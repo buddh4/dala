@@ -1,0 +1,770 @@
+<!doctype html>
+<html class="no-js">
+  <head>
+    <meta charset="utf-8">
+    <title>dala</title>
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width">
+    <link rel="shortcut icon" href="images/icons/dala.ico">
+    <link rel="stylesheet" href="css/bootstrap.css" />
+    <link rel="stylesheet" href="css/jquery-ui/all.css" />
+    <link rel="stylesheet" href="css/main.css">
+  </head>
+  <body>
+    <!--[if lt IE 10]>
+      <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+    <![endif]-->
+
+<div role="navigation" class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container-fluid">
+        <div class="navbar-header">
+          <button data-target=".navbar-collapse" data-toggle="collapse" class="navbar-toggle collapsed" type="button">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+            <a href="#" class="navbar-brand"><img height="20" src="images/icons/dala.ico" style="margin-bottom:3px;float:left;" />&nbsp;Dala</a>
+        </div>
+        <div class="navbar-collapse collapse">
+          <ul class="nav navbar-nav navbar-right">
+            <!-- If logged out and backend connection -->
+            <li class="loggedOut"><a href="#" id="loginButton">Login</a></li>
+            <li class="loggedOut"><a href="#" id="registerButton">Register</a></li>
+            <li class="loggedOut"><a href="#" id="settingButton">Settings</a></li>
+            
+            <!-- If logged in -->
+            <li class="loggedIn"><a href="#">Logout</a></li>
+            <li class="loggedIn"><a href="#">Dashboard</a></li>
+            <li class="loggedIn"><a href="#">Profile</a></li>
+            <li class="loggedIn"><a href="#">Help</a></li>
+          </ul>
+        </div>
+    </div>
+</div>
+    
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-sm-2 col-md-2 sidebar">
+            <div id="templateNav">
+                <h3>UML</h3>
+                <div>
+                    <table>
+                        <tr>
+                            <td id="tmpl_select_uml_class" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(1 1)">
+                                        <rect width="100" height="80" rx="2" style="fill:grey;stroke:black;stroke-width:1px;"/>                                     <g transform="translate(0 20)">
+                                        <rect width="100" height="40" x="0" y="0" transform="translate(0 3)"
+                                              style="fill:white;stroke:black;stroke-width:1px;"/>
+                                    </g>
+                                </svg>
+                                <span class="tmplName">Class</span>
+                            </td>
+                            <td id="tmpl_select_uml_package" class="tmpl_select">
+                                
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                <g transform="translate(1 2)">
+                                    <rect width="30" height="20" rx="2" style="fill:white;stroke:black;stroke-width:2px;"/>
+                                    <rect width="100" height="60" transform="translate(0 10)" x="0" y="0" style="fill:white;stroke:black;stroke-width:2px;"/>
+                                </g>
+                                </svg>
+                                
+                                <span class="tmplName">Package</span>
+                            </td>
+                            
+                            <td id="tmpl_select_uml_component" class="tmpl_select">
+                                
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                <g transform="translate(1 2)">
+                                    <rect width="30" height="20" rx="2" style="fill:white;stroke:black;stroke-width:2px;"/>
+                                    <rect width="100" height="60" transform="translate(0 10)" x="0" y="0" style="fill:white;stroke:black;stroke-width:2px;"/>
+                                </g>
+                                </svg>
+                                
+                                <span class="tmplName">Component</span>
+                            </td>
+                        </tr>
+                    </table>  
+                </div>
+                <h3>Simple</h3>
+                <div>
+                    <table>
+                        <tr>
+                            <td id="tmpl_select_simple_circle" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(0 0)">
+                                        <circle cx="30" cy="30" r="30" stroke="black" stroke-width="3" fill="red" />
+                                    </g>
+                                </svg>
+                                <span class="tmplName">Circle</span>
+                            </td>
+                             <td id="tmpl_select_simple_ellipse" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(0 0)">
+                                        <ellipse cx="200" cy="80" rx="100" ry="50" style="fill:yellow;stroke:purple;stroke-width:2" />
+                                    </g>
+                                </svg>
+                                <span class="tmplName">Ellipse</span>
+                            </td>
+                            <td id="tmpl_select_simple_rect" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(0 0)">
+                                        <rect x="0" y="0" width="100" height="60" stroke="black" stroke-width="3" fill="red" />
+                                    </g>
+                                </svg>
+                                <span class="tmplName">Rectangle</span>
+                            </td>
+                        </tr>
+                    </table>  
+                </div>
+            </div>
+ 
+            <div id="editNav" class="toolbox">
+                <div id="editContent">
+                    <div id="editTransition">
+                        <h3>Edit Transition</h3>
+                        <form action="#">
+                            <fieldset>
+                                <table>
+                                    <tr>
+                                        <th>Start Marker</th>
+                                        <td>
+                                            <select class="edit" name="startMarker" id="startMarker">
+                                                <option data-class="marker-none" value="none">None</option>
+                                                <option data-class="marker-arrow" value="arrow_s">Uni-directional</option>
+                                                <option data-class="marker-triangle" value="triangle_s">Inheritance</option>
+                                                <option data-class="marker-trianglefill" value="trianglefill_s">TriangleFill</option>
+                                                <option data-class="marker-aggr" value="aggr_s">Aggregation</option>
+                                                <option data-class="marker-comp" value="comp_s">Composition</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>End Marker</th>
+                                        <td>
+                                            <select class="edit" name="endMarker" id="endMarker">
+                                                <option data-class="marker-none" value="none">None</option>
+                                                <option data-class="marker-arrow" value="arrow">Uni-directional</option>
+                                                <option data-class="marker-triangle" value="triangle">Inheritance</option>
+                                                <option data-class="marker-trianglefill" value="trianglefill">TriangleFill</option>
+                                                <option data-class="marker-aggr" value="aggr">Aggregation</option>
+                                                <option data-class="marker-comp" value="comp">Composition</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr><th id="editSTIco"></th><td><input id="edit_ST" data-index="0" class="transTextEdit" type="text" ></td></tr>
+                                    <tr><th id="editMTIco"></th><td><input id="edit_MT" data-index="2" class="transTextEdit" type="text" ></td></tr>
+                                    <tr><th id="editETIco"></th><td><input id="edit_ET" data-index="4" class="transTextEdit" type="text" ></td></tr>
+                                    <tr><th id="editSBIco"></th><td><input id="edit_SB" data-index="1" class="transTextEdit" type="text" ></td></tr>
+                                    <tr><th id="editMBIco"></th><td><input id="edit_MB" data-index="3" class="transTextEdit" type="text" ></td></tr>
+                                    <tr><th id="editEBIco"></th><td><input id="edit_EB" data-index="5" class="transTextEdit" type="text" ></td></tr>
+                                </table>
+                            </fieldset>
+                        </form>
+                    </div>
+                    <div id="editNode">
+                        <h3>Edit Node</h3>
+                        <form id="editNodeForm" action="#">
+                            <div id="editNodeContent"></div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div id="infoBox" class="toolbox">&nbsp</div>
+        </div>
+          
+        
+        
+        <div class="col-sm-10 col-sm-offset-3  col-md-offset-2 main">
+            <!-- Stage -->
+            <h5 class="page-header" style="padding-bottom: 0px;margin-bottom:10px">Document</h5>  
+            <div id="notifications"></div>
+            <div id="contentTabs">
+                <ul>
+                    <li><a href="#tabs-stage">Stage</a></li>
+                    <li><a href="#tabs-2">Repository</a></li>
+                    <li><a href="#tabs-3">Editor</a></li>
+                </ul>
+                <div id="tabs-stage">
+                    <!-- STAGE TAB -->
+                    <nav id="stageNav" class="navbar navbar-default" role="navigation">
+                        <div class="container-fluid">
+                          <!-- Brand and toggle get grouped for better mobile display -->
+                          <div class="navbar-header">
+                            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                              <span class="sr-only">Toggle navigation</span>
+                              <span class="icon-bar"></span>
+                              <span class="icon-bar"></span>
+                              <span class="icon-bar"></span>
+                            </button>
+                             <!-- <a class="navbar-brand" href="#">
+                                <img alt="Brand" src="images/icons/document_blue.png">
+                              </a> -->
+                          </div>
+
+                          <!-- Collect the nav links, forms, and other content for toggling -->
+                          <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                            <ul class="nav navbar-nav">
+                              <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                                    <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span class="caret"></span></a>
+                                <ul class="dropdown-menu" role="menu">
+                                  <li><a href="#" id="newButton">New</a></li>
+                                  <!-- TODO: move this to filehandler -->
+                                  <li><a href="#" onclick="$('#openSVG').click()">Open</a></li>
+                                  <li><a href="#">Save</a></li>
+                                  <li><a href="#">!Export!</a></li>
+                                </ul>
+                              </li>
+                              <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+                                    <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Diagram <span class="caret"></span></a>
+                                <ul class="dropdown-menu" role="menu">
+                                  <li><a href="#">!Preferences!</a></li>
+                                  <li><a href="#" id="hideDocking">Hide Dockings</a></li>
+                                  <li><a href="#" id="dragAlign">Drag Alignment</a></li>
+                                </ul> 
+                              </li>
+
+                            </ul>
+                              <a href="#" id="viewXML">{SVG}</a>
+                            <ul class="nav navbar-nav navbar-right">
+                              <li><a id="downloadDiagram" href="#" download="diagram.xml"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>
+                            </ul>
+                          </div><!-- /.navbar-collapse -->
+                        </div><!-- /.container-fluid -->
+                    </nav>
+                    <!-- The min-height:0 fixes the jquery offset accurency problem, don't ask why ;)-->
+                    <div id="svgStage"></div>   
+                </div>
+                <div id="tabs-2">
+                    <p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>
+                </div>
+                <div id="tabs-3">
+                    <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
+                    <p>Duis cursus. Maecenas ligula eros, blandit nec, pharetra at, semper at, magna. Nullam ac lacus. Nulla facilisi. Praesent viverra justo vitae neque. Praesent blandit adipiscing velit. Suspendisse potenti. Donec mattis, pede vel pharetra blandit, magna ligula faucibus eros, id euismod lacus dolor eget odio. Nam scelerisque. Donec non libero sed nulla mattis commodo. Ut sagittis. Donec nisi lectus, feugiat porttitor, tempor ac, tempor vitae, pede. Aenean vehicula velit eu tellus interdum rutrum. Maecenas commodo. Pellentesque nec elit. Fusce in lacus. Vivamus a libero vitae lectus hendrerit hendrerit.</p>
+                </div>
+            
+            <!-- File Open Input  -->
+            <div style="display:none">
+                <input type="file" id="openSVG" name="files[]"/>
+            </div>
+
+            
+        </div>
+    </div>
+</div>
+</div>
+<!-- Login Settings Dialog -->
+<div id="xml-view" style="overflow:hidden;" title="SVG View">
+    <textarea style="width:100%;height:100%; resize: none;"></textarea>
+</div>
+    
+<!-- Login Settings Dialog -->
+<div id="login-dialog" title="Setting">
+    <h3>Login</h3>
+  <form>
+    <fieldset>
+      <label for="host">Host</label>
+      <input type="text" name="email" id="login_email" class="text ui-widget-content ui-corner-all">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="reg_password" class="text ui-widget-content ui-corner-all">
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
+</div>
+    
+<!-- Register Dialog -->
+<div id="register-dialog" title="Register">
+  <p class="validateTips">All form fields are required.</p>
+  
+  <form>
+    <fieldset>
+      <label for="firstName">Firstname</label>
+      <input type="text" name="firstName" id="reg_firstName" class="text ui-widget-content ui-corner-all">
+      <label for="lastName">Lastname</label>
+      <input type="text" name="lastName" id="reg_lastName" class="text ui-widget-content ui-corner-all">
+      <label for="userName">Username</label>
+      <input type="text" name="userName" id="reg_userName" class="text ui-widget-content ui-corner-all">
+      <label for="email">Email</label>
+      <input type="text" name="email" id="reg_email" class="text ui-widget-content ui-corner-all">
+      <label for="password">Password</label>
+      <input type="password" name="password" id="reg_password" class="text ui-widget-content ui-corner-all">
+      
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
+</div>
+
+<!-- Backend Settings Dialog -->
+<div id="setting-dialog" title="Setting">
+    <h3>Backend Setting</h3>
+  <form>
+    <fieldset>
+      <label for="backendhost">Host</label>
+      <input type="text" name="firstname" id="backendhost" class="text ui-widget-content ui-corner-all">
+      <label for="backendport">Port</label>
+      <input type="text" name="port" id="backendport" class="text ui-widget-content ui-corner-all">
+      <br /><br />
+      <span>Status: <b id="backendConnectionTest"></b></span>
+      <!-- Allow form submission with keyboard without duplicating the dialog button -->
+      <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+    </fieldset>
+  </form>
+</div>
+
+
+    
+<!-- IMAGE TMPL -->
+    <script id="defs" type="text/template">
+        <template>
+            <svg class="tmpl_svg" xmlns="http://www.w3.org/2000/svg" xmlns:dynDoc="http://www.dynDoc.com" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <defs>
+                    <marker id="trianglefill" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z"/>
+                    </marker>
+            
+                    <marker id="trianglefill_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 10 10 z"/>
+                    </marker>
+            
+                    <marker id="triangle" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10 z" style="stroke:black;stroke-width:1;fill:white;" />
+                    </marker>
+            
+                    <marker id="triangle_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;" />
+                    </marker>
+            
+                    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 0 0 L 10 5 L 0 10" style="stroke:black;stroke-width:1;fill:none;" />
+                    </marker>
+            
+                    <marker id="arrow_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                        <path d="M 10 0 L 0 5 L 10 10" style="stroke:black;stroke-width:1;fill:none;" />
+                    </marker>
+            
+                    <marker id="aggr_s" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;"/>
+                    </marker>
+						
+                    <marker id="aggr" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;"/>
+                    </marker>
+                    <marker id="comp_s" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:none;stroke-width:1;fill:black;"/>
+                    </marker>
+						
+                    <marker id="comp" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                        <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:none;stroke-width:1;fill:black;"/>
+                    </marker>
+                </defs>
+            </svg>
+            <config>{}</config>
+            <functions>var script;</functions>
+        </template>
+    </script>
+    <script id="image" type="text/template">
+        <template>
+            <svg class="tmpl_svg" xmlns="http://www.w3.org/2000/svg" xmlns:dala="http://www.dala.com" xmlns:xlink="http://www.w3.org/1999/xlink">
+                <g id="root_g_{nodeID}" class="dragRoute_{nodeID}" transform="translate({x} {y})">
+                    <image id="img_{nodeID}" x="0" y="0" width="{width}" height="{height}" xlink:href="{href}">
+                        <title>only jpg,png,svg</title>
+                    </image>
+                    <rect id="border_rect_{elementID}" width="{width}" height="{height}" fill="none" x="0" y="0" stroke="none" stroke-width="0" />
+		</g>
+            </svg>
+            <config>
+                {
+                    "elementID" : "imgdefault",
+                    "href" : "http://upload.wikimedia.org/wikipedia/de/thumb/3/38/Logo_Wu-Tang-Clan.svg/220px-Logo_Wu-Tang-Clan.svg.png",
+                    "title" : "DefaultTitle",
+                    "hoverColor" : "orange",
+                    "selectColor": "red",
+                    "initText":"Content",
+                    "x": 10,
+                    "y": 10,
+                    "width" : 20,
+                    "height" : 20
+		}
+            </config>
+            <functions>
+                var script =  {
+                    init: function(config) {},
+                    mouseover: function(element) {
+                        if(!element.selected) {
+                            SVG.get('border_rect_{nodeID}').stroke({color: '{hoverColor}', width: 1});
+			}
+                    },
+                    mouseout: function(element) {
+                        if(!element.selected) {
+                            SVG.get('border_rect_{nodeID}').stroke('none');
+			}
+                    },
+                    select: function(element) {
+                        SVG.get('border_rect_{nodeID}').stroke({color: '{selectColor}', width: 1});
+                    },
+                    deselect: function(element) {
+                        SVG.get('border_rect_{nodeID}').stroke({color: '{headColor}', width: 1});
+                    }
+		};
+            </functions>
+	</template>
+	</script>
+        
+        <!-- UML TMPL -->
+	<script id="uml_class" type="text/template">
+            <template>
+                <svg class="tmpl_svg" >
+                    <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                        <rect id="node_back_{node_id}" width="{init_width}" height="65" 
+                            x="0" y="0" rx="2"
+                            style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                        <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                            <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                        </text>
+                        <g id="attributes_g_{node_id}" transform="translate(0 20)">
+                            <rect id="attributes_back_{node_id}" width="{init_width}" height="15" fill="white" x="0" y="0" 
+                                style="stroke:#000000;fill:{color_second};"
+                                stroke-width="1"/>
+                            <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                                <tspan id="attributes_span_{node_id}" dy="11" x="2" >Attributes</tspan>
+                            </text>
+                        </g>
+                        <g id="methods_g_{node_id}" transform="translate(0 37)">
+                            <rect id="methods_back_{node_id}" width="{init_width}" height="17" fill="white" x="0" y="0" 
+                                style="stroke:#000000;fill:{color_second};"
+                                stroke-width="1"/>
+                            <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                                <tspan id="methods_span_{node_id}" dy="11" x="2" >Operations</tspan>
+                            </text>
+                        </g>
+                    </g>
+                </svg>
+                <config>
+                    {
+                        "init_width" : "150",
+                        "init_title" : "New Class",
+                        "color_main" : "#BBBBBB",
+                        "color_second" : "#FFFFFF",
+                        "color_hover" : "#E0E0E0",
+                        "color_select": "#898989",
+                        "dockingType" : "SQUARE", 
+                        "resize": [ 
+                            {"bind":"#methods_back", "value":"default", "min":"parent"},
+                            {"bind":"#attributes_back", "value":"default parent", "min":"parent"},
+                            {"bind":"#methods_g", "position": "static relative(2)"},
+                            {"bind":"#node_back", "value":"default parent(5)", "min":"parent"},
+                            {"bind":"#methods_back", "min":"#node_back none"},
+                            {"bind":"#attributes_back", "min":"#node_back none"},
+                            {"bind":"#title_t", "position": "center static"}
+                        ],
+                        "edit": {
+                            "title" : {
+                                "type" : "text",
+                                "label" : "Title",
+                                "bind" : "#title_span",
+                                "trigger" : "#title_t"
+                            },
+                            "attributes" : {
+                                "type" : "textarea",
+                                "label" : "Attributes",
+                                "bind" : "#attributes_t",
+                                "trigger" : ["#attributes_back", "#attributes_t"]
+                            },
+                            "methods" : {
+                                "type" : "textarea",
+                                "label" : "Methods",
+                                "bind" : "#methods_t",
+                                "trigger" : ["#methods_back", "#methods_t"]
+                            },
+                            "mainColor" : {
+                                "type" : "color",
+                                "label" : "Main Color",
+                                "bind" : "#node_back"
+                            }
+                        }
+                    }
+                </config>
+                <functions>
+                    var script =  {
+                        init: function(config) {},
+                        mouseover: function(element) {
+                            //TODO get hovercolor form 
+                            //if(!element.selected) {
+                            //    SVG.get('node_back_{node_id}').fill('{color_hover}');
+                            //}
+                        },
+                        mouseout: function(element) {
+                            //if(!element.selected) {
+                            //    SVG.get('node_back_{node_id}').fill('{color_main}');
+                            //}
+                        },
+                        select: function(element) {
+                            //SVG.get('node_back_{node_id}').fill('{color_select}');
+                        },
+                        deselect: function(element) {
+                            //SVG.get('node_back_{node_id}').fill('{color_main}');
+                        }
+                    };
+                </functions>
+            </template>
+	</script> 
+        <script id="uml_package" type="text/template">
+            <template>
+                <svg class="tmpl_svg">
+                    <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                        <g>
+                            <rect width="30" height="20"  rx="2" style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                            <rect id="body_back_{node_id}" width="100" height="60" transform="translate(0 10)" x="0" y="0" 
+                                style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                            <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="25">
+                                <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+                            </text>
+                        </g>
+                    </g>
+                </svg>
+                <config>
+                    {
+                        "dockingType" : "SQUARE", 
+                        "title" : "New Package",
+                        "color_main" : "#FFFFFF",
+                        "resize" : [
+                            {"bind":"#body_back", "value":"default", "min":"parent parent(-10)"},
+                            {"bind":"#title_t", "position":"center static", "alignto":"#body_back"}
+                        ],
+                        "edit": {
+                            "title" : {
+                                "type" : "textarea",
+                                "label" : "Text",
+                                "bind" : "#title_t",
+                                "trigger" : "#title_t"
+                            },
+                            "mainColor" : {
+                                "type" : "color",
+                                "label" : "Main Color",
+                                "bind" : "#body_back"
+                            }
+                        }
+                    }
+		</config>
+                <functions>
+                    var script =  {
+                        init: function(config) {},
+                        mouseover: function(element) {},
+                        mouseout: function(element) {},
+                        select: function(element) {},
+                        deselect: function(element) {}
+                    };
+                </functions>
+            </template>
+	</script>
+        
+        <script id="uml_component" type="text/template">
+            <template>
+                <svg>
+                    <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                        <rect id="body_back_{node_id}" height="100" width="150" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                        <text id="head_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="25">
+                            <tspan id="head_span_{node_id}" dy="13.0" x="2">&lt;&lt;component&gt;&gt;</tspan>
+                        </text>
+                        <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="40">
+                            <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+                        </text>
+                        <g id="icon_{node_id}" transform="translate(120 5)">
+                           <rect id="svg_13" height="23" width="15" y="0" x="6" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                           <rect id="svg_16" height="6" width="16" y="3" x="0" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                           <rect id="svg_17" height="6" width="16" y="13" x="0" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                        </g>
+                    </g>
+                </svg>
+                <config>
+                    {
+                        "dockingType" : "SQUARE", 
+                        "title" : "component",
+                        "head" : "&lt;&lt;component&gt;&gt;",
+                        "color_main" : "#FFFFFF",
+                        "color_second" : "#000000",
+                        "resize" : [
+                            {"bind":"#body_back", "value":"default", "min":"parent"},
+                            {"bind":"#head_t", "position": "center static", "alignto":"#body_back"},
+                            {"bind":"#title_t", "position": "center static", "alignto":"#body_back"},
+                            {"bind":"#icon", "position": "right(5) static", "alignto":"#body_back"}
+                        ],
+                        "edit": {
+                            "title" : {
+                                "type" : "textarea",
+                                "label" : "Text",
+                                "bind" : "#title_t",
+                                "trigger" : "#title_t"
+                            },
+                            "head" : {
+                                "type" : "text",
+                                "label" : "Type",
+                                "bind" : "#head_span",
+                                "trigger" : "#head_t"
+                            },
+                            "mainColor" : {
+                                "type" : "color",
+                                "label" : "Main Color",
+                                "bind" : "#body_back"
+                            }
+                        }
+                    }
+		</config>
+                <functions>
+				var script =  {
+					init: function(config) {},
+					mouseover: function(element) {},
+					mouseout: function(element) {},
+					select: function(element) {},
+					deselect: function(element) {}
+				};
+			</functions>
+            </template>
+        </script>
+        
+        <script id="simple_circle" type="text/template">
+		<template>
+			<svg class="tmpl_svg">
+                            <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                                <circle id="body_back_{node_id}" cx="50" cy="50" r="50" style="fill:{color_main};stroke:black;stroke-width:1" />
+                                <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                                    <tspan id="title_span_{node_id}" dala:content="text" dy="13.0" x="2">{title}</tspan>
+                                </text>
+                            </g>
+			</svg>
+			<config>
+                            {
+                                "dockingType" : "CIRCLE", 
+                                "title" : "circle",
+                                "color_main" : "#FF0000",
+                                "resize" : [
+                                    {"bind":"#body_back", "value":"circle", "min":"parent"},
+                                    {"bind":"#title_t", "position": "center"}
+                                ],
+                                "edit": {
+                                    "title" : {
+                                        "type" : "text",
+                                        "label" : "Text",
+                                        "bind" : "#title_span",
+                                        "trigger" : "#title_t"
+                                    },
+                                    "mainColor" : {
+                                        "type" : "color",
+                                        "label" : "Main Color",
+                                        "bind" : "#body_back"
+                                    }
+                                }
+                            }
+			</config>
+			<functions>
+				var script =  {
+					init: function(config) {},
+					mouseover: function(element) {},
+					mouseout: function(element) {},
+					select: function(element) {},
+					deselect: function(element) {}
+				};
+			</functions>
+		</template>
+	</script>
+        <script id="simple_rect" type="text/template">
+		<template>
+			<svg class="tmpl_svg">
+                            <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                                <rect id="body_back_{node_id}" width="100" height="60" style="fill:{color_main};stroke:black;stroke-width:2" />
+                                <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                                    <tspan id="title_span_{node_id}" dala:content="text" dy="13.0" x="2">{title}</tspan>
+                                </text>
+                            </g>
+			</svg>
+			<config>
+				{
+                                    "dockingType" : "SQUARE", 
+                                    "title" : "RECTANGLE",
+                                    "color_main" : "#FF0000",
+                                    "resize" : [
+                                        {"bind":"#body_back", "value":"default", "min":"parent"},
+                                        {"bind":"#title_t", "position": "center"}
+                                    ],
+                                    "edit": {
+                                        "title" : {
+                                            "type" : "text",
+                                            "label" : "Text",
+                                            "bind" : "#title_span",
+                                            "trigger" : "#title_t"
+                                        },
+                                        "mainColor" : {
+                                            "type" : "color",
+                                            "label" : "Main Color",
+                                            "bind" : "#body_back"
+                                        }
+                                    }
+				}
+			</config>
+			<functions>
+				var script =  {
+					init: function(config) {},
+					mouseover: function(element) {},
+					mouseout: function(element) {},
+					select: function(element) {},
+					deselect: function(element) {}
+				};
+			</functions>
+		</template>
+	</script>
+        <script id="simple_ellipse" type="text/template">
+		<template>
+			<svg class="tmpl_svg">
+                            <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                                <ellipse id="body_back_{node_id}" cx="100" cy="50" rx="100" ry="50" style="fill:{color_main};stroke:black;stroke-width:1" />
+                                <text id="title_t_{node_id}" dala:position="center" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                                    <tspan id="title_span_{node_id}" dala:content="text" dy="13.0" x="2">{title}</tspan>
+                                </text>
+                            </g>
+			</svg>
+			<config>
+				{
+                                    "dockingType" : "ELLIPSE", 
+                                    "color_main" : "#FFFF00",
+                                    "title" : "ellipse",
+                                    "resize" : [
+                                        {"bind":"#body_back", "value":"default", "min":"parent"},
+                                        {"bind":"#title_t", "position": "center"}
+                                    ],
+                                    "edit": {
+                                        "title" : {
+                                            "type" : "text",
+                                            "label" : "Text",
+                                            "bind" : "#title_span",
+                                            "trigger" : "#title_t"
+                                        },
+                                        "mainColor" : {
+                                            "type" : "color",
+                                            "label" : "Main Color",
+                                            "bind" : "#body_back"
+                                        }
+                                    }
+				}
+			</config>
+			<functions>
+				var script =  {
+					init: function(config) {},
+					mouseover: function(element) {},
+					mouseout: function(element) {},
+					select: function(element) {},
+					deselect: function(element) {}
+				};
+			</functions>
+		</template>
+	</script>
+
+
+    <!-- SCRIPTS -->
+    <script src="js/client.js"></script>
+</body>
+</html>

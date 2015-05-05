@@ -1,0 +1,54 @@
+{
+  "name": "dala_browserify",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node ./bin/www",
+    "watch": "watchify client/*.js -o public/app.js -v",
+    "build": "browserify -t debowerify --debug client/clientapp.js -o public/js/client.js"
+  },
+  "dependencies": {
+    "body-parser": "~1.12.0",
+    "bootstrap": "^3.3.4",
+    "cookie-parser": "~1.3.4",
+    "debug": "~2.1.1",
+    "express": "~4.12.2",
+    "jade": "~1.9.2",
+    "jquery": "^2.1.4",
+    "jquery-ui": "^1.11.2",
+    "morgan": "~1.5.1",
+    "serve-favicon": "~2.2.0"
+  },
+  "devDependencies": {
+    "browserify": "^9.0.8",
+    "browserify-shim": "^3.8.5",
+    "debowerify": "^1.2.1",
+    "grunt": "^0.4.5",
+    "grunt-browserify": "^3.8.0",
+    "grunt-contrib-uglify": "^0.9.1",
+    "grunt-contrib-watch": "^0.6.1",
+    "nodemon": "^1.3.7",
+    "watchify": "^3.2.0"
+  },
+  "browser": {
+    "bootstrap": "./node_modules/bootstrap/dist/js/bootstrap.js",
+    "jqurey-ui": "./bower_components/jquery-ui/jquery-ui.js"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim"
+    ]
+  },
+  "browserify-shim": {
+    "bootstrap": {
+      "depends": [
+        "jquery:jQuery"
+      ]
+    },
+    "jquery-ui": {
+      "depends": [
+        "jquery:$"
+      ]
+    }
+  }
+}
