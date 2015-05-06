@@ -3,6 +3,7 @@ var event = require('../core/event');
 
 var StageCommand = function(diagram) {
     this.diagram = diagram;
+    this.event = diagram.event;
 };
 
 StageCommand.prototype.getNodeById = function(id) {

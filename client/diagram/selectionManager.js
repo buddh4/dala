@@ -6,6 +6,7 @@ var dom = util.dom;
 
 var SelectionManager = function(diagram) {
     this.diagram = diagram;
+    this.event = diagram.event;
     this.selectedNodes = [];
     this.copyNodes = [];
     this.selectedTransition;
@@ -17,18 +18,20 @@ var SelectionManager = function(diagram) {
     event.listen('key_copy_press', this.copyListener, this);
     event.listen('key_paste_press', this.pasteListener, this);
     event.listen('key_del_press', this.deleteListener, this);
+    event.listen('tab_activated', this.clear, this);
 
-    event.listen('transition_start', this.transitionStartListener, this);
-    event.listen('transition_select', this.selectTransitionListener, this);
-    event.listen('transition_removed', this.removedTransitionListener, this);
+    this.event.listen('transition_start', this.transitionStartListener, this);
+    this.event.listen('transition_select', this.selectTransitionListener, this);
+    this.event.listen('transition_removed', this.removedTransitionListener, this);
 
-    event.listen('node_added', this.selectNodeListener, this);
-    event.listen('node_removed', this.removedNodeListener, this);
-    event.listen('node_mousedown', this.selectNodeListener, this);
+    this.event.listen('node_added', this.selectNodeListener, this);
+    this.event.listen('node_removed', this.removedNodeListener, this);
+    this.event.listen('node_mousedown', this.selectNodeListener, this);
 
-    event.listen('docking_select', this.selectDockingListener, this);
-    event.listen('docking_removed', this.removedDockingListener, this);
+    this.event.listen('docking_select', this.selectDockingListener, this);
+    this.event.listen('docking_removed', this.removedDockingListener, this);
 
+    //These are currently global events not diagram context events
     event.listen('element_hoverIn', this.hoverInElementListener, this);
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
 };
@@ -40,8 +43,9 @@ SelectionManager.prototype.copyListener = function(evt) {
 
 SelectionManager.prototype.pasteListener = function(evt) {
     evt.preventDefault();
+    var that = this;
     object.each(this.copyNodes, function(index, node) {
-        event.trigger('node_copy', node, evt);
+        that.event.trigger('node_copy', node, evt);
     });
 };
 
@@ -107,7 +111,7 @@ SelectionManager.prototype.deleteListener = function(evt) {
 
     //Remove selected transition
     if(object.isDefined(this.selectedTransition)) {
-        event.trigger('transition_delete', this.selectedTransition);
+        this.event.trigger('transition_delete', this.selectedTransition);
     };
 
     this.clear();
@@ -115,21 +119,23 @@ SelectionManager.prototype.deleteListener = function(evt) {
 
 SelectionManager.prototype.deleteSelectionNodes = function() {
     var arrClone = this.selectedNodes.slice(0);
+    var that = this;
     object.each(arrClone, function(index, node) {
         if(object.isDefined(node)) {
-            event.trigger('node_delete', node);
+            that.event.trigger('node_delete', node);
         } else {
             //If there is a undefined value we remove it from the selection
-            this.selectedNodes.splice(0, 1);
+            that.selectedNodes.splice(0, 1);
         }
     });
 };
 
 SelectionManager.prototype.deleteSelectionDockings = function() {
     var arrClone = this.selectedDockings.slice(0);
+    var that = this;
     object.each(arrClone, function(index, docking) {
         if(object.isDefined(docking)) {
-            event.trigger('docking_delete', docking);
+            that.event.trigger('docking_delete', docking);
         }
     });
 };
@@ -180,7 +186,7 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
     //TODO MULTIPLE SELECTIONS DIFFERENT TYPES (TRANSITION/NODES)...
     // we could provide the whole selection instead of the single node
     if(!this.containsNode(selectedNode)) {
-        event.trigger('node_selected',selectedNode);
+        this.event.trigger('node_selected',selectedNode);
 
         //Clear the current selection
         if(!(object.isDefined(shifted) && shifted)) {
@@ -260,7 +266,7 @@ SelectionManager.prototype.clear = function() {
     this.clearNodes();
     this.clearTransition();
     this.clearDocking();
-    event.trigger('selection_clear');
+    this.event.trigger('selection_clear');
 };
 
 SelectionManager.prototype.clearNodes = function() {

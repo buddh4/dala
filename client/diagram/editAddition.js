@@ -1,11 +1,11 @@
 var util = require('../util/util');
-var event = require('../core/event');
 
 var object = util.object;
 var dom = util.dom;
 
 var EditAddition = function(node) {
     this.node = node;
+    this.event = node.event;
     this.node.additions.edit = this;
     this.config = this.node.template.config.edit;
     this.initEditTrigger();
@@ -204,7 +204,7 @@ EditAddition.prototype.setValue = function(key, newValue) {
             break;
     }
     this.node.executeAddition('edit');
-    event.trigger('node_edit',this.node);
+    this.event.trigger('node_edit',this.node);
 };
 
 EditAddition.prototype.deselect = function() {

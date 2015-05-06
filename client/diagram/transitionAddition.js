@@ -4,6 +4,7 @@ var Transition = require('./transition');
 
 var TransitionAddition = function(node) {
     this.node = node;
+    this.event = node.event;
     this.node.additions.transition = this;
     this.diagram = this.node.diagram;
     this.transitionMgr = this.diagram.transitionMgr;

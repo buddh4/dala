@@ -78,6 +78,20 @@ SVGElement.prototype.back = function() {
     return this;
 };
 
+SVGElement.prototype.scale = function(scale) {
+    var result = this.getTransformation().scale(scale);
+
+    if(result instanceof Transform) {
+        // The trnaslate setter returns the Transform object so we reset the
+        // transform attribute in dom (setter was called)
+        this.update();
+        return this;
+    } else {
+        // The getter just returns the x,y values of the translate transformation
+        return result;
+    }
+};
+
 SVGElement.prototype.translate = function(x, y) {
     var result = this.getTransformation().translate(x,y);
 

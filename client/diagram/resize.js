@@ -30,6 +30,7 @@ var DIF_REL = DIF + SIZE;
 
 var Resize = function(node, diagram) {
     this.diagram = diagram;
+    this.event = diagram.event;
     this.knobs = [];
     this.node = node;
     this.config = this.node.template.config.resize;
@@ -87,10 +88,13 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
                 this.fill('black');
             }
 
-            event.trigger('node_resized', that.node);
+            that.event.trigger('node_resized', that.node);
 
             delete that.resizeElements;
 
+        })
+        .getScale(function() {
+            return that.diagram.scale;
         }).get();
 
     // Render the knob on stage

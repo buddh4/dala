@@ -2,6 +2,7 @@ var events = {};
 
 var object = require('../util/object');
 var config = require('../core/config');
+var SubEvent = require('./subEvent');
 
 
 var hasHandler = function(type) {
@@ -33,6 +34,10 @@ module.exports = {
                 events[type].splice(index, 1);
             }
         }
+    },
+
+    sub: function(context) {
+        return new SubEvent(context, this);
     },
 
     command: function(command, execute) {

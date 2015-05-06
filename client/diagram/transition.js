@@ -16,6 +16,7 @@ var Transition = function(node, diagram) {
         // Create new Transition with the given node as startnode
         this.startNode = node;
         this.diagram = node.diagram;
+        this.event = node.event;
         this.svg = this.diagram.svg;
         this.additions = {};
         this.docking = new TransitionDocking(this);
@@ -23,6 +24,7 @@ var Transition = function(node, diagram) {
     } else {
         //Activation of a transition, the node is supposted to be the transition group
         this.diagram = diagram;
+        this.event = diagram.event;
         this.svg = this.diagram.svg;
         this.docking = new TransitionDocking(this);
         this.activate(node);
@@ -269,9 +271,10 @@ Transition.prototype.init = function(mouse) {
     //TODO DIFFERENT TYPES USE Path
     this.line = this.svg.path({
         d : path,
-        'marker-end' :'url(#trianglefill)',
         style  : STYLE_TRANSITION_ACTIVE
     });
+
+    this.endMarker('trianglefill');
 
     this.lineArea = this.svg.path({
         d : path,
@@ -302,7 +305,7 @@ Transition.prototype.initEvents = function() {
 
     this.lineArea.mousedown(function(mainEvent) {
         mainEvent.preventDefault();
-        event.trigger('transition_select', that);
+        that.event.trigger('transition_select', that);
 
         var dragInitiated = false;
         var startPosition = that.diagram.getStagePosition(mainEvent.pageX, mainEvent.pageY);
@@ -352,7 +355,7 @@ Transition.prototype.startMarker = function(marker) {
 Transition.prototype.marker = function(type, marker) {
     var key = 'marker-'+type;
     if(object.isDefined(marker)) {
-        this.line.attr(key, 'url(#'+marker+')');
+        this.line.attr(key, this.getMarkerSelector(marker));
     } else {
         var markerStr = this.line.attr(key);
         if(object.isDefined(markerStr)) {
@@ -360,6 +363,10 @@ Transition.prototype.marker = function(type, marker) {
         }
     }
 };
+
+Transition.prototype.getMarkerSelector = function(marker) {
+    return 'url(#'+marker+'_'+this.diagram.id+')';
+}
 
 Transition.prototype.select = function() {
     this.line.attr({style:STYLE_TRANSITION_ACTIVE});
@@ -388,7 +395,7 @@ Transition.prototype.remove = function() {
     this.group.remove();
     this.startNode.removeOutgoingTransition(this);
     this.endNode.removeIncomingTransition(this);
-    event.trigger('transition_removed', this);
+    this.event.trigger('transition_removed', this);
     this.docking.remove();
 };
 

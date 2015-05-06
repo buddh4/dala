@@ -1,11 +1,10 @@
 var object = require('../util/object');
-var event = require('../core/event');
 
-var DockingManager = function() {
+var DockingManager = function(diagram) {
     this.dockings = [];
     this.hideDocking = false;
-    event.listen('docking_added', this.addDockingListener, this);
-    event.listen('docking_delete', this.deleteDocking, this);
+    diagram.event.listen('docking_added', this.addDockingListener, this);
+    diagram.event.listen('docking_delete', this.deleteDocking, this);
 };
 
 DockingManager.prototype.addDockingListener = function(evt) {

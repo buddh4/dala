@@ -25,10 +25,10 @@ var createTemplate = function(tmplId, tmplRootEl) {
     return addTemplate(new Template(tmplId, tmplRootEl));
 };
 
-var getTemplate = function(id) {
+var getTemplate = function(id, tmplRootEl) {
     var tmpl = templates[id];
     if(!object.isDefined(tmpl)) {
-        tmpl = createTemplate(id);
+        tmpl = createTemplate(id, tmplRootEl);
     }
     return tmpl;
 };

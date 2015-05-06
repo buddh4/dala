@@ -60,6 +60,15 @@ Transform.prototype.hasTransformation = function(key) {
     return (typeof definition[key] !== 'undefined');
 };
 
+Transform.prototype.scale = function(s) {
+    if(s) {
+        this.definition.scale = s;
+        return this;
+    } else {
+        return this.definition.scale;
+    }
+};
+
 Transform.prototype.translate = function(x, y) {
     var p = util.app.getPoint(x,y);
 

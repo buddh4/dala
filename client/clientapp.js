@@ -17,10 +17,14 @@ require('./ui/gui');
 
 config.debug(true);
 
+
+require('./diagram/diagramManager');
+
 // Init Diagram
 // TODO: try loading user data app state from local storage or remote
 // TODO: use document / project model instead of diagram
-var diagram = new Diagram();
+//var diagram = new Diagram();
+
 new CommandManager();
 
 mouse = {};
@@ -33,6 +37,7 @@ event.on(document, 'mousemove', function(e) {
 
 event.on(document, 'keydown', function(e) {
     e.mouse = mouse;
+    console.log('keypress: '+e.keyCode);
     switch(e.keyCode) {
         case 13: //ENTER
             event.trigger('key_enter_press', {}, e);
@@ -66,12 +71,25 @@ event.on(document, 'keydown', function(e) {
                 event.trigger('key_unddo_press', {}, e);
             }
             break;
+        case 187:
+            if(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger('view_zoomIn');
+            }
+            break;
+        case 189:
+            if(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger('view_zoomOut');
+            }
+            break;
     }
 });
 
 //TODO: move this in gui with diagram handler...
-var XMLDialog = require('./ui/xmlView');
-new XMLDialog(diagram);
+//var XMLDialog = require('./ui/xmlView');
+//new XMLDialog(diagram);
 
+event.trigger('tab_new');
 event.trigger('app_start');
 event.trigger('info', 'Application started successfully! Either login or use the editor for a standalone session.');

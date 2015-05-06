@@ -45,7 +45,7 @@
     
 <div class="container-fluid">
     <div class="row">
-        <div class="col-sm-2 col-md-2 sidebar">
+        <div class="col-sm-2 col-md-2 sidebar" style="padding:2px;">
             <div id="templateNav">
                 <h3>UML</h3>
                 <div>
@@ -210,7 +210,7 @@
                                 <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                                     <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span class="caret"></span></a>
                                 <ul class="dropdown-menu" role="menu">
-                                  <li><a href="#" id="newButton">New</a></li>
+                                  <li><a href="#" id="file_new">New</a></li>
                                   <!-- TODO: move this to filehandler -->
                                   <li><a href="#" onclick="$('#openSVG').click()">Open</a></li>
                                   <li><a href="#">Save</a></li>
@@ -229,6 +229,8 @@
 
                             </ul>
                               <a href="#" id="viewXML">{SVG}</a>
+                              <a href="#" id="zoomIn">Zoom +</a>
+                              <a href="#" id="zoomOut">Zoom -</a>
                             <ul class="nav navbar-nav navbar-right">
                               <li><a id="downloadDiagram" href="#" download="diagram.xml"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>
                             </ul>
@@ -236,7 +238,10 @@
                         </div><!-- /.container-fluid -->
                     </nav>
                     <!-- The min-height:0 fixes the jquery offset accurency problem, don't ask why ;)-->
-                    <div id="svgStage"></div>   
+                    <div id="diagramStage">
+                        <ul id="stageTabs">
+                        </ul>
+                    </div>
                 </div>
                 <div id="tabs-2">
                     <p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>
@@ -316,49 +321,46 @@
   </form>
 </div>
 
-
-    
-<!-- IMAGE TMPL -->
     <script id="defs" type="text/template">
         <template>
             <svg class="tmpl_svg" xmlns="http://www.w3.org/2000/svg" xmlns:dynDoc="http://www.dynDoc.com" xmlns:xlink="http://www.w3.org/1999/xlink">
                 <defs>
-                    <marker id="trianglefill" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="trianglefill_{diagramId}" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 0 0 L 10 5 L 0 10 z"/>
                     </marker>
             
-                    <marker id="trianglefill_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="trianglefill_s_{diagramId}" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 10 10 z"/>
                     </marker>
             
-                    <marker id="triangle" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="triangle_{diagramId}" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 0 0 L 10 5 L 0 10 z" style="stroke:black;stroke-width:1;fill:white;" />
                     </marker>
             
-                    <marker id="triangle_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="triangle_s_{diagramId}" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;" />
                     </marker>
             
-                    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="arrow_{diagramId}" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 0 0 L 10 5 L 0 10" style="stroke:black;stroke-width:1;fill:none;" />
                     </marker>
             
-                    <marker id="arrow_s" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
+                    <marker id="arrow_s_{diagramId}" viewBox="0 0 10 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                         <path d="M 10 0 L 0 5 L 10 10" style="stroke:black;stroke-width:1;fill:none;" />
                     </marker>
             
-                    <marker id="aggr_s" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                    <marker id="aggr_s_{diagramId}" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;"/>
                     </marker>
 						
-                    <marker id="aggr" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                    <marker id="aggr_{diagramId}" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:black;stroke-width:1;fill:white;"/>
                     </marker>
-                    <marker id="comp_s" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                    <marker id="comp_s_{diagramId}" viewBox="0 0 20 10" refX="0" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:none;stroke-width:1;fill:black;"/>
                     </marker>
 						
-                    <marker id="comp" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
+                    <marker id="comp_{diagramId}" viewBox="0 0 20 10" refX="20" refY="5" markerUnits="strokeWidth" markerWidth="20" markerHeight="10" orient="auto">
                         <path d="M 0 5 L 10 0 L 20 5 L 10 10 z" style="stroke:none;stroke-width:1;fill:black;"/>
                     </marker>
                 </defs>

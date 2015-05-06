@@ -10,6 +10,7 @@ var object = util.object;
 
 var TransitionDocking = function(transition) {
     this.transition = transition;
+    this.event = transition.event;
     this.dockings = [];
 };
 
@@ -53,7 +54,7 @@ TransitionDocking.prototype.addInnerDocking = function(startPoint, dockingIndex)
 };
 
 TransitionDocking.prototype.initDocking = function(startPoint) {
-    var docking = new Docking(this.transition.svg, startPoint, {group : this.transition.group});
+    var docking = new Docking(this.transition.diagram, startPoint, {group : this.transition.group});
 
     var that = this;
     docking.draggable({
@@ -69,6 +70,9 @@ TransitionDocking.prototype.initDocking = function(startPoint) {
         dragMove : function() {
             //We have to determine the index since it could be changed
             that.updateTransitionDocking(docking.position(), that.dockings.indexOf(docking));
+        },
+        getScale: function() {
+            return that.transition.diagram.scale;
         }
     });
 
@@ -139,10 +143,10 @@ TransitionDocking.prototype.updateTransitionDocking = function(position, docking
     // special handling for start and end dockings
     if(dockingIndex === 0) {
         this.transition.updateEnd(position);
-        event.trigger('transition_drag_startdocking', this.transition);
+        this.event.trigger('transition_drag_startdocking', this.transition);
     } else if(dockingIndex === this.dockings.length -1) {
         this.transition.updateStart(position);
-        event.trigger('transition_drag_enddocking', this.transition);
+        this.event.trigger('transition_drag_enddocking', this.transition);
     } else {
         this.transition.update();
     }

@@ -84,13 +84,7 @@ var empty = function(element) {
 };
 
 var remove = function(element) {
-    if(object.isDefined(element.root)) {
-        if(element.root.instance) {
-            element.root.instance().removeChild(element.instance());
-        } else {
-            element.root.removeChild(element.instance());
-        }
-    } else if(element.instance) {
+    if(element.instance) {
         $(element.instance()).remove();
     } else {
         $(element).remove();

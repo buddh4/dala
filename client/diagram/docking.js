@@ -1,13 +1,12 @@
 var object = require('../util/object');
 var dom = require('../util/dom');
 var Transform = require('../svg/transform');
-var event = require('../core/event');
 
 var DEFAULT_FILL = 'black';
 var DEFAULT_FILL_SELECT = 'green';
 
-var Docking = function(svg, x,y, cfg) {
-    this.svg = svg;
+var Docking = function(diagram, x,y, cfg) {
+    this.diagram = diagram;
     this.selected = false;
     this.hideDocking = false;
 
@@ -41,7 +40,7 @@ Docking.prototype.relativeOrientation = function(position) {
 };
 
 Docking.prototype.init = function(x,y, cfg) {
-    this.marker = this.svg.circle({
+    this.marker = this.diagram.svg.circle({
         cx: 0,
         cy: 0,
         r: 3,
@@ -50,10 +49,10 @@ Docking.prototype.init = function(x,y, cfg) {
         transform: new Transform().translate(x, y)
     });
 
-    event.trigger('docking_added', this);
+    this.diagram.event.trigger('docking_added', this);
 
     if(object.isDefined(this.group)) {
-        this.svg.addToGroup(this.group, this.marker);
+        this.diagram.svg.addToGroup(this.group, this.marker);
     }
 };
 
@@ -130,7 +129,7 @@ Docking.prototype.selectable = function() {
     });
 
     this.marker.mousedown(function(evt) {
-        event.trigger('docking_select', that, evt);
+        that.diagram.event.trigger('docking_select', that, evt);
     });
 };
 
@@ -140,7 +139,7 @@ Docking.prototype.onRemove = function(handler) {
 
 Docking.prototype.remove = function() {
     this.marker.remove();
-    event.trigger('docking_removed', this);
+    this.diagram.event.trigger('docking_removed', this);
     if(object.isDefined(this.removeHandler)) {
         this.removeHandler.apply();
     }

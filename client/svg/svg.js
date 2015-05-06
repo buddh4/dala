@@ -7,12 +7,21 @@ var object = util.object;
 
 var instances = {};
 
+
 var SVG = function(cID, cfg) {
-    this.containerNode = $(cID).get(0);
     if(cID.indexOf('#') === 0) {
+        this.containerNode = $(cID).get(0);
         cID = cID.substring(1, cID.length);
+    } else {
+        this.containerNode = $('#'+cID).get(0);
     }
-    var svgId = cID+'_svg';
+
+    if(!this.containerNode) {
+        console.error('Attempt to initiate svg stage for invalid id setting: '+cID);
+        //TODO: throw error
+    }
+
+    this.svgId = cID+'_svg';
 
     cfg = cfg || {};
 
@@ -29,7 +38,7 @@ var SVG = function(cID, cfg) {
         xmlns : 'http://www.w3.org/2000/svg',
         'xmlns:xlink' : 'http://www.w3.org/1999/xlink',
         version : '1.1',
-        id : svgId
+        id : this.svgId
     });
 
     // Set remaining cfg values as attributes
@@ -38,11 +47,18 @@ var SVG = function(cID, cfg) {
     // Add the svg root element to the container
     dom.appendSVGElement(this.containerNode, this.root);
 
-    instances[svgId] = this;
+    this.svgParts = {'root':this.root};
+    this.defaultPart = this.root;
+
+    instances[this.svgId] = this;
 };
 
-SVG.prototype.getRootNode = function(element) {
+SVG.prototype.getRootNode = function() {
     return this.root.instance();
+};
+
+SVG.prototype.getDefaultPart = function() {
+    return this.defaultPart;
 };
 
 SVG.prototype.setRoot = function(element) {
@@ -57,36 +73,70 @@ SVG.prototype.getRoot = function(element) {
     return this.root;
 };
 
+SVG.prototype.createPart = function(part, isDefault) {
+    //New parts are always added to the root part
+    this.svgParts[part] = this.g({id: this.svgId+'_'+part, part: 'root'});
+    if(isDefault) {
+        this.defaultPart = this.svgParts[part];
+    }
+    return this.svgParts[part];
+};
+
+SVG.prototype.part = function(id) {
+    return this.svgParts[id];
+};
+
+SVG.prototype.addToPart = function(part, element) {
+    this.addToGroup(this.svgParts[part], element);
+};
+
 SVG.prototype.addToRoot = function(element, prepend, text) {
     if(prepend) {
         return dom.prependSVGElement(this.getRoot(), element, text);
     } else {
         return dom.appendSVGElement(this.getRoot(), element, text);
     }
-
 };
 
-SVG.prototype.import = function(elementXML) {
-    return dom.importSVG(this.getRoot(), elementXML);
+SVG.prototype.add = function(element, part, prepend, text) {
+    part = part || this.getDefaultPart();
+    element.parent = part;
+    if(prepend) {
+        return dom.prependSVGElement(part, element, text);
+    } else {
+        return dom.appendSVGElement(part, element, text);
+    }
 };
 
-SVG.prototype.rect = function(cfg) {
-    return this.addToRoot(new SVGElement('rect',this.getRoot(), cfg));
+SVG.prototype.import = function(elementXML, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return dom.importSVG(part, elementXML);
 };
 
-SVG.prototype.text = function(text, cfg) {
-    return this.addToRoot(new SVGText(text, this.getRoot(), cfg), false);
+SVG.prototype.rect = function(cfg, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new SVGElement('rect', this.root, cfg), part);
 };
 
-SVG.prototype.circle = function(cfg) {
-    return this.addToRoot(new SVGElement('circle', this.getRoot(), cfg));
+SVG.prototype.text = function(text, cfg, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new SVGText(text, this.root, cfg), part, false);
+};
+
+SVG.prototype.circle = function(cfg, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new SVGElement('circle', this.root, cfg), part);
 };
 
 SVG.prototype.g = function(cfg) {
     var prepend = (object.isDefined(cfg.prepend))?cfg.prepend:false;
     delete cfg.prepend;
 
-    var group = this.addToRoot(new SVGElement('g', this.getRoot(), cfg));
+    part = this.svgParts[cfg.part] || this.getDefaultPart();
+
+    delete cfg.part;
+
+    var group = this.add(new SVGElement('g', this.root, cfg), part);
 
     if(arguments.length > 1) {
         for(var i = 1;i < arguments.length; i++) {
@@ -101,8 +151,9 @@ SVG.prototype.addToGroup = function(group, element) {
     return dom.appendSVGElement(group.instance(), element);
 };
 
-SVG.prototype.path = function(cfg) {
-    return this.addToRoot(new SVGElement('path', this.getRootNode(), cfg));
+SVG.prototype.path = function(cfg, part) {
+    var part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new SVGElement('path', this.root, cfg), part);
 };
 
 SVG.get = function(elementIDSelector) {

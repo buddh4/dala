@@ -48,6 +48,13 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
             dy = actualdy;
         }
 
+        //TODO: somehow the scale should be determined in a more elegant way perhaps store it in svg instance...
+        if(cfg.getScale) {
+            var scale = cfg.getScale();
+            dx /= scale;
+            dy /= scale;
+        }
+
         // EXECUTE DRAG
         if(dx !== 0 || dy !== 0) {
             that.move(dx, dy);
@@ -72,6 +79,10 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         }
         this.drag = false;
 
+        if(cfg.cursor) {
+            $('body').css('cursor','default');
+        }
+
         // DRAG END HOOK
         if(cfg.dragEnd) {
             cfg.dragEnd.apply(that, [evt]);
@@ -79,7 +90,11 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
     };
 
     if(object.isDefined(dragElement)) {
-        event.on(dragElement,'mousedown', function(e) {
+        var evtType = (cfg.once)? event.once : event.on;
+        evtType(dragElement,'mousedown', function(e) {
+            if(e.ctrlKey) {
+                return;
+            }
             e.preventDefault();
             // We stop the event propagation to prevent the document mousedown handler to fire
             e.stopPropagation();
@@ -88,12 +103,14 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
             if(cfg.dragStart) {
                 cfg.dragStart.apply(that, [e]);
             }
+
+            if(cfg.cursor) {
+                $('body').css('cursor', cfg.cursor);
+            }
+
             that.dragCurrentX = e.clientX;
             that.dragCurrentY = e.clientY;
             that.drag = true;
-            var asdf = function(evt) {
-                alert('amotherfuckingsdf');
-            };
             event.on(that.getRootNode(), 'mousemove', dragMove);
             event.on(document, 'mouseup', dragEnd);
         });

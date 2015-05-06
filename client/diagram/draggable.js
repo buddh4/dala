@@ -1,6 +1,5 @@
 require('../svg/draggable');
 var util = require('../util/util');
-var event = require('../core/event');
 var DragAlignment = require('./dragAlignment');
 var Node = require('./node');
 
@@ -15,6 +14,7 @@ Node.prototype.draggable = function() {
     };
 
     this.root.draggable({
+            cursor: 'all-scroll',
             dragAlignment : new DragAlignment(that.diagram,
                 {
                     getSource: function() {
@@ -31,18 +31,21 @@ Node.prototype.draggable = function() {
                 that.dxSum = 0;
                 that.dySum = 0;
             },
-            dragMove : function(event, dx , dy) {
+            dragMove : function(evt, dx , dy) {
                 that.executeAddition('drag');
                 //TODO: perhaps fire every 20 px a node_drag event...
                 that.dxSum += dx;
                 that.dySum += dy;
-                if(!event.triggerEvent) {
+                if(!evt.triggerEvent) {
                     that.diagram.selectionMgr.fireDrag(that, dx, dy);
                 }
             },
             dragEnd : function(evt) {
-                event.trigger('node_droped', that);
+                that.event.trigger('node_droped', that);
 
+            },
+            getScale: function() {
+                return that.diagram.scale;
             }},
         this.getDragElement());
 

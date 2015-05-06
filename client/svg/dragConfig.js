@@ -16,6 +16,11 @@ DragConfig.prototype.yOnly = function() {
     return this;
 };
 
+DragConfig.prototype.getScale = function(gsHook) {
+    this.hooks.getScale = gsHook;
+    return this;
+};
+
 DragConfig.prototype.dragMove = function(drmHook) {
     this.hooks.dragMove = drmHook;
     return this;

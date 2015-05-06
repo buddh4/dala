@@ -36,6 +36,17 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
  */
  var Diagram = function(cfg) {
     cfg = cfg || {};
+
+    if(!cfg.id) {
+        console.warn('Created diagram without id');
+    }
+
+    this.id = cfg.id || 'not specified';
+
+    //Diagram intern event context
+    this.event = event.sub(this.id);
+
+
     if(cfg.container) {
         this.containerNode = $(cfg.container);
     } else {
@@ -57,13 +68,18 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.dockingMgr = new DockingManager(this);
 
     // Build the SVG stage within the container
-    this.svg = new SVG(CONTAINER_SELECTOR, {"xmlns:dala" : "http://www.dala.com"});
+    this.svg = new SVG(this.containerNode.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
+
     // Init stage related and key events
     this.initEvents();
+
+    this.scale = 1;
 
     //Todo: make the defs id configurable
     //TODO: load defs/marker on demand
     this.loadDefs();
+
+    this.mainPart = this.svg.createPart('main', true);
 };
 
 /*
@@ -76,13 +92,36 @@ Diagram.prototype.initEvents = function() {
     // we start a transition drag.
     event.on(this.svg.getRootNode(), 'dblclick', function(evt) {
         if (!that.selectionMgr.isElementHover()) {
-            event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
+            that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
         }
     });
 
     event.on(this.svg.getRootNode(), 'mousedown', function(evt) {
         var startPosition = that.getStagePosition(evt);
         this.mouseDownPosition = startPosition;
+
+        if(evt.ctrlKey) {
+            //Move main part
+            that.mainPart.draggable({
+                once: true,
+                cursor: 'all-scroll',
+                dragMove: function(event, dx, dy) {
+                    //TODO: add listener
+                    that.event.trigger('view_viewpoint_update', this.position());
+                },
+                restrictionX: function(event, dx, dy) {
+                  return (this.x() + dx <= 0)? dx : 0;
+                },
+                restrictionY: function(event, dx, dy) {
+                    return (this.y() + dy <= 0)? dy : 0;
+                },
+                getScale: function() {
+                    return that.scale;
+                }
+            });
+            event.triggerDom(that.mainPart.instance(), 'mousedown');
+            return;
+        }
 
         // INIT drag selection
         if (!that.selectionMgr.isElementHover()) {
@@ -147,10 +186,17 @@ Diagram.prototype.initEvents = function() {
     });
 };
 
+Diagram.prototype.part = function(id) {
+    return this.svg.part(id);
+};
+
 Diagram.prototype.import = function(svg) {
     return this.svg.import(svg);
 };
 
+Diagram.prototype.part = function(id) {
+    return this.svg.part(id);
+};
 
 Diagram.prototype.getHoverNode = function() {
     return this.nodeMgr.hoverNode;
@@ -173,8 +219,8 @@ Diagram.prototype.isPoint = function(value) {
 };
 
 Diagram.prototype.loadDefs = function() {
-    var template = this.templateMgr.createTemplate('defs', 'defs');
-    template.getInstance({}, this).init();
+    var template = this.templateMgr.getTemplate('defs', 'defs');
+    template.getInstance({diagramId: this.id}, this).init();
 };
 
 Diagram.prototype.newDiagram = function() {
@@ -230,6 +276,18 @@ Diagram.prototype.getTransitionById = function(id) {
     return this.transitionMgr.getNode(id);
 };
 
+Diagram.prototype.zoomIn = function() {
+    this.scale += 0.1;
+    this.part('main').scale(this.scale);
+};
+
+Diagram.prototype.zoomOut = function() {
+    if(this.scale > 0) {
+        this.scale -= 0.1;
+        this.part('main').scale(this.scale);
+    }
+};
+
 /**
  * This method determines the relative stage coordinates for a given
  * window position either by providing the x and y position or an event
@@ -250,11 +308,12 @@ Diagram.prototype.getStagePosition = function(x, y) {
     }
 
     var stagePosition = dom.offset(this.containerNode);
+    var viewPointAlignment = this.mainPart.position();
 
     //TODO: viewbox alignement ?
     return {
-        x : parseInt(x - stagePosition.left),
-        y : parseInt(y - stagePosition.top)
+        x : parseInt((x  - stagePosition.left - viewPointAlignment.x) / this.scale),
+        y : parseInt((y  - stagePosition.top - viewPointAlignment.y) / this.scale)
     };
 };
 

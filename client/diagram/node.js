@@ -19,6 +19,7 @@ var dom = util.dom;
  */
 var Node = function(tmpl, config, diagram) {
     this.diagram = diagram;
+    this.event = diagram.event;
     this.id = config.node_id;
     this.template = tmpl;
     this.config = config;
@@ -108,8 +109,10 @@ Node.prototype.initEventFunctions = function() {
     });
 
     this.root.mousedown(function(evt) {
-        that.executeAddition('mousedown');
-        event.trigger('node_mousedown', that, evt);
+        if(!evt.ctrlKey) {
+            that.executeAddition('mousedown');
+            that.event.trigger('node_mousedown', that, evt);
+        }
     });
 };
 

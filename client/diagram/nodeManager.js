@@ -16,11 +16,11 @@ var NodeManager = function(diagram) {
     StageCommand.call(this, diagram);
     this.nodes = {};
 
-    event.listen('node_create', this.createNodeListener, this);
-    event.listen('node_delete', this.deleteNodeListener, this);
-    event.listen('node_copy', this.copyNodeListener, this);
-    event.listen('node_droped', this.dropNodeListener, this);
-    event.listen('node_resized', this.resizeNodeListener, this);
+    this.diagram.event.listen('node_create', this.createNodeListener, this);
+    this.diagram.event.listen('node_delete', this.deleteNodeListener, this);
+    this.diagram.event.listen('node_copy', this.copyNodeListener, this);
+    this.diagram.event.listen('node_droped', this.dropNodeListener, this);
+    this.diagram.event.listen('node_resized', this.resizeNodeListener, this);
 };
 
 NodeManager.prototype = Object.create(StageCommand.prototype);
@@ -39,7 +39,7 @@ NodeManager.prototype.createNodeListener = function(evt) {
 NodeManager.prototype.createNode = function(tmpl, config) {
     config = config || {};
 
-    if(!object.isDefined(tmpl)) {
+    if(!tmpl) {
         event.trigger('warn', 'Could not create Node: No template selected!');
         return;
     }
@@ -57,7 +57,7 @@ NodeManager.prototype.createNodeCmd = function(tmpl, config) {
 
 NodeManager.prototype.addNode = function(node) {
     this.nodes[node.id] = node;
-    event.trigger('node_added', node);
+    this.event.trigger('node_added', node);
 };
 
 NodeManager.prototype.activateNode = function(elementId, tmpl) {
