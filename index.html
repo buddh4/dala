@@ -46,6 +46,14 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-sm-2 col-md-2 sidebar" style="padding:2px;">
+            <div id="overviewBox" class="toolbox">
+                <h3>Overview</h3>
+                <div style="width:100%;height:250px;background-color:#ffffff;">
+                    <div id="viewbox" style="width:100%;height:250px;background-color:grey;opacity: 0.4;">
+                        <div id="viewport" style="background-color:#ffffff;border:1px solid black;position:relative;">&nbsp;</div>
+                    </div>
+                </div>
+            </div>
             <div id="templateNav">
                 <h3>UML</h3>
                 <div>
@@ -54,12 +62,24 @@
                             <td id="tmpl_select_uml_class" class="tmpl_select">
                                 <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
                                     <g transform="translate(1 1)">
-                                        <rect width="100" height="80" rx="2" style="fill:grey;stroke:black;stroke-width:1px;"/>                                     <g transform="translate(0 20)">
+                                        <rect width="100" height="80" rx="2" style="fill:white;stroke:black;stroke-width:1px;"/>
+                                        <g transform="translate(0 20)">
                                         <rect width="100" height="40" x="0" y="0" transform="translate(0 3)"
                                               style="fill:white;stroke:black;stroke-width:1px;"/>
                                     </g>
                                 </svg>
                                 <span class="tmplName">Class</span>
+                            </td>
+                            <td id="tmpl_select_uml_stereotype" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(1 1)">
+                                        <rect width="100" height="80" rx="2" style="fill:white;stroke:black;stroke-width:1px;"/>
+                                        <g transform="translate(0 20)">
+                                        <rect width="100" height="40" x="0" y="0" transform="translate(0 3)"
+                                              style="fill:white;stroke:black;stroke-width:1px;"/>
+                                    </g>
+                                </svg>
+                                <span class="tmplName">Stereotype</span>
                             </td>
                             <td id="tmpl_select_uml_package" class="tmpl_select">
                                 
@@ -433,7 +453,7 @@
                                 style="stroke:#000000;fill:{color_second};"
                                 stroke-width="1"/>
                             <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
-                                <tspan id="attributes_span_{node_id}" dy="11" x="2" >Attributes</tspan>
+                                <tspan id="attributes_span_{node_id}" dy="11" x="2" ></tspan>
                             </text>
                         </g>
                         <g id="methods_g_{node_id}" transform="translate(0 37)">
@@ -441,7 +461,7 @@
                                 style="stroke:#000000;fill:{color_second};"
                                 stroke-width="1"/>
                             <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
-                                <tspan id="methods_span_{node_id}" dy="11" x="2" >Operations</tspan>
+                                <tspan id="methods_span_{node_id}" dy="11" x="2" > </tspan>
                             </text>
                         </g>
                     </g>
@@ -450,7 +470,7 @@
                     {
                         "init_width" : "150",
                         "init_title" : "New Class",
-                        "color_main" : "#BBBBBB",
+                        "color_main" : "#FFFFFF",
                         "color_second" : "#FFFFFF",
                         "color_hover" : "#E0E0E0",
                         "color_select": "#898989",
@@ -458,7 +478,7 @@
                         "resize": [ 
                             {"bind":"#methods_back", "value":"default", "min":"parent"},
                             {"bind":"#attributes_back", "value":"default parent", "min":"parent"},
-                            {"bind":"#methods_g", "position": "static relative(2)"},
+                            {"bind":"#methods_g", "position": "static relative(0)"},
                             {"bind":"#node_back", "value":"default parent(5)", "min":"parent"},
                             {"bind":"#methods_back", "min":"#node_back none"},
                             {"bind":"#attributes_back", "min":"#node_back none"},
@@ -514,8 +534,115 @@
                     };
                 </functions>
             </template>
-	</script> 
-        <script id="uml_package" type="text/template">
+	</script>
+    <script id="uml_stereotype" type="text/template">
+        <template>
+            <svg class="tmpl_svg" >
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <rect id="node_back_{node_id}" width="{init_width}" height="100"
+                          x="0" y="0" rx="2"
+                          style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                    <text id="stereotype_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="stereotype_span_{node_id}" dy="13.0" x="2">&lt;&lt;stereotpye&gt;&gt;</tspan>
+                    </text>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="16">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                    </text>
+                    <g id="attributes_g_{node_id}" transform="translate(0 32)">
+                        <rect id="attributes_back_{node_id}" width="{init_width}" height="15" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="attributes_span_{node_id}" dy="11" x="2" ></tspan>
+                        </text>
+                    </g>
+                    <g id="methods_g_{node_id}" transform="translate(0 47)">
+                        <rect id="methods_back_{node_id}" width="{init_width}" height="17" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="methods_span_{node_id}" dy="11" x="2" > </tspan>
+                        </text>
+                    </g>
+                </g>
+            </svg>
+            <config>
+                {
+                    "init_width" : "150",
+                    "init_title" : "New Class",
+                    "color_main" : "#FFFFFF",
+                    "color_second" : "#FFFFFF",
+                    "color_hover" : "#E0E0E0",
+                    "color_select": "#898989",
+                    "dockingType" : "SQUARE",
+                    "resize": [
+                    {"bind":"#methods_back", "value":"default", "min":"parent"},
+                    {"bind":"#attributes_back", "value":"default parent", "min":"parent"},
+                    {"bind":"#methods_g", "position": "static relative(0)"},
+                    {"bind":"#node_back", "value":"default parent(5)", "min":"parent"},
+                    {"bind":"#methods_back", "min":"#node_back none"},
+                    {"bind":"#attributes_back", "min":"#node_back none"},
+                    {"bind":"#stereotype_t", "position": "center static", "alignto":"#node_back"},
+                    {"bind":"#title_t", "position": "center static", "alignto":"#node_back"}
+                    ],
+                    "edit": {
+                        "stereotype" : {
+                            "type" : "text",
+                            "label" : "Stereotype",
+                            "bind" : "#stereotype_span",
+                            "trigger" : "#stereotype_t"
+                        },
+                        "title" : {
+                            "type" : "text",
+                            "label" : "Title",
+                            "bind" : "#title_span",
+                            "trigger" : "#title_t"
+                        },
+                        "attributes" : {
+                            "type" : "textarea",
+                            "label" : "Attributes",
+                            "bind" : "#attributes_t",
+                            "trigger" : ["#attributes_back", "#attributes_t"]
+                        },
+                        "methods" : {
+                            "type" : "textarea",
+                            "label" : "Methods",
+                            "bind" : "#methods_t",
+                            "trigger" : ["#methods_back", "#methods_t"]
+                        },
+                            "mainColor" : {
+                            "type" : "color",
+                            "label" : "Main Color",
+                            "bind" : "#node_back"
+                        }
+                    }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {
+                //TODO get hovercolor form
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_hover}');
+                //}
+                },
+                mouseout: function(element) {
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_main}');
+                //}
+                },
+                select: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_select}');
+                },
+                deselect: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_main}');
+                }
+                };
+            </functions>
+        </template>
+    </script>
+    <script id="uml_package" type="text/template">
             <template>
                 <svg class="tmpl_svg">
                     <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">

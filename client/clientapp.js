@@ -5,7 +5,6 @@ require('jquery-ui');
 require('bootstrap');
 var config = require('./core/config');
 var Diagram = require('./diagram/diagram');
-var CommandManager = require('./core/commandManager');
 
 // Init core modulesF
 var event = require('./core/event');
@@ -25,14 +24,27 @@ require('./diagram/diagramManager');
 // TODO: use document / project model instead of diagram
 //var diagram = new Diagram();
 
-new CommandManager();
-
 mouse = {};
 
 event.on(document, 'mousemove', function(e) {
     mouse.pageX = e.pageX;
     mouse.pageY = e.pageY;
 
+});
+
+$(window).bind('mousewheel DOMMouseScroll', function(evt){
+    if(!evt.ctrlKey) {
+        return;
+    }
+
+    evt.preventDefault();
+
+    if (evt.originalEvent.wheelDelta > 0 || evt.originalEvent.detail < 0) {
+        event.trigger('view_zoomIn');
+    }
+    else {
+        event.trigger('view_zoomOut');
+    }
 });
 
 event.on(document, 'keydown', function(e) {
@@ -68,7 +80,7 @@ event.on(document, 'keydown', function(e) {
             break;
         case 90: //z
             if(e.ctrlKey) {
-                event.trigger('key_unddo_press', {}, e);
+                event.trigger('key_undo_press', {}, e);
             }
             break;
         case 187:

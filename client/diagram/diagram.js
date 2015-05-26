@@ -12,7 +12,8 @@ var util = require('../util/util');
 var event = require('../core/event');
 var SVG = require('../svg/svg');
 var PathData = require('../svg/pathData'); //Rather implement svg.createpath().start().line()...
-var TemplateManager = require('./templateManager');
+var templateManager = require('./templateManager');
+var commandManager = require('../core/commandManager');
 var SelectionManager = require('./selectionManager');
 var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
@@ -46,7 +47,6 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     //Diagram intern event context
     this.event = event.sub(this.id);
 
-
     if(cfg.container) {
         this.containerNode = $(cfg.container);
     } else {
@@ -56,8 +56,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     //TODO: Create a diagramId with ts and userid.
 
 
+    this.commandMgr = commandManager.sub(this.id);
+
     // Handles the loading and creation of templates
-    this.templateMgr = TemplateManager;
+    this.templateMgr = templateManager;
     // Responsible for creating and maintaining nodes
     this.nodeMgr = new NodeManager(this);
     // Responsible for creating and maintaining transitions
@@ -106,8 +108,10 @@ Diagram.prototype.initEvents = function() {
                 once: true,
                 cursor: 'all-scroll',
                 dragMove: function(event, dx, dy) {
-                    //TODO: add listener
-                    that.event.trigger('view_viewpoint_update', this.position());
+                    that.event.trigger('viewport_update', this.position());
+                },
+                dragEnd: function(event) {
+                    that.event.trigger('viewport_updated', this.position());
                 },
                 restrictionX: function(event, dx, dy) {
                   return (this.x() + dx <= 0)? dx : 0;
@@ -337,6 +341,26 @@ Diagram.prototype.overlaysNode = function(position) {
 
 Diagram.prototype.asString = function() {
     return xml.serializeToString(this.svg.getRootNode());
+};
+
+Diagram.prototype.undoCommand = function() {
+    this.commandMgr.undo();
+};
+
+Diagram.prototype.redoCommand = function() {
+    this.commandMgr.redo();
+};
+
+Diagram.prototype.registerCommand = function(cmdId, cmd) {
+    this.commandMgr.register(cmdId, cmd);
+};
+
+Diagram.prototype.executeCommand = function(cmdId, doArgs, undoArgs) {
+    this.commandMgr.exec(cmdId, doArgs, undoArgs);
+};
+
+Diagram.prototype.addCommand = function(cmdId, doArgs, undoArgs) {
+    this.commandMgr.add(cmdId, doArgs, undoArgs);
 };
 
 module.exports = Diagram;

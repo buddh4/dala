@@ -5,6 +5,7 @@ require('./infobox').init();
 require('./userNotificationBar').init();
 require('./stage').init();
 require('./fileMenu').init();
+require('./overviewBox').init();
 
 var event = require('../core/event');
 
