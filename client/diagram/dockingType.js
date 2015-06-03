@@ -29,10 +29,16 @@ var getDocking = function(node, orientationOut, orientationIn) {
             return ELLIPSE.call(node, orientationOut, orientationIn);
         case 'SQUARE':
             return SQUARE.call(node,orientationOut, orientationIn);
+        case 'FREE':
+            return FREE.call(node,orientationOut, orientationIn);
         default:
             return CENTER.call(node, orientationOut, orientationIn);
 
     };
+};
+
+var FREE = function(position , orientationIn) {
+    return this.getOrientation(orientationIn);
 };
 
 var ELLIPSE = function(position , orientationIn) {
@@ -135,8 +141,7 @@ var SQUARE = function(position, orientationIn) {
  * @returns {DockingType_L20.CENTER@call;getCenter}
  */
 var CENTER = function(position) {
-    var center = this.getCenter();
-    return center;
+    return this.getCenter();
 };
 
 /**

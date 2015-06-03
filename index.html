@@ -70,6 +70,17 @@
                                 </svg>
                                 <span class="tmplName">Class</span>
                             </td>
+                            <td id="tmpl_select_uml_seq_class" class="tmpl_select">
+                                <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
+                                    <g transform="translate(1 1)">
+                                        <rect width="100" height="80" rx="2" style="fill:white;stroke:black;stroke-width:1px;"/>
+                                        <g transform="translate(0 20)">
+                                            <rect width="100" height="40" x="0" y="0" transform="translate(0 3)"
+                                                  style="fill:white;stroke:black;stroke-width:1px;"/>
+                                        </g>
+                                </svg>
+                                <span class="tmplName">UML Seq</span>
+                            </td>
                             <td id="tmpl_select_uml_stereotype" class="tmpl_select">
                                 <svg class="tmpl_svg" viewbox="0 0 102 82"  width="20" height="16">
                                     <g transform="translate(1 1)">
@@ -438,6 +449,58 @@
 	</script>
         
         <!-- UML TMPL -->
+    <script id="uml_seq_class" type="text/template">
+        <template>
+            <svg class="tmpl_svg" >
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <line id="time_line_area_{node_id}" x1="0" y1="0" x2="0" y2="50" stroke="#000000" stroke-width="6" stroke-opacity="0.0" fill="none"/>
+                    <line id="time_line_{node_id}" x1="0" y1="0" x2="0" y2="50" stroke="#000000" fill="none"/>
+                    <rect id="head_back_{node_id}" width="{init_width}" height="20"
+                          x="0" y="0" rx="2"
+                          style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                    </text>
+                </g>
+            </svg>
+            <config>
+                {
+                "init_width" : "150",
+                "init_title" : "New Class",
+                "color_main" : "#FFFFFF",
+                "dockingType" : "FREE",
+                "resize": [
+                    {"bind":"#head_back", "value":"default static"},
+                    {"bind":"#title_t", "position": "center static"},
+                    {"bind":"#time_line", "value":"vertical", "position": "center static", "alignto":"parent"},
+                    {"bind":"#time_line_area", "value":"vertical", "position": "center static", "alignto":"parent"}
+                ],
+                "edit": {
+                    "title" : {
+                    "type" : "text",
+                    "label" : "Title",
+                    "bind" : "#title_span",
+                    "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                    "type" : "color",
+                    "label" : "Main Color",
+                    "bind" : "#head_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+    </script>
 	<script id="uml_class" type="text/template">
             <template>
                 <svg class="tmpl_svg" >
@@ -453,7 +516,7 @@
                                 style="stroke:#000000;fill:{color_second};"
                                 stroke-width="1"/>
                             <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
-                                <tspan id="attributes_span_{node_id}" dy="11" x="2" ></tspan>
+                                <tspan id="attributes_span_{node_id}" dy="11" x="2" >attributes</tspan>
                             </text>
                         </g>
                         <g id="methods_g_{node_id}" transform="translate(0 37)">
@@ -461,7 +524,7 @@
                                 style="stroke:#000000;fill:{color_second};"
                                 stroke-width="1"/>
                             <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
-                                <tspan id="methods_span_{node_id}" dy="11" x="2" > </tspan>
+                                <tspan id="methods_span_{node_id}" dy="11" x="2" >operations</tspan>
                             </text>
                         </g>
                     </g>
@@ -515,7 +578,7 @@
                     var script =  {
                         init: function(config) {},
                         mouseover: function(element) {
-                            //TODO get hovercolor form 
+                            //TODO get hovercolor form
                             //if(!element.selected) {
                             //    SVG.get('node_back_{node_id}').fill('{color_hover}');
                             //}

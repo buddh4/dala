@@ -128,8 +128,9 @@ Transition.prototype.setStartNodeFeature = function(feature) {
 };
 
 Transition.prototype.setRelativeStartDocking = function(x,y) {
+    var p = util.app.getPoint(x,y);
     this.setStartNodeFeature({
-        value : [x,y]
+        value : [p.x, p.y]
     });
 };
 
@@ -177,7 +178,7 @@ Transition.prototype.getLineByIndex = function(index, fromEnd) {
     return new util.math.Line(p1, p2);
 };
 
-Transition.prototype.setEndNode = function(node, feature) {
+Transition.prototype.setEndNode = function(node, feature, mouse) {
     if(object.isDefined(this.endNode)) {
         this.endNode.removeIncomingTransition(this);
     }
@@ -192,8 +193,13 @@ Transition.prototype.setEndNode = function(node, feature) {
         this.docking.add(this.end);
     }
 
-    // Set relatvie endnode orientation and update
-    this.setEndNodeFeature(feature);
+    //Not that clean but here we set the relative orientation for nodes with dockingtype FREE
+    if(node.config.dockingType.toUpperCase() === 'FREE' && mouse) {
+        this.setRelativeEndDocking(mouse);
+    } else if(feature) {
+        this.setEndNodeFeature(feature);
+    }
+
     this.line.attr({style:STYLE_TRANSITION_INACTIVE});
     this.update();
 };
@@ -247,8 +253,9 @@ Transition.prototype.undockEdgeDocking = function(dockingType) {
 };
 
 Transition.prototype.setRelativeEndDocking = function(x,y) {
+    var p = util.app.getPoint(x,y);
     this.setEndNodeFeature({
-        value : [x,y]
+        value : [p.x, p.y]
     });
 };
 
@@ -286,6 +293,12 @@ Transition.prototype.init = function(mouse) {
     this.group = this.svg.g({prepend:true, "class":'transition', "dala:start":this.startNode.id, 'id':this.id}, this.line, this.lineArea);
 
     this.docking.add(this.start);
+
+    //Not that clean but here we set an relative orientation for templates with dockingType FREE
+    if(this.startNode.config.dockingType.toUpperCase() === 'FREE') {
+        this.setRelativeStartDocking(mouse);
+    }
+
     return this;
 };
 

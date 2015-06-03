@@ -49,7 +49,7 @@ $(window).bind('mousewheel DOMMouseScroll', function(evt){
 
 event.on(document, 'keydown', function(e) {
     e.mouse = mouse;
-    console.log('keypress: '+e.keyCode);
+    //console.log('keypress: '+e.keyCode);
     switch(e.keyCode) {
         case 13: //ENTER
             event.trigger('key_enter_press', {}, e);

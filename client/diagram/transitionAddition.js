@@ -53,17 +53,18 @@ TransitionAddition.prototype.updateLineDrag = function(evt) {
 
     //Initialize or update the new transition
     if (!this.transitionMgr.dragTransition) {
-        this.transitionMgr.dragTransition = this.node.addOutgoingTransition(mouse);
+        this.transitionMgr.dragTransition = this.addOutgoingTransition(mouse);
     } else {
         this.transitionMgr.dragTransition.update(mouse);
     }
 };
 
-TransitionAddition.prototype.mousedown = function() {
+TransitionAddition.prototype.mousedown = function(evt) {
+    var mouse = this.diagram.getStagePosition(evt);
     // Stop transition drag event and set end node
     if(object.isDefined(this.transitionMgr.dragTransition)) {
         var transition = this.transitionMgr.dragTransition;
-        transition.setEndNode(this.node);
+        transition.setEndNode(this.node, undefined, mouse);
         this.transitionMgr.addTransition(transition);
         delete this.transitionMgr.dragTransition;
         event.off(this.diagram.svg.getRootNode(), 'mousemove');
@@ -145,8 +146,9 @@ TransitionAddition.prototype.addOutgoingTransition = function(value) {
     var transition;
 
     if(value instanceof Transition) {
+        transition = value;
         this.outgoingTransitions.push(value);
-    } else if(object.isDefined(value)) {
+    } else if(value) {
         transition = new Transition(this.node).init(value);
         this.outgoingTransitions.push(transition);
     }

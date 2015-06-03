@@ -5,7 +5,7 @@ var util = require('../util/util');
 var xml = require('../xml/xml');
 var event = require('../core/event');
 var Node = require('./node');
-var StageCommand = require('./stageCommand');
+var AbstractManager = require('./abstractManager');
 var Command = require('../core/command');
 
 var object = util.object;
@@ -20,25 +20,25 @@ var CMD_EDIT = 'node_edit';
 
 var NodeManager = function(diagram) {
     // Contains all nodes added to the diagram
-    StageCommand.call(this, diagram);
+    AbstractManager.call(this, diagram);
     this.nodes = {};
 
-    this.diagram.event.listen('node_create', this.createNodeListener, this);
-    this.diagram.event.listen('node_delete', this.deleteNodeListener, this);
-    this.diagram.event.listen('node_copy', this.copyNodeListener, this);
-    this.diagram.event.listen('node_droped', this.dropNodeListener, this);
-    this.diagram.event.listen('node_resized', this.resizeNodeListener, this);
+    this.listen('node_create', this.createNodeListener);
+    this.listen('node_delete', this.deleteNodeListener);
+    this.listen('node_copy', this.copyNodeListener);
+    this.listen('node_droped', this.dropNodeListener);
+    this.listen('node_resized', this.resizeNodeListener);
 
-    this.diagram.registerCommand(CMD_ADD, new Command(this,this.createNodeCmd, this.deleteNodeCmd));
-    this.diagram.registerCommand(CMD_DELETE, new Command(this,this.deleteNodeCmd, this.importNodeCmd));
-    this.diagram.registerCommand(CMD_COPY, new Command(this,this.importNodeCmd, this.deleteNodeCmd));
-    this.diagram.registerCommand(CMD_DROP, new Command(this, this.moveNodeCmd, this.moveNodeCmd));
-    this.diagram.registerCommand(CMD_RESIZE, new Command(this, this.resizeCmd, this.resizeCmd));
-    this.diagram.registerCommand(CMD_EDIT, new Command(this, this.editCmd, this.editCmd));
+    this.command(CMD_ADD, this.createNodeCmd, this.deleteNodeCmd);
+    this.command(CMD_DELETE, this.deleteNodeCmd, this.importNodeCmd);
+    this.command(CMD_COPY, this.importNodeCmd, this.deleteNodeCmd);
+    this.command(CMD_DROP, this.moveNodeCmd, this.moveNodeCmd);
+    this.command(CMD_RESIZE, this.resizeCmd, this.resizeCmd);
+    this.command(CMD_EDIT, this.editCmd, this.editCmd);
 };
 
-NodeManager.prototype = Object.create(StageCommand.prototype);
-var _super = StageCommand.prototype;
+NodeManager.prototype = Object.create(AbstractManager.prototype);
+var _super = AbstractManager.prototype;
 
 NodeManager.prototype.createNodeListener = function(evt) {
     try {
@@ -60,7 +60,7 @@ NodeManager.prototype.createNode = function(tmpl, config) {
 
     config.node_id = Date.now();
 
-    return this.diagram.executeCommand(CMD_ADD, [tmpl, config], [config.node_id]);
+    return this.exec(CMD_ADD, [tmpl, config], [config.node_id]);
 };
 
 NodeManager.prototype.createNodeCmd = function(tmpl, config) {
@@ -86,7 +86,7 @@ NodeManager.prototype.deleteNodeListener = function(evt) {
     try {
         var node = this.getNode(evt.data);
         if(node) {
-            return this.diagram.executeCommand(CMD_DELETE, [node.id], [this.getNodeAsString(node)]);
+            return this.exec(CMD_DELETE, [node.id], [this.getNodeAsString(node)]);
         }
     } catch(err) {
         console.error(err);
@@ -135,7 +135,7 @@ NodeManager.prototype.copyNodeListener = function(evt) {
         if(object.isDefined(node)) {
             var nodeStr = this.getNodeAsString(node);
             var newNodeId = Date.now();
-            return this.diagram.executeCommand(CMD_COPY, [nodeStr,
+            return this.exec(CMD_COPY, [nodeStr,
                 {
                     mouse : evt.mouse,
                     oldId : node.id,
@@ -153,7 +153,7 @@ NodeManager.prototype.dropNodeListener = function(evt) {
         var node = evt.data;
         if(node) {
             //We just add the command since we don't want to execute the drag twice
-            return this.diagram.addCommand(CMD_DROP,
+            return this.addCmd(CMD_DROP,
                 [node.id, node.dxSum, node.dySum],
                 [node.id, (-1 * node.dxSum), (-1 * node.dySum)]);
         }
@@ -167,14 +167,14 @@ NodeManager.prototype.moveNodeCmd = function(node, dxSum, dySum) {
     if(node) {
         node.triggerDrag(dxSum, dySum);
     }
-}
+};
 
 NodeManager.prototype.resizeNodeListener = function(evt) {
     try {
         var node = evt.data;
         if(node) {
             var resizeInstance = node.additions.resize.get();
-            this.diagram.executeCommand(CMD_RESIZE,
+            this.addCmd(CMD_RESIZE,
                 [node.id, resizeInstance.dx, resizeInstance.dy, resizeInstance.knob],
                 [node.id, (-1*resizeInstance.dx), (-1*resizeInstance.dy), resizeInstance.knob]);
         }
@@ -210,9 +210,7 @@ NodeManager.prototype.setEditValue = function(node, editKey, newValue) {
     node = this.getNode(node);
     if(node) {
         var editConfigItem = this.getEditItem(node, editKey);
-        return this.diagram.executeCommand(CMD_EDIT,
-            [node.id, editKey, newValue],
-            [node.id, editKey, editConfigItem.currentVal]);
+        return this.exec(CMD_EDIT, [node.id, editKey, newValue], [node.id, editKey, editConfigItem.currentVal]);
     }
 };
 

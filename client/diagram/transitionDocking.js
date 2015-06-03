@@ -5,8 +5,6 @@ var event = require('../core/event');
 
 var dom = util.dom;
 var object = util.object;
-//TODO: perhaps we should rather mark an element like rect or cicle as content
-//element since we have to be able to add elements even if there is none
 
 var TransitionDocking = function(transition) {
     this.transition = transition;
@@ -187,6 +185,7 @@ TransitionDocking.prototype.calcStartDockingPosition = function(mouse) {
                 break;
         }
     }
+
     var relativeInnerOrientation = (object.isDefined(this.getStartDocking()))
         ? this.getStartDocking().relativeOrientation()
         : undefined;

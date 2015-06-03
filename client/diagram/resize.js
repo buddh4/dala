@@ -79,8 +79,8 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
         })
         .dragMove(function(evt, dx, dy) {
             //We keep track of the total drag movement
-            this.dx += dx;
-            this.dy += dy;
+            that.dx += dx;
+            that.dy += dy;
             that.resize(dx,dy, that.knob);
         })
         .dragEnd(function(evt) {
@@ -220,7 +220,9 @@ Resize.prototype.updateNode = function(index, element, dx, dy) {
 
     var elementConfig = this.config[index];
     if(object.isDefined(elementConfig.value)) {
-        this.setResize(element, elementConfig, elementConfig.value[0], dx, 'width');
+        if(elementConfig.value[0].type !== 'vertical') {
+            this.setResize(element, elementConfig, elementConfig.value[0], dx, 'width');
+        }
         //We just set one dimension for a circle
         if(elementConfig.value[0].type !== 'circle' || this.dragKnob === KNOB_S || this.dragKnob === KNOB_N) {
             this.setResize(element,elementConfig, elementConfig.value[1], dy, 'height');
@@ -244,8 +246,12 @@ Resize.prototype.updateNode = function(index, element, dx, dy) {
 
 Resize.prototype.setResize = function(svgElement, elementConfig, setting, d, dimension) {
     switch(setting.type) {
+        case 'static':
         case 'none':
             break;
+        case 'vertical':
+            var newY = parseInt(svgElement.attr('y2')) + d;
+            svgElement.attr('y2', newY);
         case 'parent':
             //We could check the resize settings of the parent if this is static
             //we do not have to change anything when resizing.
@@ -341,15 +347,22 @@ Resize.prototype.getAlignedValue = function(svgElement, settings, alignto, dimen
 
 Resize.prototype.getAlignElement = function(alignto, node) {
     var elementToAlign;
-    if(alignto) {
-        //If the alignto is set in the config we just use this node element
-        elementToAlign = SVG.get(this.node.getNodeSelector(alignto));
-    } else {
-        //Else we try to get the previous element e.g. a rect element
+    //The alignto setting can be the parent-, root- or an explicit element default is the previous sibling element
+    if(!alignto || alignto === 'prev') {
         elementToAlign = SVG.get(dom.prev(node));
+    }else if(!alignto || alignto === 'parent') {
+        elementToAlign = SVG.get(dom.parent(node));
+    } else if(alignto === 'root') {
+        elementToAlign = node.root;
+    } else {
+        elementToAlign = SVG.get(this.node.getNodeSelector(alignto));
     }
-    // If we do not have a prev element we return the parent node
-    return (object.isDefined(elementToAlign)) ? elementToAlign : SVG.get(dom.parent(node));
+
+    if(!elementToAlign) {
+        console.warn('Could not determine alignto element "'+alignto+'" for node '+node.id);
+    }
+
+    return elementToAlign;
 };
 
 module.exports = Resize;

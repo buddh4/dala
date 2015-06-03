@@ -110,7 +110,7 @@ Node.prototype.initEventFunctions = function() {
 
     this.root.mousedown(function(evt) {
         if(!evt.ctrlKey) {
-            that.executeAddition('mousedown');
+            that.executeAddition('mousedown', [evt]);
             that.event.trigger('node_mousedown', that, evt);
         }
     });
@@ -307,9 +307,10 @@ Node.prototype.getCenter = function() {
 };
 
 Node.prototype.getRelativePosition = function(pageX,pageY) {
+    var p = util.app.getPoint(pageX,pageY);
     return {
-        x: pageX - this.x(),
-        y: pageY - this.y()
+        x: p.x - this.x(),
+        y: p.y - this.y()
     };
 };
 

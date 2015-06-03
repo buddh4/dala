@@ -37,12 +37,10 @@ CommandManager.prototype.register = function(cmdId, cmd) {
     this.commands[cmdId] = cmd;
 };
 
-CommandManager.prototype.exec = function(cmdId, doArgs, undoArgs, preventRedo) {
+CommandManager.prototype.exec = function(cmdId, doArgs, undoArgs) {
     var cmdInstance = this.add(cmdId, doArgs, undoArgs);
     if(cmdInstance) {
-        if(!preventRedo) {
-            this.undoCommands.push(cmdInstance);
-        }
+        console.log('Execute command '+cmdInstance.id);
         cmdInstance.exec();
     }
 };
@@ -51,8 +49,11 @@ CommandManager.prototype.add = function(cmdId, doArgs, undoArgs) {
     var command = this.commands[cmdId];
     if(command) {
         var cmdInstance = command.instance(doArgs,undoArgs);
-        this.undoCommands.push(cmdInstance);
-        return cmdInstance;
+        if(cmdInstance) {
+            cmdInstance.id = cmdId+'_'+Date.now();
+            this.undoCommands.push(cmdInstance);
+        }
+        return cmdInstance
     } else {
         console.warn('Unregistered command '+cmdId+' was called.');
     }
@@ -62,6 +63,7 @@ CommandManager.prototype.undo = function() {
     var command = this.undoCommands.pop();
     if(object.isDefined(command) && object.isDefined(command.undo)) {
         command.undo.apply(command);
+        console.log('Undo command '+command.id);
         this.redoCommands.push(command);
     }
 };
@@ -70,6 +72,7 @@ CommandManager.prototype.redo = function() {
     var command = this.redoCommands.pop();
     if(object.isDefined(command) && object.isDefined(command.exec)) {
         command.exec.apply(command);
+        console.log('Redo command '+command.id);
         this.undoCommands.push(command);
 
     }
