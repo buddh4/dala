@@ -6,7 +6,6 @@ var xml = require('../xml/xml');
 var event = require('../core/event');
 var Node = require('./node');
 var AbstractManager = require('./abstractManager');
-var Command = require('../core/command');
 
 var object = util.object;
 var dom = util.dom;
@@ -126,7 +125,7 @@ NodeManager.prototype.importNodeCmd = function(nodeStr, cfg) {
 
 NodeManager.prototype.getNodeAsString = function(node) {
     node = this.getNode(node);
-    return xml.serializeToString(this.getNode(node).instance());
+    return xml.serializeToString(node.instance());
 };
 
 NodeManager.prototype.copyNodeListener = function(evt) {
@@ -153,7 +152,7 @@ NodeManager.prototype.dropNodeListener = function(evt) {
         var node = evt.data;
         if(node) {
             //We just add the command since we don't want to execute the drag twice
-            return this.addCmd(CMD_DROP,
+            this.addCmd(CMD_DROP,
                 [node.id, node.dxSum, node.dySum],
                 [node.id, (-1 * node.dxSum), (-1 * node.dySum)]);
         }
@@ -191,7 +190,6 @@ NodeManager.prototype.resizeCmd = function(node, dx, dy, knob) {
         console.warn('resizeCmd was for unknown node :'+node.toString());
     }
 };
-
 
 NodeManager.prototype.getNode = function(id) {
     if(object.isString(id) && !isNaN(id)) {

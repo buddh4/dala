@@ -41,8 +41,9 @@ Node.prototype.draggable = function() {
                 }
             },
             dragEnd : function(evt) {
-                that.event.trigger('node_droped', that);
-
+                if(that.dxSum > 0 || that.dySum > 0) {
+                    that.event.trigger('node_droped', that);
+                }
             },
             getScale: function() {
                 return that.diagram.scale;

@@ -1,14 +1,82 @@
 var object = require('../util/object');
+var xml = require('../xml/xml');
 var event = require('../core/event');
 var Transition = require('./transition');
 
+var AbstractManager = require('./abstractManager');
+
+var CMD_ADD = "transition_add";
+var CMD_DEL = "transition_delete";
+var CMD_DOC_CREATED = "transition_doc_created";
+var CMD_DOC_DROPPED = "transition_doc_dropped";
+
 var TransitionManager = function(diagram) {
     // Contains all nodes added to the diagram
+    AbstractManager.call(this, diagram);
+
     this.transitions = {};
     this.diagram = diagram;
     event.listen('transition_delete', this.deleteTransitionListener, this);
     event.listen('transition_drag_startdocking', this.startDockingDragListener, this);
     event.listen('transition_drag_enddocking', this.endDockingDragListener, this);
+    event.listen('transition_docking_created', this.transitionDockingCreatedListener, this);
+    event.listen('transition_docking_dropped', this.transitionDockingDropListener, this);
+
+
+    this.command(CMD_ADD, this.importTransitionAction, this.deleteTransitionAction);
+    this.command(CMD_DEL, this.deleteTransitionAction, this.importTransitionAction);
+    this.command(CMD_DOC_CREATED, this.importTransitionAction, this.deleteDockingAction);
+    this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
+};
+
+TransitionManager.prototype = Object.create(AbstractManager.prototype);
+var _super = AbstractManager.prototype;
+
+TransitionManager.prototype.transitionDockingDropListener = function(evt) {
+    if (evt.data) {
+        var transition = evt.data.transition;
+        var dockingIndex = evt.data.dockingIndex;
+        var docking = this.getTransition(transition).docking.getDockingByIndex(dockingIndex);
+
+        this.addCmd(CMD_DOC_DROPPED,
+            [transition, dockingIndex, docking.marker.dxSum, docking.marker.dySum],
+            [transition, dockingIndex, (-1 * docking.marker.dxSum), (-1 * docking.marker.dySum)]);
+    }
+};
+
+TransitionManager.prototype.dropDockingAction = function(transition, dockingIndex, dxSum, dySum) {
+    transition = this.getTransition(transition);
+    if(transition) {
+        var docking = transition.docking.getDockingByIndex(dockingIndex);
+        docking.triggerDrag(dxSum, dySum);
+    }
+}
+
+TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
+    if (evt.data) {
+        var transition = evt.data.transition;
+        var dockingIndex = evt.data.dockingIndex;
+        this.addCmd(CMD_DOC_CREATED, [this.getTransitionString(transition), transition], [transition, dockingIndex]);
+    }
+};
+
+TransitionManager.prototype.deleteDockingAction = function(transition, dockingIndex) {
+    transition = this.getTransition(transition);
+    if(transition) {
+        transition.docking.getDockingByIndex(dockingIndex).remove();
+    }
+}
+
+TransitionManager.prototype.importTransitionAction = function(transitionStr, transition) {
+    if(transition) {
+        transition = this.getTransition(transition)
+        if(transition) {
+            this.deleteTransitionAction(transition.id);
+        }
+    }
+
+    var transitionElement = this.diagram.import(transitionStr);
+    this.activateTransition(transitionElement);
 };
 
 TransitionManager.prototype.activateTransition = function(value) {
@@ -20,25 +88,46 @@ TransitionManager.prototype.activateTransition = function(value) {
         });
         return result;
     } else  {
-        var transiton = new Transition(value, this.diagram);
-        this.addTransition(transiton);
-        return transiton;
-    }
-};
-
-TransitionManager.prototype.deleteTransitionListener = function(evt) {
-    if(object.isDefined(evt.data)) {
-        delete this.transitions[evt.data.id];
-        evt.data.remove();
+        return this.addTransition(new Transition(value, this.diagram));
     }
 };
 
 TransitionManager.prototype.addTransition = function(transition) {
-    this.transitions[transition.id] = transition;
+    this.addCmd(CMD_ADD, [this.getTransitionString(transition)], [transition.id]);
+    return this.transitions[transition.id] = transition;
+};
+
+TransitionManager.prototype.getTransitionString = function(transition) {
+    transition = this.getTransition(transition);
+    return xml.serializeToString(transition.instance());
+};
+
+TransitionManager.prototype.deleteTransitionListener = function(evt) {
+    if(evt.data) {
+        var transition = evt.data;
+        this.exec(CMD_DEL, [transition.id], [this.getTransitionString(transition)]);
+    }
+};
+
+TransitionManager.prototype.deleteTransitionAction = function(id) {
+    var transition = this.getTransition(id);
+    if(transition) {
+        delete this.transitions[id];
+        transition.remove();
+    }
 };
 
 TransitionManager.prototype.getTransition = function(id) {
-    return this.transitions[id];
+    if(object.isString(id) && !isNaN(id)) {
+        return this.transitions[parseInt(id)];
+    } else if(!isNaN(id)) {
+        return this.transitions[id];
+    } else if(id instanceof Transition) {
+        //We assume a node instance
+        return id;
+    } else {
+        console.warn('getTransition call with no result for :'+id);
+    }
 };
 
 TransitionManager.prototype.startDockingDragListener = function(evt) {

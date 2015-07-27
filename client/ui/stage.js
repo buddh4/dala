@@ -1,4 +1,5 @@
 var event = require('../core/event');
+var stringUtil = require('../util/string');
 var diagramManager = require('../diagram/diagramManager');
 
 var CONTAINER_SELECTOR = '#diagramStage'
@@ -12,11 +13,21 @@ var tabTemplate = '<li><a href="#{href}">#{label}</a> <span class="ui-icon ui-ic
 
 var initListener = function() {
     event.listen('tab_new', newFileListener);
+    event.listen('diagram_updated', diagramUpdatedListener);
     event.listen('diagram_initialized', showTabListener);
 };
 
 var newFileListener = function(evt) {
     addTab();
+};
+
+var diagramUpdatedListener = function(evt) {
+    var diagramId = evt.data;
+    var $tabLink = getTabLinkForDiagramId(diagramId);
+    var text = $tabLink.text();
+    if(!stringUtil.endsWith(text, '*')) {
+        $tabLink.text(text+'*');
+    }
 };
 
 var addTab = function() {
@@ -37,12 +48,16 @@ var addTab = function() {
 }
 
 var showTabListener = function(evt) {
-    // We search the tab link which has a href="#file_" attribute and trigger an click event to open it
     var diagramId = evt.data;
-    var tabContentSelector = '#'+TAB_CONTAINER_PREFIX+diagramId;
-    $('a[href="'+tabContentSelector+'"]').click();
+    getTabLinkForDiagramId(diagramId).click();
     event.trigger('tab_activated', diagramId);
 };
+
+var getTabLinkForDiagramId = function(diagramId) {
+    // We search the tab link which has a href="#file_" attribute and trigger an click event to open it
+    var tabContentSelector = '#'+TAB_CONTAINER_PREFIX+diagramId;
+    return $('a[href="'+tabContentSelector+'"]');
+}
 
 module.exports.init = function() {
     var tabs = $CONTAINER_NODE.tabs({

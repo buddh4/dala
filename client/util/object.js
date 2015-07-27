@@ -42,15 +42,16 @@ module.exports = {
 
     isDefined: function(obj) {
         if(arguments.length > 1) {
-            var result;
+            var result = true;
             var that = this;
             this.each(arguments, function(index, value) {
-                result = that.isDefined(value);
+                if(!that.isDefined(value)) {
+                    result = false;
+                    return false;
+                }
             });
-    
-            if(!result) {
-                return false;
-            }
+
+            return result;
         }
         return typeof obj !== 'undefined';
     },

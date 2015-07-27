@@ -6,8 +6,8 @@ var event = require('./event');
 //Command instances for diagrams
 var instances = {};
 
-var sub = function(subId) {
-    return instances[subId] = new CommandManager();
+var sub = function(subId, updateHandler) {
+    return instances[subId] = new CommandManager(subId, updateHandler);
 };
 
 var exec = function(subId, cmdId, doArgs, undoArgs, preventRedo) {
@@ -17,11 +17,12 @@ var exec = function(subId, cmdId, doArgs, undoArgs, preventRedo) {
     }
 };
 
-var CommandManager = function(subId) {
+var CommandManager = function(subId, updateHandler) {
     this.subId = subId;
     this.commands = {};
     this.undoCommands = [];
     this.redoCommands = [];
+    this.updateHandler = updateHandler;
 };
 
 /**
@@ -48,10 +49,13 @@ CommandManager.prototype.exec = function(cmdId, doArgs, undoArgs) {
 CommandManager.prototype.add = function(cmdId, doArgs, undoArgs) {
     var command = this.commands[cmdId];
     if(command) {
+        this.updated(command);
         var cmdInstance = command.instance(doArgs,undoArgs);
         if(cmdInstance) {
             cmdInstance.id = cmdId+'_'+Date.now();
+            console.log('Add command '+cmdInstance.id);
             this.undoCommands.push(cmdInstance);
+            this.redoCommands = [];
         }
         return cmdInstance
     } else {
@@ -65,6 +69,7 @@ CommandManager.prototype.undo = function() {
         command.undo.apply(command);
         console.log('Undo command '+command.id);
         this.redoCommands.push(command);
+        this.updated(command);
     }
 };
 
@@ -74,9 +79,16 @@ CommandManager.prototype.redo = function() {
         command.exec.apply(command);
         console.log('Redo command '+command.id);
         this.undoCommands.push(command);
-
+        this.updated(command);
     }
 };
+
+CommandManager.prototype.updated = function(command) {
+    this.lastChange = Date.now();
+    if(this.updateHandler) {
+        this.updateHandler(command);
+    }
+}
 
 module.exports = {
     sub : sub

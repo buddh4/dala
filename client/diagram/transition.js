@@ -12,15 +12,15 @@ var object = util.object;
 var dom = util.dom;
 
 var Transition = function(node, diagram) {
+    this.additions = {};
+
     if(object.isDefined(node) && object.isDefined(node.template)) {
         // Create new Transition with the given node as startnode
         this.startNode = node;
         this.diagram = node.diagram;
         this.event = node.event;
         this.svg = this.diagram.svg;
-        this.additions = {};
         this.docking = new TransitionDocking(this);
-        new TransitionTextAddition(this);
     } else {
         //Activation of a transition, the node is supposted to be the transition group
         this.diagram = diagram;
@@ -29,6 +29,8 @@ var Transition = function(node, diagram) {
         this.docking = new TransitionDocking(this);
         this.activate(node);
     }
+
+    new TransitionTextAddition(this);
 };
 
 /**
@@ -137,31 +139,31 @@ Transition.prototype.setRelativeStartDocking = function(x,y) {
 Transition.prototype.getGradien = function(x,y) {
     var position = util.app.getPoint(x,y);
     var index = this.docking.getDockingIndexForPoint(position);
-    var p1 = this.docking.getDockingFromIndex(index).position();
-    var p2 = this.docking.getDockingFromIndex(index + 1).position();
+    var p1 = this.docking.getDockingByIndex(index).position();
+    var p2 = this.docking.getDockingByIndex(index + 1).position();
     return util.math.Line.calcGradient(p1, p2);
 };
 
 Transition.prototype.getGradientByIndex = function(index) {
-    var p1 = this.docking.getDockingFromIndex(index).position();
-    var p2 = this.docking.getDockingFromIndex(index + 1).position();
+    var p1 = this.docking.getDockingByIndex(index).position();
+    var p2 = this.docking.getDockingByIndex(index + 1).position();
     return util.math.Line.calcGradient(p1, p2);
 };
 
 Transition.prototype.getGradientByIndex = function(index) {
-    var p1 = this.docking.getDockingFromIndex(index).position();
-    var p2 = this.docking.getDockingFromIndex(index + 1).position();
+    var p1 = this.docking.getDockingByIndex(index).position();
+    var p2 = this.docking.getDockingByIndex(index + 1).position();
     return util.math.Line.calcGradient(p1, p2);
 };
 
 Transition.prototype.getVectorByIndex = function(index, fromEnd) {
     var p1, p2;
     if(fromEnd) {
-        p1 = this.docking.getDockingFromEndIndex(index + 1).position();
-        p2 = this.docking.getDockingFromEndIndex(index).position();
+        p1 = this.docking.getDockingByEndIndex(index + 1).position();
+        p2 = this.docking.getDockingByEndIndex(index).position();
     } else {
-        p1 = this.docking.getDockingFromIndex(index).position();
-        p2 = this.docking.getDockingFromIndex(index + 1).position();
+        p1 = this.docking.getDockingByIndex(index).position();
+        p2 = this.docking.getDockingByIndex(index + 1).position();
     }
     return util.math.Line.calcNormalizedLineVector(p1, p2);
 };
@@ -169,11 +171,11 @@ Transition.prototype.getVectorByIndex = function(index, fromEnd) {
 Transition.prototype.getLineByIndex = function(index, fromEnd) {
     var p1, p2;
     if(fromEnd) {
-        p1 = this.docking.getDockingFromEndIndex(index + 1).position();
-        p2 = this.docking.getDockingFromEndIndex(index).position();
+        p1 = this.docking.getDockingByEndIndex(index + 1).position();
+        p2 = this.docking.getDockingByEndIndex(index).position();
     } else {
-        p1 = this.docking.getDockingFromIndex(index).position();
-        p2 = this.docking.getDockingFromIndex(index + 1).position();
+        p1 = this.docking.getDockingByIndex(index).position();
+        p2 = this.docking.getDockingByIndex(index + 1).position();
     }
     return new util.math.Line(p1, p2);
 };
@@ -196,7 +198,7 @@ Transition.prototype.setEndNode = function(node, feature, mouse) {
     //Not that clean but here we set the relative orientation for nodes with dockingtype FREE
     if(node.config.dockingType.toUpperCase() === 'FREE' && mouse) {
         this.setRelativeEndDocking(mouse);
-    } else if(feature) {
+    } else {
         this.setEndNodeFeature(feature);
     }
 
@@ -290,7 +292,7 @@ Transition.prototype.init = function(mouse) {
 
     this.id = Date.now();
 
-    this.group = this.svg.g({prepend:true, "class":'transition', "dala:start":this.startNode.id, 'id':this.id}, this.line, this.lineArea);
+    this.group = this.svg.g({prepend:true, "class":'transition', "dala:start":this.startNode.id, 'id':this.id, "xmlns:dala" : "http://www.dala.com"}, this.line, this.lineArea);
 
     this.docking.add(this.start);
 
@@ -324,7 +326,7 @@ Transition.prototype.initEvents = function() {
         var startPosition = that.diagram.getStagePosition(mainEvent.pageX, mainEvent.pageY);
         var dockingIndex = that.docking.getDockingIndexForPoint(startPosition);
 
-        if (dockingIndex !== 'undefined') {
+        if (dockingIndex) {
             event.on(that.diagram.svg.getRootNode(), "mouseup", function(evt) {
                 event.off(that.diagram.svg.getRootNode(), "mousemove");
             });
@@ -336,8 +338,6 @@ Transition.prototype.initEvents = function() {
                     var docking = that.docking.addInnerDocking(startPosition, dockingIndex);
                     docking.initDrag(event);
                     dragInitiated = true;
-                } else if(dragInitiated) {
-                    //that.docking.updateTransitionDocking(stagePosition, dockingIndex);
                 }
             });
         }
@@ -355,6 +355,12 @@ Transition.prototype.checkDomPosition = function() {
 
 Transition.prototype.index = function() {
     return dom.index(this.group.instance());
+};
+
+Transition.prototype.instance = function() {
+    if(this.group) {
+        return this.group.instance();
+    }
 };
 
 Transition.prototype.endMarker = function(marker) {

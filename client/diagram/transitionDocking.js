@@ -23,10 +23,11 @@ TransitionDocking.prototype.hasInnerDockings = function() {
 TransitionDocking.prototype.activateDockings = function() {
     var arr = this.getTransitionLineData().dataArr;
     for(var i = 0; i < arr.length; i++) {
-        this.dockings[i] = this.initDocking(arr[i].value);
+        this.dockings[i] = this.initDocking(arr[i].value, i);
     }
 };
 
+//Just used for start- and enddocking
 TransitionDocking.prototype.add = function(position) {
     this.dockings.push(this.initDocking(position));
 };
@@ -45,16 +46,17 @@ TransitionDocking.prototype.removeDockingMarker = function() {
 
 TransitionDocking.prototype.addInnerDocking = function(startPoint, dockingIndex) {
     this.getTransitionLineData().addLine(dockingIndex, startPoint);
-    var docking = this.initDocking(startPoint);
+    var docking = this.initDocking(startPoint, dockingIndex);
     this.dockings.splice(dockingIndex, 0, docking);
     this.transition.redraw();
     return docking;
 };
 
-TransitionDocking.prototype.initDocking = function(startPoint) {
+TransitionDocking.prototype.initDocking = function(startPoint, dockingIndex) {
     var docking = new Docking(this.transition.diagram, startPoint, {group : this.transition.group});
 
     var that = this;
+    var initialDrag = true;
     docking.draggable({
         dragAlignment : new DragAlignment(that.transition.diagram,
             {
@@ -68,6 +70,14 @@ TransitionDocking.prototype.initDocking = function(startPoint) {
         dragMove : function() {
             //We have to determine the index since it could be changed
             that.updateTransitionDocking(docking.position(), that.dockings.indexOf(docking));
+        },
+        dragEnd : function() {
+          if(dockingIndex && initialDrag) {
+              that.event.trigger('transition_docking_created', {'transition':that.transition.id, 'dockingIndex':dockingIndex});
+              initialDrag = false;
+          } else if(dockingIndex) {
+              that.event.trigger('transition_docking_dropped', {'transition':that.transition.id, 'dockingIndex':dockingIndex});
+          }
         },
         getScale: function() {
             return that.transition.diagram.scale;
@@ -116,11 +126,11 @@ TransitionDocking.prototype.getIndexForDocking = function(docking) {
     return this.dockings.indexOf(docking);
 };
 
-TransitionDocking.prototype.getDockingFromEndIndex = function(indexDif) {
+TransitionDocking.prototype.getDockingByEndIndex = function(indexDif) {
     return this.dockings[(this.dockings.length - 1) - indexDif];
 };
 
-TransitionDocking.prototype.getDockingFromIndex = function(index) {
+TransitionDocking.prototype.getDockingByIndex = function(index) {
     return this.dockings[index];
 };
 

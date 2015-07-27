@@ -56,7 +56,9 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     //TODO: Create a diagramId with ts and userid.
 
 
-    this.commandMgr = commandManager.sub(this.id);
+    this.commandMgr = commandManager.sub(this.id, function(cmd) {
+        event.trigger('diagram_updated', cfg.id);
+    });
 
     // Handles the loading and creation of templates
     this.templateMgr = templateManager;
@@ -83,6 +85,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
 
     this.mainPart = this.svg.createPart('main', true);
 };
+
+Diagram.prototype.updateHandler = function(command) {
+    this.event
+}
 
 /*
  * Initializes Stage Mouse and Key events.

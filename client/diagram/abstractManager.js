@@ -28,10 +28,6 @@ Manager.prototype.getNodeById = function(id) {
 };
 
 Manager.prototype.getTransitionById = function(id) {
-    return this.diagram.getNodeById(id);
-};
-
-Manager.prototype.getTransitionById = function(id) {
     return this.diagram.getTransitionById(id);
 };
 

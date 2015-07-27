@@ -64,6 +64,9 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         that.dragCurrentX = event.clientX;
         that.dragCurrentY = event.clientY;
 
+        that.dxSum += dx;
+        that.dySum += dy;
+
         // DRAG MOVE HOOK
         if(cfg.dragMove) {
             cfg.dragMove.apply(that, [event, dx, dy, dragElement]);
@@ -74,7 +77,7 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         evt.preventDefault();
         event.off(that.getRootNode(), 'mousemove');
         event.off(document, 'mouseup', dragEnd);
-        if(object.isDefined(cfg.dragAlignment)) {
+        if(cfg.dragAlignment) {
             cfg.dragAlignment.reset();
         }
         this.drag = false;
@@ -89,7 +92,7 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         }
     };
 
-    if(object.isDefined(dragElement)) {
+    if(dragElement) {
         var evtType = (cfg.once)? event.once : event.on;
         evtType(dragElement,'mousedown', function(e) {
             if(e.ctrlKey) {
@@ -98,6 +101,9 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
             e.preventDefault();
             // We stop the event propagation to prevent the document mousedown handler to fire
             e.stopPropagation();
+
+            that.dxSum = 0;
+            that.dySum = 0;
 
             // DRAG START HOOK
             if(cfg.dragStart) {

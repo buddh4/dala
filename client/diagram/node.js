@@ -144,7 +144,7 @@ Node.prototype.moveDown = function() {
 };
 
 Node.prototype.remove = function() {
-    event.trigger('node_removed', this);
+    this.event.trigger('node_removed', this);
     this.executeAddition('remove');
     this.root.remove();
 };

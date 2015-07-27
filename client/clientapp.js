@@ -3,12 +3,12 @@
 $ = jQuery = require('jquery');
 require('jquery-ui');
 require('bootstrap');
+
+// Init core modules
 var config = require('./core/config');
 var Diagram = require('./diagram/diagram');
-
-// Init core modulesF
 var event = require('./core/event');
-//var config = require('./core/config');
+require('./user/userManager').init();
 
 // Init UI modules
 require('./ui/gui');
@@ -66,6 +66,12 @@ event.on(document, 'keydown', function(e) {
         case 67: //c
             if(e.ctrlKey) {
                 event.trigger('key_copy_press', {}, e);
+            }
+            break;
+        case 83: //s
+            if(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger('key_save_press', {}, e);
             }
             break;
         case 86: //v

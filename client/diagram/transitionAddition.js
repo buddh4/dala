@@ -121,7 +121,7 @@ TransitionAddition.prototype.getOrientations = function() {
                 // Return the endNode orientation inclusive the end docking relative orientation for alignment
                 result.push(transition.endNode.getOrientation(transition.getEndDocking().relativeOrientation()));
             } else {
-                var docking = transition.docking.getDockingFromIndex(1);
+                var docking = transition.docking.getDockingByIndex(1);
                 result.push({x: docking.x(), y: docking.y()});
             }
         }
@@ -133,7 +133,7 @@ TransitionAddition.prototype.getOrientations = function() {
                 // Return the startNode orientation inclusive the start docking relative orientation for alignment
                 result.push(transition.startNode.getOrientation(transition.getStartDocking().relativeOrientation()));
             } else {
-                var docking = transition.docking.getDockingFromEndIndex(1);
+                var docking = transition.docking.getDockingByEndIndex(1);
                 result.push({x: docking.x(), y: docking.y()});
             }
 
