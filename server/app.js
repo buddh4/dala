@@ -1,18 +1,37 @@
+var mongoose = require('mongoose');
 var express = require('express');
+var session = require('client-sessions');
 var path = require('path');
-var favicon = require('serve-favicon');
 var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
-
-var routes = require('./routes/index');
-var users = require('./routes/users');
+var userService = require('./user/userService');
+//var favicon = require('serve-favicon');
 
 var app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
+// view engine setup we do not use jade but we have to set a view engine here
+app.set('views', path.join(__dirname, '../views'));
 app.set('view engine', 'jade');
+
+//Database Connection
+mongoose.connect('mongodb://localhost/dala');
+
+//Session Setting
+app.use(session({
+  cookieName: 'session',
+  secret: 'fjlka973bbj3k24kj5fk2h2h3ghj2qio2994ghj31ggj2kgfd2',
+  duration: 30 * 60 * 1000,
+  activeDuration: 5 * 60 * 1000,
+  httpOnly : true
+  //secure : true,
+  //ephemeral : true
+}));
+
+//User authentication mechanism
+app.use(userService.auth);
+
+
 
 // uncomment after placing your favicon in /public
 //app.use(favicon(__dirname + '/public/favicon.ico'));
@@ -20,10 +39,14 @@ app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '../public')));
 
-app.use('/', routes);
-app.use('/users', users);
+
+// routes
+app.use('/', require('./core/indexRoute'));
+app.use('/user', require('./user/userRoute'));
+app.use('/service', require('./core/serviceRoute'));
+app.use('/diagram', require('./project/projectRoute'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
