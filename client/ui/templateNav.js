@@ -30,5 +30,6 @@ var setActiveTemplate = function(tmplId) {
 
 module.exports.init = function() {
     $CONTAINER_NODE.accordion({collapsible: true});
+    $('.tmpl_select').draggable({helper: "clone", appendTo: "body" ,zIndex: 1004});
     initListener();
 }

@@ -35,6 +35,7 @@ var update = function() {
 };
 
 var init = function() {
+    $('#overviewBox').accordion({collapsible: true});
     initListener();
 };
 

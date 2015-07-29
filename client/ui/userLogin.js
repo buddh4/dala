@@ -34,7 +34,7 @@ var login = function() {
         async : false,
         success : function(response) {
             if(response.isConfirmation()) {
-                loggedInHandler(values);
+                loggedInHandler(response.data.result);
             } else {
                 //TODO: implementation
             }
@@ -68,7 +68,7 @@ var loggedInHandler = function(values) {
     $(SEL_LOGGED_OUT).hide();
     $(SEL_LOGGED_IN).show();
     $(SEL_USER_LINK_TXT).text(values.email);
-    event.trigger('user_loggedin', {email: values.email});
+    event.trigger('user_loggedin', values);
 };
 
 var logoutHandler = function() {

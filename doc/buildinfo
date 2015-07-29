@@ -1,0 +1,6 @@
+Grunt is used to build an browserify the browser client modules.
+
+The default grunt task builds up the client.js and client.min.js module in /public/js.
+Some client modules like jquery, jquery-ui and some jquery plugins are installed as bower_components and are shimmed
+to browserify modules within the package.json configuration. All modules dependent on jquery should be bowerified since
+a simple require('jquery') will require the wrong jquery version/module.

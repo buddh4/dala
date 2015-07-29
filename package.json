@@ -36,24 +36,22 @@
     "watchify": "^3.2.0"
   },
   "browser": {
-    "bootstrap": "./node_modules/bootstrap/dist/js/bootstrap.js",
-    "jqurey-ui": "./bower_components/jquery-ui/jquery-ui.js"
+    "bootstrap": "./bower_components/bootstrap/dist/js/bootstrap.js",
+    "jqurey-ui": "./bower_components/jquery-ui/jquery-ui.js",
+    "jstree": "./bower_components/jstree/dist/jstree.js"
   },
   "browserify": {
-    "transform": [
-      "browserify-shim"
-    ]
+    "transform": ["browserify-shim"]
   },
   "browserify-shim": {
     "bootstrap": {
-      "depends": [
-        "jquery:jQuery"
-      ]
+      "depends": ["jquery:jQuery"]
     },
     "jquery-ui": {
-      "depends": [
-        "jquery:$"
-      ]
+      "depends": ["jquery:$"]
+    },
+    "jstree": {
+      "depends": ["jquery:$"]
     }
   }
 }

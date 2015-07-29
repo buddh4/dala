@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="css/bootstrap.css" />
     <link rel="stylesheet" href="css/jquery-ui/all.css" />
     <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/jstree/style.min.css" />
   </head>
   <body>
     <!--[if lt IE 10]>
@@ -56,13 +57,17 @@
 <div class="container-fluid">
     <div class="row">
         <div class="col-sm-2 col-md-2 sidebar" style="padding:2px;">
-            <div id="overviewBox" class="toolbox">
+            <div id="overviewBox">
                 <h3>Overview</h3>
                 <div style="width:100%;height:250px;background-color:#ffffff;">
                     <div id="viewbox" style="width:100%;height:250px;background-color:grey;opacity: 0.4;">
                         <div id="viewport" style="background-color:#ffffff;border:1px solid black;position:relative;">&nbsp;</div>
                     </div>
                 </div>
+            </div>
+            <div id="fileBrowser">
+                <h3>Projects</h3>
+                <div id="fileSystem"></div>
             </div>
             <div id="templateNav">
                 <h3>UML</h3>
@@ -284,7 +289,13 @@
                     </div>
                 </div>
                 <div id="tabs-2">
-                    <p>Morbi tincidunt, dui sit amet facilisis feugiat, odio metus gravida ante, ut pharetra massa metus id nunc. Duis scelerisque molestie turpis. Sed fringilla, massa eget luctus malesuada, metus eros molestie lectus, ut tempus eros massa ut dolor. Aenean aliquet fringilla sem. Suspendisse sed ligula in ligula suscipit aliquam. Praesent in eros vestibulum mi adipiscing adipiscing. Morbi facilisis. Curabitur ornare consequat nunc. Aenean vel metus. Ut posuere viverra nulla. Aliquam erat volutpat. Pellentesque convallis. Maecenas feugiat, tellus pellentesque pretium posuere, felis lorem euismod felis, eu ornare leo nisi vel felis. Mauris consectetur tortor et purus.</p>
+                    <object data="/test/asdf.pdf" type="application/pdf" width="100%" height="100%">
+
+                        <p>It appears you don't have a PDF plugin for this browser.
+                            No biggie... you can <a href="/test/asdf.pdf">click here to
+                                download the PDF file.</a></p>
+
+                    </object>
                 </div>
                 <div id="tabs-3">
                     <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
@@ -306,7 +317,7 @@
 <div id="xml-view" style="overflow:hidden;" title="SVG View">
     <textarea style="width:100%;height:100%; resize: none;"></textarea>
 </div>
-    
+
 <!-- Login Settings Dialog -->
 <div id="login-dialog" title="Setting">
     <h3>Login</h3>

@@ -39,7 +39,7 @@ var _createProjectFiles = function(project) {
 var getProjectsByUserId = function(userId) {
     userId = (object.isString(userId))? mongoose.Types.ObjectId(userId) : userId;
     return new Promise(function(resolve, reject) {
-        Project.find({ 'user.user_id' : userId }, 'id title, description', function(err, projects) {
+        Project.find({ 'user.user_id' : userId }, 'id title description', function(err, projects) {
             if(err) {
                 reject(err);
             } else {

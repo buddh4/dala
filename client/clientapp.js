@@ -2,6 +2,8 @@
 // Global jQuery
 $ = jQuery = require('jquery');
 require('jquery-ui');
+require('jstree');
+
 require('bootstrap');
 
 // Init core modules

@@ -52,8 +52,9 @@ var saveDiagram = function(evt) {
 var newDiagramListener = function(evt) {
     var diagramId = evt.data.ts;
     var stageId = evt.data.stageId;
+    evt.data.diagramId = diagramId;
     diagrams[diagramId] = new Diagram({id:diagramId, container:'#'+stageId});
-    event.trigger('diagram_initialized', diagramId);
+    event.trigger('diagram_initialized', evt.data);
 };
 
 var activeTabListener = function(evt) {

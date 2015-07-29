@@ -18,7 +18,7 @@ var initListener = function() {
 };
 
 var newFileListener = function(evt) {
-    addTab();
+    addTab(evt.data);
 };
 
 var diagramUpdatedListener = function(evt) {
@@ -30,12 +30,12 @@ var diagramUpdatedListener = function(evt) {
     }
 };
 
-var addTab = function() {
+var addTab = function(projectId) {
     // We use the timestamp to identify the tab/stage/diagram
     var ts = Date.now();
     var id = TAB_CONTAINER_PREFIX+ts;
     var stageId = TAB_STAGE_PREFIX+ts;
-    var label = 'New Diagram';
+    var label = 'new.dala';
     var li = $( tabTemplate.replace( /#\{href\}/g, "#" + id ).replace( /#\{label\}/g, label ) );
 
     $CONTAINER_NODE.find( ".ui-tabs-nav" ).append( li );
@@ -44,11 +44,11 @@ var addTab = function() {
 
     $('#stageTabs').removeClass('ui-corner-all').addClass('ui-corner-top');
 
-    event.trigger('diagram_new', {ts: ts, stageId: stageId});
+    event.trigger('diagram_new', {ts: ts, stageId: stageId, projectId: projectId, label: label });
 }
 
 var showTabListener = function(evt) {
-    var diagramId = evt.data;
+    var diagramId = evt.data.diagramId;
     getTabLinkForDiagramId(diagramId).click();
     event.trigger('tab_activated', diagramId);
 };
@@ -91,6 +91,12 @@ module.exports.init = function() {
 
     $('#zoomOut').on('click', function() {
         event.trigger('view_zoomOut');
+    });
+
+    $CONTAINER_NODE.droppable({
+        drop: function( event, ui ) {
+            console.log('DROPPPPPPED');
+        }
     });
 
     initListener();
