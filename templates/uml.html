@@ -1,0 +1,366 @@
+<script id="tmpl_panel_uml" type="text/template">
+    <templates id="uml" label="UML">
+        <template id="uml_seq_class" label="Seq. Class">
+            <svg class="tmpl_svg" >
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <line id="time_line_area_{node_id}" x1="0" y1="0" x2="0" y2="50" stroke="#000000" stroke-width="6" stroke-opacity="0.0" fill="none"/>
+                    <line id="time_line_{node_id}" x1="0" y1="0" x2="0" y2="50" stroke="#000000" fill="none"/>
+                    <rect id="head_back_{node_id}" width="{init_width}" height="20"
+                          x="0" y="0" rx="2"
+                          style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                    </text>
+                </g>
+            </svg>
+            <config>
+                {
+                "init_width" : "150",
+                "init_title" : "New Class",
+                "color_main" : "#FFFFFF",
+                "dockingType" : "FREE",
+                "resize": [
+                {"bind":"#head_back", "value":"default static"},
+                {"bind":"#title_t", "position": "center static"},
+                {"bind":"#time_line", "value":"vertical", "position": "center static", "alignto":"parent"},
+                {"bind":"#time_line_area", "value":"vertical", "position": "center static", "alignto":"parent"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "text",
+                "label" : "Title",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#head_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+
+        <template id="uml_class" label="Class">
+            <svg class="tmpl_svg" >
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <rect id="node_back_{node_id}" width="{init_width}" height="65"
+                          x="0" y="0" rx="2"
+                          style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                    </text>
+                    <g id="attributes_g_{node_id}" transform="translate(0 20)">
+                        <rect id="attributes_back_{node_id}" width="{init_width}" height="15" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="attributes_span_{node_id}" dy="11" x="2" >attributes</tspan>
+                        </text>
+                    </g>
+                    <g id="methods_g_{node_id}" transform="translate(0 37)">
+                        <rect id="methods_back_{node_id}" width="{init_width}" height="17" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="methods_span_{node_id}" dy="11" x="2" >operations</tspan>
+                        </text>
+                    </g>
+                </g>
+            </svg>
+            <config>
+                {
+                "init_width" : "150",
+                "init_title" : "New Class",
+                "color_main" : "#FFFFFF",
+                "color_second" : "#FFFFFF",
+                "color_hover" : "#E0E0E0",
+                "color_select": "#898989",
+                "dockingType" : "SQUARE",
+                "resize": [
+                {"bind":"#methods_back", "value":"default", "min":"parent"},
+                {"bind":"#attributes_back", "value":"default parent", "min":"parent"},
+                {"bind":"#methods_g", "position": "static relative(0)"},
+                {"bind":"#node_back", "value":"default parent(5)", "min":"parent"},
+                {"bind":"#methods_back", "min":"#node_back none"},
+                {"bind":"#attributes_back", "min":"#node_back none"},
+                {"bind":"#title_t", "position": "center static"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "text",
+                "label" : "Title",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "attributes" : {
+                "type" : "textarea",
+                "label" : "Attributes",
+                "bind" : "#attributes_t",
+                "trigger" : ["#attributes_back", "#attributes_t"]
+                },
+                "methods" : {
+                "type" : "textarea",
+                "label" : "Methods",
+                "bind" : "#methods_t",
+                "trigger" : ["#methods_back", "#methods_t"]
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#node_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {
+                //TODO get hovercolor form
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_hover}');
+                //}
+                },
+                mouseout: function(element) {
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_main}');
+                //}
+                },
+                select: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_select}');
+                },
+                deselect: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_main}');
+                }
+                };
+            </functions>
+        </template>
+
+        <template id="uml_stereotype" label="Stereotyped">
+            <svg class="tmpl_svg" >
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <rect id="node_back_{node_id}" width="{init_width}" height="100"
+                          x="0" y="0" rx="2"
+                          style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                    <text id="stereotype_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="stereotype_span_{node_id}" dy="13.0" x="2">&lt;&lt;stereotpye&gt;&gt;</tspan>
+                    </text>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="16">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+                    </text>
+                    <g id="attributes_g_{node_id}" transform="translate(0 32)">
+                        <rect id="attributes_back_{node_id}" width="{init_width}" height="15" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="attributes_span_{node_id}" dy="11" x="2" ></tspan>
+                        </text>
+                    </g>
+                    <g id="methods_g_{node_id}" transform="translate(0 47)">
+                        <rect id="methods_back_{node_id}" width="{init_width}" height="17" fill="white" x="0" y="0"
+                              style="stroke:#000000;fill:{color_second};"
+                              stroke-width="1"/>
+                        <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                            <tspan id="methods_span_{node_id}" dy="11" x="2" > </tspan>
+                        </text>
+                    </g>
+                </g>
+            </svg>
+            <config>
+                {
+                "init_width" : "150",
+                "init_title" : "New Class",
+                "color_main" : "#FFFFFF",
+                "color_second" : "#FFFFFF",
+                "color_hover" : "#E0E0E0",
+                "color_select": "#898989",
+                "dockingType" : "SQUARE",
+                "resize": [
+                {"bind":"#methods_back", "value":"default", "min":"parent"},
+                {"bind":"#attributes_back", "value":"default parent", "min":"parent"},
+                {"bind":"#methods_g", "position": "static relative(0)"},
+                {"bind":"#node_back", "value":"default parent(5)", "min":"parent"},
+                {"bind":"#methods_back", "min":"#node_back none"},
+                {"bind":"#attributes_back", "min":"#node_back none"},
+                {"bind":"#stereotype_t", "position": "center static", "alignto":"#node_back"},
+                {"bind":"#title_t", "position": "center static", "alignto":"#node_back"}
+                ],
+                "edit": {
+                "stereotype" : {
+                "type" : "text",
+                "label" : "Stereotype",
+                "bind" : "#stereotype_span",
+                "trigger" : "#stereotype_t"
+                },
+                "title" : {
+                "type" : "text",
+                "label" : "Title",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "attributes" : {
+                "type" : "textarea",
+                "label" : "Attributes",
+                "bind" : "#attributes_t",
+                "trigger" : ["#attributes_back", "#attributes_t"]
+                },
+                "methods" : {
+                "type" : "textarea",
+                "label" : "Methods",
+                "bind" : "#methods_t",
+                "trigger" : ["#methods_back", "#methods_t"]
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#node_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {
+                //TODO get hovercolor form
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_hover}');
+                //}
+                },
+                mouseout: function(element) {
+                //if(!element.selected) {
+                //    SVG.get('node_back_{node_id}').fill('{color_main}');
+                //}
+                },
+                select: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_select}');
+                },
+                deselect: function(element) {
+                //SVG.get('node_back_{node_id}').fill('{color_main}');
+                }
+                };
+            </functions>
+        </template>
+
+        <template id="uml_package" label="Package">
+            <svg class="tmpl_svg">
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <g>
+                        <rect width="30" height="20"  rx="2" style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                        <rect id="body_back_{node_id}" width="100" height="60" transform="translate(0 10)" x="0" y="0"
+                              style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+                        <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="25">
+                            <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+                        </text>
+                    </g>
+                </g>
+            </svg>
+            <config>
+                {
+                "dockingType" : "SQUARE",
+                "title" : "New Package",
+                "color_main" : "#FFFFFF",
+                "resize" : [
+                {"bind":"#body_back", "value":"default", "min":"parent parent(-10)"},
+                {"bind":"#title_t", "position":"center static", "alignto":"#body_back"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "textarea",
+                "label" : "Text",
+                "bind" : "#title_t",
+                "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#body_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+
+        <template id="uml_component" label="Component" >
+            <svg>
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <rect id="body_back_{node_id}" height="100" width="150" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                    <text id="head_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="25">
+                        <tspan id="head_span_{node_id}" dy="13.0" x="2">&lt;&lt;component&gt;&gt;</tspan>
+                    </text>
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="40">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+                    </text>
+                    <g id="icon_{node_id}" transform="translate(120 5)">
+                        <rect id="svg_13" height="23" width="15" y="0" x="6" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                        <rect id="svg_16" height="6" width="16" y="3" x="0" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                        <rect id="svg_17" height="6" width="16" y="13" x="0" style="fill:{color_main};stroke:{color_second};stroke-width:1"/>
+                    </g>
+                </g>
+            </svg>
+            <config>
+                {
+                "dockingType" : "SQUARE",
+                "title" : "component",
+                "head" : "&lt;&lt;component&gt;&gt;",
+                "color_main" : "#FFFFFF",
+                "color_second" : "#000000",
+                "resize" : [
+                {"bind":"#body_back", "value":"default", "min":"parent"},
+                {"bind":"#head_t", "position": "center static", "alignto":"#body_back"},
+                {"bind":"#title_t", "position": "center static", "alignto":"#body_back"},
+                {"bind":"#icon", "position": "right(5) static", "alignto":"#body_back"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "textarea",
+                "label" : "Text",
+                "bind" : "#title_t",
+                "trigger" : "#title_t"
+                },
+                "head" : {
+                "type" : "text",
+                "label" : "Type",
+                "bind" : "#head_span",
+                "trigger" : "#head_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#body_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+    </templates>
+</script>

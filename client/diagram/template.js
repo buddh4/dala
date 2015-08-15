@@ -6,11 +6,17 @@ var config = require('../core/config');
 var object = util.object;
 var dom = util.dom;
 
-var Template = function(id, tmplRootEl) {
+var Template = function(id, fromDom, tmplRootEl) {
     tmplRootEl = tmplRootEl || 'g';
-    this.id = id;
-    this.tmplNode = dom.cache('#'+id);
-    this.tmplXML = dom.parseNodeXML(this.tmplNode);
+
+    if(fromDom) {
+        this.id = id;
+        this.tmplXML = dom.parseNodeXML(dom.cache('#' + id));
+    } else {
+        this.tmplXML = id;
+        this.id = $(this.tmplXML).attr('id');
+    }
+
     this.svg = xml.serializeToString(dom.find(this.tmplXML, tmplRootEl));
 
     //TODO: add error handling to enable templates without function and ocnfig elements

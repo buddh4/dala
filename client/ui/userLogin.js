@@ -33,11 +33,7 @@ var login = function() {
     client.post('/user/login', values, {
         async : false,
         success : function(response) {
-            if(response.isConfirmation()) {
-                loggedInHandler(response.data.result);
-            } else {
-                //TODO: implementation
-            }
+            loggedInHandler(response.data.result);
             close();
         },
         error : function(status, error) {

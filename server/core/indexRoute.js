@@ -4,7 +4,10 @@ var path = require('path');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
-  res.sendFile(path.join(__dirname + '/../../index.html'));
+  res.render('application', {
+      //TODO: check user settings
+      initial_templates : {panels:[{id: 'uml', label:'UML'}, {id:'simple', label:'Simple'}]}
+  });
 });
 
 module.exports = router;

@@ -35,7 +35,6 @@ var diagramInitializedListener = function(evt) {
         "type":"diagram"
     });
 
-
     $TREE_NODE.jstree(true).open_node(projectNodeId);
     $TREE_NODE.jstree(true).refresh();
 }
@@ -78,6 +77,17 @@ var getProjectContextMenu = function(projectId) {
     };
 }
 
+var getRootContextMenu = function() {
+    return {
+        "New Project": {
+            "label": "New Project",
+            "action": function (obj) {
+                //event.trigger('project_new', projectId);
+            }
+        }
+        //TODO: DELETE / CLOSE PROJECT / RENAME / NEW FOLDER
+    };
+}
 
 module.exports.init = function() {
     $CONTAINER_NODE.accordion({collapsible: true});
@@ -101,7 +111,7 @@ module.exports.init = function() {
                 "valid_children " : ['project']
             },
             "project" : {
-                "icon": "/images/icons/folder.png"
+                "icon": "/images/icons/project_folder.png"
             },
             "diagram" : {
                 "icon": "/images/icons/file.png",
@@ -120,6 +130,7 @@ module.exports.init = function() {
                     case 'diagram':
                         break;
                     case 'root':
+                        return getRootContextMenu();
                         break;
                 }
             }
@@ -128,7 +139,7 @@ module.exports.init = function() {
 
     updateTreeData( [
         { "id" : "root_projects", "parent" : "#", "text" : "Projects", state: { opened: true}, type : 'root' },
-        { "id" : "project_default", "parent" : "root_projects", "text" : "default", type: 'project' }
+        { "id" : "project_default", "parent" : "root_projects", "text" : "default", type: 'project', state: { opened: true} }
     ]);
 
     $TREE_NODE.on('redraw.jstree after_open.jstree after_close.jstree', function(e) {
@@ -139,6 +150,11 @@ module.exports.init = function() {
         //Single selection
         var id = data.selected[0];
 
+    });
+
+    $TREE_NODE.on('ready.jstree', function(e) {
+       console.log('read');
+        $TREE_NODE.jstree(true).refresh();
     });
 
     $(document)

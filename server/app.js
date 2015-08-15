@@ -11,8 +11,16 @@ var userService = require('./user/userService');
 var app = express();
 
 // view engine setup we do not use jade but we have to set a view engine here
-app.set('views', path.join(__dirname, '../views'));
-app.set('view engine', 'jade');
+var exphbs = require('express-handlebars');
+app.engine('handlebars', exphbs({
+  defaultLayout: 'main',
+  helpers: {
+    'json': function(context) {
+      return JSON.stringify(context);
+    }
+  }
+}));
+app.set('view engine', 'handlebars');
 
 //Database Connection
 mongoose.connect('mongodb://localhost/dala');
@@ -47,6 +55,7 @@ app.use('/', require('./core/indexRoute'));
 app.use('/user', require('./user/userRoute'));
 app.use('/service', require('./core/serviceRoute'));
 app.use('/diagram', require('./project/projectRoute'));
+app.use('/template', require('./template/templateRoute'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

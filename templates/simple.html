@@ -1,0 +1,133 @@
+<script id="tmpl_panel_uml" type="text/template">
+    <templates id="simple" label="Simple">
+        <template id="simple_circle" label="Circle">
+            <svg class="tmpl_svg">
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <circle id="body_back_{node_id}" cx="50" cy="50" r="50" style="fill:{color_main};stroke:#9e9e9e;stroke-width:1" />
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+                    </text>
+                </g>
+            </svg>
+            <config>
+                {
+                "dockingType" : "CIRCLE",
+                "title" : "circle",
+                "color_main" : "#FFFFFF",
+                "resize" : [
+                {"bind":"#body_back", "value":"circle", "min":"parent"},
+                {"bind":"#title_t", "position": "center"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "text",
+                "label" : "Text",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#body_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+        <template id="simple_rect" label="Rectangle">
+            <svg class="tmpl_svg">
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <rect id="body_back_{node_id}" width="100" height="60" style="fill:{color_main};stroke:#9e9e9e;stroke-width:1" />
+                    <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dala:content="text" dy="13.0" x="2">{title}</tspan>
+                    </text>
+                </g>
+            </svg>
+            <config>
+                {
+                "dockingType" : "SQUARE",
+                "title" : "RECTANGLE",
+                "color_main" : "#FFFFFF",
+                "resize" : [
+                {"bind":"#body_back", "value":"default", "min":"parent"},
+                {"bind":"#title_t", "position": "center"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "text",
+                "label" : "Text",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#body_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+        <template id="simple_ellipse" label="Ellipse">
+            <svg class="tmpl_svg">
+                <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+                    <ellipse id="body_back_{node_id}" cx="100" cy="50" rx="100" ry="50" style="fill:{color_main};stroke:#9e9e9e;stroke-width:1" />
+                    <text id="title_t_{node_id}" dala:position="center" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+                        <tspan id="title_span_{node_id}" dala:content="text" dy="13.0" x="2">{title}</tspan>
+                    </text>
+                </g>
+            </svg>
+            <config>
+                {
+                "dockingType" : "ELLIPSE",
+                "color_main" : "#FFFFFF",
+                "title" : "ellipse",
+                "resize" : [
+                {"bind":"#body_back", "value":"default", "min":"parent"},
+                {"bind":"#title_t", "position": "center"}
+                ],
+                "edit": {
+                "title" : {
+                "type" : "text",
+                "label" : "Text",
+                "bind" : "#title_span",
+                "trigger" : "#title_t"
+                },
+                "mainColor" : {
+                "type" : "color",
+                "label" : "Main Color",
+                "bind" : "#body_back"
+                }
+                }
+                }
+            </config>
+            <functions>
+                var script =  {
+                init: function(config) {},
+                mouseover: function(element) {},
+                mouseout: function(element) {},
+                select: function(element) {},
+                deselect: function(element) {}
+                };
+            </functions>
+        </template>
+    </templates>
+</script>

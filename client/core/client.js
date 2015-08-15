@@ -1,5 +1,6 @@
 var event = require('./event');
 var object = require('../util/object');
+var string = require('../util/string');
 
 var Response = function(data) {
     this.data = data;
@@ -120,10 +121,14 @@ module.exports = {
         cfg.type = 'POST';
         this.ajax(path, data, cfg);
     },
-    get: function(path, data, cfg) {
+    get: function(path, cfg) {
         var cfg = cfg || {};
         cfg.type = 'GET';
-        this.ajax(path, data, cfg);
+        this.ajax(path, cfg.data, cfg);
+    },
+    restGet: function(path, id, cfg) {
+        var path = string.endsWith(path, '/')? path+id : path+'/'+id;
+        this.get(path, cfg);
     },
     getUrl: function(addition) {
         var url = "http://"+config.host+":"+config.port;
