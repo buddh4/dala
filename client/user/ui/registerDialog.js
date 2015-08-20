@@ -1,5 +1,5 @@
-var Dialog = require('./dialog');
-var client = require('../core/client');
+var Dialog = require('./../../ui/dialog');
+var client = require('../../core/client');
 
 var dialog;
 

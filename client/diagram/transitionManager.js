@@ -1,5 +1,5 @@
 var object = require('../util/object');
-var xml = require('../xml/xml');
+var xml = require('../util/xml');
 var event = require('../core/event');
 var Transition = require('./transition');
 
@@ -84,7 +84,7 @@ TransitionManager.prototype.activateTransition = function(value) {
         var result = [];
         var that = this;
         object.each(value, function() {
-            result.push(that.activateTransition(this));
+            result.push(that.activateTransition($(this)));
         });
         return result;
     } else  {

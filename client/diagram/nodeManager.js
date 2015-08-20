@@ -2,7 +2,7 @@ require('./draggable');
 require('./hoverable');
 
 var util = require('../util/util');
-var xml = require('../xml/xml');
+var xml = require('../util/xml');
 var event = require('../core/event');
 var Node = require('./node');
 var AbstractManager = require('./abstractManager');

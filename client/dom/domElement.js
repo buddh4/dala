@@ -69,11 +69,11 @@ Element.prototype.setSecureAttribute = function(key, value) {
                 this.setSecureAttribute(attribute, key[attribute]);
             }
         }
-    } else{
+    } else {
 
         // Some elementtypes can transform specific types of attributes to special objects
         // which are able to render and set the values in a special way.
-        if(object.isString(value) && object.isDefined(this.attributeSetter[key])) {
+        if(!this.hasClass('noParse') && object.isString(value) && object.isDefined(this.attributeSetter[key])) {
             value = this.attributeSetter[key](value);
         }
 
@@ -84,8 +84,6 @@ Element.prototype.setSecureAttribute = function(key, value) {
         // Just transform stringlits values to arrays in case its a string list
         this.attributes[key] = value;
 
-
-
         // Directly set it to the SVG instance if already rendered
         if(this.domInstance) {
             var val = Element.getAttributeString(value);
@@ -94,12 +92,20 @@ Element.prototype.setSecureAttribute = function(key, value) {
     }
 };
 
-Element.prototype.nodeText = function(value) {
-    if(value) {
-        return dom.setText(this.domInstance, value);
-    } else {
-        return dom.text(this.domInstance);
+Element.prototype.hasClass = function(searchClass) {
+    if(this.domInstance) {
+        //Jquery hasclass does not work with svg elements
+        var elementClass = ' '+ this.$(this.domInstance).attr('class')+' ';
+        return elementClass.indexOf(' '+searchClass+' ') > -1;
     }
+};
+
+Element.prototype.$ = function(selector) {
+    if(!this.$domInstance && this.domInstance) {
+        this.$domInstance = $(this.domInstance);
+    }
+
+    return (selector) ? this.$domInstance.find(selector) : this.$domInstance;
 };
 
 Element.getAttributeString = function(value) {
@@ -127,27 +133,6 @@ Element.getAttributeValueFromStringList = function(value) {
     }
 };
 
-Element.prototype.addClass = function(newClass) {
-    if(!this.attributes.cssClass) {
-        this.attributes.cssClass = [];
-    }
-    object.addValue(this.attributes.cssClass, newClass);
-};
-
-Element.prototype.removeClass = function(classToRemove) {
-    var index = this.tag.cssClass.indexOf(classToRemove);
-    if(index > -1) {
-        this.tag.cssClass.splice(index,1);
-    }
-    return this;
-};
-
-Element.prototype.hasClass = function(searchClass) {
-    if(this.tag.attributes && this.tag.attributes['class']) {
-        return this.tag.attributes['class'].indexOf(searchClass) > -1;
-    }
-};
-
 Element.prototype.attr = function(attribute) {
     if(arguments.length > 1) {
         //TODO: implement for mor thant 2
@@ -167,5 +152,3 @@ Element.prototype.attr = function(attribute) {
 };
 
 module.exports =  Element;
-
-

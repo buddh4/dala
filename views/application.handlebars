@@ -139,13 +139,13 @@
                     </div>
                 </div>
                 <div id="tabs-2">
-                    <object data="/test/asdf.pdf" type="application/pdf" width="100%" height="100%">
+                    <!-- object data="/test/asdf.pdf" type="application/pdf" width="100%" height="100%">
 
                         <p>It appears you don't have a PDF plugin for this browser.
                             No biggie... you can <a href="/test/asdf.pdf">click here to
                                 download the PDF file.</a></p>
 
-                    </object>
+                    </object -->
                 </div>
                 <div id="tabs-3">
                     <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
@@ -159,7 +159,6 @@
 
 
             </div>
-            <div id="notifications"></div>
         </div>
     </div>
 </div>
@@ -169,8 +168,7 @@
 </div>
 
 <!-- Login Settings Dialog -->
-<div id="login-dialog" title="Setting">
-    <h3>Login</h3>
+<div id="login-dialog" title="Login">
     <form>
         <fieldset>
             <label for="host">Email</label>
@@ -219,6 +217,32 @@
     </form>
 </div>
 
+<div id="new-project-dialog" title="Create Project">
+    <form>
+        <fieldset>
+            <label for="title">Title</label>
+            <input type="text" name="title" id="new-project-title" class="text ui-widget-content ui-corner-all">
+            <label for="description">Description</label>
+            <textarea name="description" id="new-project-description" class="ui-corner-all" style="width:100%;height:100px;"></textarea>
+            <!-- Allow form submission with keyboard without duplicating the dialog button -->
+            <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+        </fieldset>
+    </form>
+</div>
+
+<div id="new-diagram-dialog" title="Create New Diagram">
+    <form>
+        <fieldset>
+            <label for="title">Title</label>
+            <input type="text" name="title" id="new-diagram-title" class="text ui-widget-content ui-corner-all">
+            <label for="project">Project</label>
+            <input type="text" name="project" id="new-diagram-project" class="text ui-widget-content ui-corner-all" disabled="disabled">
+            <!-- Allow form submission with keyboard without duplicating the dialog button -->
+            <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
+        </fieldset>
+    </form>
+</div>
+
 <script>
     var dala_env = dala_env || {};
     dala_env.initial_templates = {{{json initial_templates }}};
@@ -226,7 +250,7 @@
 
 <script id="defs" type="text/template">
     <template>
-        <svg class="tmpl_svg" xmlns="http://www.w3.org/2000/svg" xmlns:dynDoc="http://www.dynDoc.com" xmlns:xlink="http://www.w3.org/1999/xlink">
+        <svg class="tmpl_svg" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
             <defs>
                 <marker id="trianglefill_{diagramId}" viewBox="0 0 10 10" refX="10" refY="5" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                     <path d="M 0 0 L 10 5 L 0 10 z"/>
@@ -268,7 +292,5 @@
                 </marker>
             </defs>
         </svg>
-        <config>{}</config>
-        <functions>var script;</functions>
     </template>
 </script>

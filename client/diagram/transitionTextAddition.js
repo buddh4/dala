@@ -29,7 +29,7 @@ TransitionTextAddition.prototype.update = function() {
 
 TransitionTextAddition.prototype.getText = function(pos) {
     if(this.textNodes[pos]) {
-        return this.textNodes[pos].nodeText();
+        return this.textNodes[pos].$().text();
     }
 };
 
@@ -42,7 +42,7 @@ TransitionTextAddition.prototype.setText = function(pos, text) {
         this.textNodes[pos] = this.diagram.svg.text(text);
         this.diagram.svg.addToGroup(this.transition.group, this.textNodes[pos]);
     } else {
-        this.textNodes[pos].nodeText(text);
+        this.textNodes[pos].$().text(text);
     }
     this.updateTextPosition(pos);
 };

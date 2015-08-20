@@ -1,7 +1,8 @@
-var string = require('../util/string');
+var string = require('./string');
 
 var serializeToString = function(node) {
     var s = new XMLSerializer();
+    node = (node.jQuery) ? node[0] : node;
     return s.serializeToString(node);
 };
 

@@ -18,7 +18,7 @@ module.exports = function(grunt) {
                 livereload: true
             },
             scripts: {
-                files: ['client/*/*.js'],
+                files: ['client/**/*.js'],
                 tasks: ['build_dev'],
                 options: {
                     spawn: false

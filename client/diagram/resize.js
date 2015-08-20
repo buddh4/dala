@@ -8,6 +8,9 @@ var DragConfig = require('../svg/dragConfig');
 var object = util.object;
 var dom = util.dom;
 
+// We create a small sub query cache for caching all queries without filling the global cache
+var cache = $.qCache().sub();
+
 // Used to identify the different knobs from north west clockwise
 var KNOB_NW = 0;
 var KNOB_N = 1;
@@ -75,7 +78,7 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
             that.dx = 0;
             that.dy = 0;
             that.dragKnob = knob;
-            that.resizeElements = that.getResizeElements();
+           // that.resizeElements = that.getResizeElements();
         })
         .dragMove(function(evt, dx, dy) {
             //We keep track of the total drag movement
@@ -90,7 +93,7 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
 
             that.event.trigger('node_resized', that.node);
 
-            delete that.resizeElements;
+           // delete that.resizeElements;
 
         })
         .getScale(function() {
@@ -125,7 +128,7 @@ Resize.prototype.getResizeElements = function() {
     var result = [];
     var that = this;
     object.each(this.config, function(index, value) {
-        result[index] = SVG.get(that.node.getNodeSelector(value.bind));
+        result[index] = SVG.get(cache.$(that.node.getNodeSelector(value.bind)));
     });
     return result;
 };
@@ -198,7 +201,7 @@ Resize.prototype.calculateKnobPosition = function() {
 
 Resize.prototype.removeKnobs = function() {
     if(object.isDefined(this.group)) {
-        dom.remove(this.group);
+        this.group.remove();
     }
     delete this.group;
 };
@@ -257,7 +260,8 @@ Resize.prototype.setResize = function(svgElement, elementConfig, setting, d, dim
             //we do not have to change anything when resizing.
             svgElement[dimension](1);
 
-            var parentVal = dom.parent(svgElement.instance()).getBBox()[dimension];
+            //Get the dimension from parent node
+            var parentVal = svgElement.$().parent().get(0).getBBox()[dimension];
             svgElement[dimension](parentVal + setting.value);
             break;
         default:
@@ -275,11 +279,11 @@ Resize.prototype.alignValueLimit = function(svgElement, setting, dimension, type
     var limit;
 
     if(value === 'parent') {
-        limit = dom.parent(svgElement.instance()).getBBox()[dimension];
+        limit = svgElement.$().parent()[0].getBBox()[dimension];
     } else if(!isNaN(value)) {
         limit = parseInt(value);
     } else if(util.string.startsWith(value, '#')) {
-        limit = dom.getFirst(this.node.getNodeSelector(value)).getBBox()[dimension];
+        limit = cache.$(this.node.getNodeSelector(value))[0].getBBox()[dimension];
     } else {
         return;
     }
@@ -314,16 +318,16 @@ Resize.prototype.getAlignedValue = function(svgElement, settings, alignto, dimen
         case 'none':
             break;
         case 'center':
-            var alignSVG = this.getAlignElement(alignto, svgElement.instance());
+            var alignSVG = this.getAlignElement(alignto, svgElement);
             if(object.isDefined(alignSVG)) {
                 var alignVal = alignSVG[dimension]();
                 return (alignVal - svgElement[dimension]()) / 2 + settings.value;
             };
             break;
         case 'relative':
-            var prevNode = dom.prev(svgElement.instance());
-            if(object.isDefined(prevNode)) {
-                var prevSVG = SVG.get(prevNode);
+            var $prevNode = svgElement.$().prev();
+            if($prevNode.length) {
+                var prevSVG = cache.svg($prevNode);
                 var prevVal = prevSVG[dimension]();
                 var prevCoord = prevSVG[dimensionCoord]();
                 return (prevCoord + prevVal) + settings.value;
@@ -334,7 +338,7 @@ Resize.prototype.getAlignedValue = function(svgElement, settings, alignto, dimen
             break;
         case 'right':
         case 'bottom':
-            var alignSVG = this.getAlignElement(alignto, svgElement.instance());
+            var alignSVG = this.getAlignElement(alignto, svgElement);
             if(object.isDefined(alignSVG)) {
                 var alignVal = (settings.type === 'right')? alignSVG.getRightX():alignSVG.getBottomY();
                 return (alignVal - svgElement[dimension]()) - settings.value;
@@ -345,17 +349,17 @@ Resize.prototype.getAlignedValue = function(svgElement, settings, alignto, dimen
     }
 };
 
-Resize.prototype.getAlignElement = function(alignto, node) {
+Resize.prototype.getAlignElement = function(alignto, svgElement) {
     var elementToAlign;
     //The alignto setting can be the parent-, root- or an explicit element default is the previous sibling element
     if(!alignto || alignto === 'prev') {
-        elementToAlign = SVG.get(dom.prev(node));
+        elementToAlign = cache.svg(svgElement.$().prev());
     }else if(!alignto || alignto === 'parent') {
-        elementToAlign = SVG.get(dom.parent(node));
+        elementToAlign = cache.svg(svgElement.$().parent());;
     } else if(alignto === 'root') {
-        elementToAlign = node.root;
+        elementToAlign = this.node.root;
     } else {
-        elementToAlign = SVG.get(this.node.getNodeSelector(alignto));
+        elementToAlign = $.qCache(this.node.getNodeSelector(alignto)).svg();
     }
 
     if(!elementToAlign) {

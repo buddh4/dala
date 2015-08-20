@@ -1,6 +1,8 @@
-var event = require('../core/event');
-var stringUtil = require('../util/string');
-var diagramManager = require('../diagram/diagramManager');
+var event = require('../../core/event');
+var stringUtil = require('../../util/string');
+var objectUtil = require('../../util/object');
+var diagramManager = require('../diagramManager');
+var userManager = require('../../user/userManager');
 
 var CONTAINER_SELECTOR = '#diagramStage'
 var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
@@ -18,7 +20,11 @@ var initListener = function() {
 };
 
 var newFileListener = function(evt) {
-    addTab(evt.data);
+    var settings = (evt.data) ? evt.data : {
+        projectId : 'default',
+        title : 'new'
+    }
+    addTab(settings);
 };
 
 var diagramUpdatedListener = function(evt) {
@@ -30,12 +36,15 @@ var diagramUpdatedListener = function(evt) {
     }
 };
 
-var addTab = function(projectId) {
+var addTab = function(settings) {
+    var projectId = (objectUtil.isString(settings)) ? settings : settings.projectId;
+    var title = (objectUtil.isString(settings)) ? 'new' : settings.title;
+
     // We use the timestamp to identify the tab/stage/diagram
-    var ts = Date.now();
-    var id = TAB_CONTAINER_PREFIX+ts;
-    var stageId = TAB_STAGE_PREFIX+ts;
-    var label = 'new.dala';
+    var diagramId = diagramManager.createDiagramId();
+    var id = TAB_CONTAINER_PREFIX+diagramId;
+    var stageId = TAB_STAGE_PREFIX+diagramId;
+    var label = title+'.dala';
     var li = $( tabTemplate.replace( /#\{href\}/g, "#" + id ).replace( /#\{label\}/g, label ) );
 
     $CONTAINER_NODE.find( ".ui-tabs-nav" ).append( li );
@@ -44,7 +53,7 @@ var addTab = function(projectId) {
 
     $('#stageTabs').removeClass('ui-corner-all').addClass('ui-corner-top');
 
-    event.trigger('diagram_new', {ts: ts, stageId: stageId, projectId: projectId, label: label });
+    event.trigger('diagram_new', {diagramId: diagramId, stageId: stageId, projectId: projectId, title: title, label: label });
 }
 
 var showTabListener = function(evt) {

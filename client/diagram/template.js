@@ -1,5 +1,5 @@
 var util = require('../util/util');
-var xml = require('../xml/xml');
+var xml = require('../util/xml');
 var Node = require('./node');
 var config = require('../core/config');
 
@@ -11,24 +11,38 @@ var Template = function(id, fromDom, tmplRootEl) {
 
     if(fromDom) {
         this.id = id;
-        this.tmplXML = dom.parseNodeXML(dom.cache('#' + id));
+        this.tmplXML = dom.parseNodeXML($.qCache('#'+id));
     } else {
         this.tmplXML = id;
         this.id = $(this.tmplXML).attr('id');
     }
 
-    this.svg = xml.serializeToString(dom.find(this.tmplXML, tmplRootEl));
-
-    //TODO: add error handling to enable templates without function and ocnfig elements
-    this.functions = dom.text(dom.find(this.tmplXML, 'functions'));
-    this.config = dom.parseNodeJSON(dom.find(this.tmplXML, 'config'));
+    this.svg = xml.serializeToString($(this.tmplXML).find(tmplRootEl)[0]);
+    this.parseFunctions();
+    this.parseConfig();
 
     if(object.isDefined(this.config)) {
         if(object.isDefined(this.config.resize)) {
             this.initResizeConfig();
         }
     }
+};
 
+Template.prototype.parseFunctions = function() {
+    try {
+        this.functions = $(this.tmplXML).find('functions').text() || {};
+    } catch(err) {
+        this.functions = {}//There is probably no function element.
+    }
+};
+
+Template.prototype.parseConfig = function() {
+    try {
+        this.config = dom.parseNodeJSON($(this.tmplXML).find('config')) || {};
+    } catch(err) {
+        //There is probably no configuration element.
+        this.config = {};
+    }
 };
 
 /**
@@ -86,7 +100,9 @@ Template.prototype.getSVGXML = function(cfg) {
 };
 
 Template.prototype.getFunctions = function(cfg) {
-    return config.replaceConfigValues(this.functions, cfg);
+    if(this.function) {
+        return config.replaceConfigValues(this.functions, cfg);
+    }
 };
 
 Template.prototype.getConfig = function(cfg) {

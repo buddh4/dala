@@ -1,9 +1,6 @@
 var object = require('../util/object');
 var event = require('../core/event');
 
-var CONTAINER_SELECTOR = '#notifications';
-var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
-
 var log = {};
 
 var initListener = function() {
@@ -15,7 +12,7 @@ var initListener = function() {
 };
 
 var info = function(evt) {
-    infoNotification(evt, 'info');
+    infoNotification(evt, 'info', 10000);
 };
 
 var warn = function(evt) {
@@ -26,7 +23,7 @@ var error = function(evt) {
     infoNotification(evt, 'error');
 };
 
-var infoNotification = function(evt, type) {
+var infoNotification = function(evt, type, closeAfter) {
     var msg;
     if(!evt.data) {
         return;
@@ -40,21 +37,20 @@ var infoNotification = function(evt, type) {
 
     //TODO: do something with this log and clear it after a defined size :)
     log[Date.now()] = msg;
-    showInfo(msg, type);
+    showInfo(msg, type, closeAfter);
 };
 
-var showInfo = function(msg,type) {
+var showInfo = function(msg,type, closeAfter) {
     clear();
-    $CONTAINER_NODE.html('<b class="'+type+'">'+type.toUpperCase()+': '+msg+'</b>');
+    $('body').growl({ title: type, text: msg, growlClass: type, closeAfter: closeAfter });
 };
 
 var clear = function() {
-    $CONTAINER_NODE.html('');
+    if($('body').data('ui-tooltip')) {
+        $('body').uitooltip('close');
+    }
 };
 
-
-
 module.exports.init = function() {
-    clear();
     initListener();
 };

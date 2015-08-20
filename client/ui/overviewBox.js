@@ -17,7 +17,7 @@ var update = function() {
 
     var scaledRate = rate * diagram.scale;
 
-    var $stageContainer = $(diagram.svg.containerNode);
+    var $stageContainer = $(diagram.svg.$containerNode);
     var stHeight = $stageContainer.height();
     var stWidth = $stageContainer.width();
 

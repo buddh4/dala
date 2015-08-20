@@ -41,7 +41,7 @@ TransitionDocking.prototype.remove = function() {
 };
 
 TransitionDocking.prototype.removeDockingMarker = function() {
-    dom.remove(dom.children(this.transition.group.instance(), '.docking'));
+    this.transition.group.$().children('.docking').remove();
 };
 
 TransitionDocking.prototype.addInnerDocking = function(startPoint, dockingIndex) {

@@ -1,18 +1,17 @@
-require('./uiAdditions');
 require('./templateNav').init();
 require('./editNav').init();
 require('./infobox').init();
 require('./userNotificationBar').init();
 require('./fileMenu').init();
-require('./stage').init();
-require('./fileBrowser').init();
+require('./../diagram/ui/stage').init();
+require('./../project/ui/fileBrowser').init();
 require('./overviewBox').init();
-require('./userLogin').init();
+require('./../user/ui/userLogin').init();
 
 var ClientSettingDialog = require('./clientSettingDialog');
 new ClientSettingDialog();
 
-var RegisterDialog = require('./registerDialog');
+var RegisterDialog = require('./../user/ui/registerDialog');
 new RegisterDialog();
 
 var XmlViewDialog = require('./xmlViewDialog');

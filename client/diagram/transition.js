@@ -39,10 +39,10 @@ var Transition = function(node, diagram) {
  * @param {type} groupElement
  * @returns {Transition_L1.Transition.prototype}
  */
-Transition.prototype.activate = function(groupElement) {
-    this.activateTransitionElements(groupElement);
+Transition.prototype.activate = function($groupElement) {
+    this.activateTransitionElements($groupElement);
     this.docking.activateDockings();
-    this.activateNodeBinding(groupElement);
+    this.activateNodeBinding($groupElement);
     this.initEvents();
 };
 
@@ -77,20 +77,20 @@ Transition.getDockingLocation = function(node, position) {
     }
 };
 
-Transition.prototype.activateTransitionElements = function(groupElement) {
-    var transitionElements = dom.children(groupElement);
-    this.group = this.svg.get(groupElement);
+Transition.prototype.activateTransitionElements = function($groupElement) {
+    var transitionElements = dom.children($groupElement);
+    this.group = $.svg($groupElement);
     this.id = this.group.attr('id');
-    this.line = this.svg.get(transitionElements[0]);
-    this.lineArea = this.svg.get(transitionElements[1]);
+    this.line = $.svg(transitionElements[0]);
+    this.lineArea = $.svg(transitionElements[1]);
     this.lineArea.attributes.d = this.line.attributes.d;
 
     //We remove the marker, they will be rerendered and initialized later
     this.docking.removeDockingMarker();
 };
 
-Transition.prototype.activateNodeBinding = function(groupElement) {
-    var attributes = dom.getAttributes(groupElement);
+Transition.prototype.activateNodeBinding = function($groupElement) {
+    var attributes = dom.getAttributes($groupElement);
     var startNodeFeature = util.app.parseFeatureString(attributes['dala:start']);
     var endNodeFeature = util.app.parseFeatureString(attributes['dala:end']);
 
@@ -354,7 +354,7 @@ Transition.prototype.checkDomPosition = function() {
 };
 
 Transition.prototype.index = function() {
-    return dom.index(this.group.instance());
+    return this.group.$;
 };
 
 Transition.prototype.instance = function() {

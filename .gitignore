@@ -9,23 +9,23 @@
 # if you remove the above rule, at least ignore the following:
 
 # User-specific stuff:
-# .idea/workspace.xml
-# .idea/tasks.xml
+# .idea/workspace.dom
+# .idea/tasks.dom
 # .idea/dictionaries
 
 # Sensitive or high-churn files:
 # .idea/dataSources.ids
-# .idea/dataSources.xml
-# .idea/sqlDataSources.xml
-# .idea/dynamic.xml
-# .idea/uiDesigner.xml
+# .idea/dataSources.dom
+# .idea/sqlDataSources.dom
+# .idea/dynamic.dom
+# .idea/uiDesigner.dom
 
 # Gradle:
-# .idea/gradle.xml
+# .idea/gradle.dom
 # .idea/libraries
 
 # Mongo Explorer plugin:
-# .idea/mongoSettings.xml
+# .idea/mongoSettings.dom
 
 ## File-based project format:
 *.ipr

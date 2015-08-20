@@ -1,49 +1,33 @@
-var xml = require('../xml/XML');
-var object = require('../util/Object');
+var xml = require('../util/xml');
+var object = require('../util/object');
 
 var elementCache = {};
 
 var query = function(selector, cache) {
     var result;
-    if(typeof elementCache[selector] === 'undefined') {
-        result = $(selector);
-        if(object.isDefined(cache) && cache) {
-            elementCache[selector] = result;
-        }
+    if(cache) {
+        result = $.qCache(selector);
     } else {
-        result = elementCache[selector];
+        result = $(selector);
     }
     return result;
 };
 
 var getJQueryNode = function(node) {
+    if(!node) {
+        return;
+    }
     // The node is either a dom node or a selector
     if(object.isString(node)) {
         return query(node);
     } else if(node.getAttribute){
-        var cached = elementCache[node.getAttribute('id')];
-        return object.isDefined(cached) ? cached : $(node);
+        return $.qCache(node.getAttribute('id'), true);
     } else if(node.jQuery) {
         return node;
     } else {
         // e.g. document, window...
         return $(node);
     }
-};
-
-var index = function(node) {
-    return getJQueryNode(node).index();
-};
-
-var clone = function(node) {
-    return getJQueryNode(node).clone().get(0);
-};
-
-var parent = function(node, selector) {
-    var result = $(node).parents(selector);
-    if(result.length > 0) {
-        return result.get(0);
-    };
 };
 
 var moveDown = function(node) {
@@ -54,49 +38,6 @@ var moveDown = function(node) {
 var moveUp = function(node) {
     var $node = getJQueryNode(node);
     $node.after($node.prev());
-};
-
-var firstChild = function(node) {
-    var result = $(node).children().first();
-    if(result.length > 0) {
-        return result.get(0);
-    };
-};
-
-var prev = function(node, selector) {
-    return $(node).prev(selector).get(0);
-};
-
-var draggable = function(instance) {
-    $(instance).draggable();
-};
-
-var onDrag = function(instance, callback) {
-    var test = $(instance);
-    $(instance).on('drag', function(e) {
-        alert('asdf');
-    });
-    //$(instance).on('drag', callback);
-};
-
-var empty = function(element) {
-    $(element).empty();
-};
-
-var remove = function(element) {
-    if(element.instance) {
-        $(element.instance()).remove();
-    } else {
-        $(element).remove();
-    }
-};
-
-var after = function(node, afterNode) {
-    $(node).after(afterNode);
-};
-
-var before = function(node, beforeNode) {
-    $(node).after(beforeNode);
 };
 
 var insertAfterIndex = function(node, index) {
@@ -214,7 +155,7 @@ var importSVG = function(container, svgXML) {
         }
     };
 
-    appendSVGElement(container, element, getChildText($svgXML));
+    appendSVGElement(container, element, _getChildText($svgXML));
 
     $svgXML.children().each(function(index, child) {
         importSVG(element.instance(), child);
@@ -223,7 +164,7 @@ var importSVG = function(container, svgXML) {
     return element.instance();
 };
 
-var getChildText = function(node) {
+var _getChildText = function(node) {
     if(!node.jquery) {
         node = $(node);
     }
@@ -237,18 +178,6 @@ var getChildText = function(node) {
     }
 };
 
-var cache = function(selector) {
-    return query(selector, true)[0];
-};
-
-var getFirst = function(selector, cache) {
-    return query(selector, cache)[0];
-};
-
-var children = function(node, selector) {
-    return $(node).children(selector).get();
-};
-
 var getAttributes = function(node) {
     var result = {};
     $(node.attributes).each(function() {
@@ -257,40 +186,15 @@ var getAttributes = function(node) {
     return result;
 };
 
-var getAttribute = function(node, key) {
-    return getJQueryNode(node).attr(key);
-};
-
-var setAttribute = function(node, key, value) {
-    getJQueryNode(node).attr(key, value);
-};
-
-var find = function(node, selector) {
-    return $(node).find(selector).get(0);
-};
-
-var get = function(selector) {
-    return $(selector).get();
-};
-
 var findIncludeSelf = function(node, selector) {
     return $(node).find(selector).andSelf().filter(selector).get(0);
 };
 
-var text = function(node) {
-    return getJQueryNode(node).text();
-};
-
-var setText = function(node, txt) {
-    return getJQueryNode(node).text(txt);
-};
-
-var html = function(node, value) {
-    return getJQueryNode(node).html(value);
-};
-
 var parseNodeXML = function(node) {
-    return $.parseXML(text(node));
+    if(!node) {
+        return;
+    }
+    return $.parseXML($(node).text());
 };
 
 var parseXML = function(str) {
@@ -298,67 +202,46 @@ var parseXML = function(str) {
 };
 
 var parseNodeJSON = function(node) {
-    return $.parseJSON(text(node));
+    return $.parseJSON($(node).text());
 };
 
-var offset = function(node) {
-    return getJQueryNode(node).offset();
+var getRawId = function(idSelector) {
+    if(!object.isString(idSelector)) {
+        return;
+    }
+
+    if(idSelector.charAt(0) === '#') {
+        return idSelector.substring(1, idSelector.length);
+    } else {
+        return idSelector;
+    }
 };
 
-var left = function(node, value) {
-    return getJQueryNode(node).css({left: value});
-};
+var getIdSelector = function(rawId) {
+    if(!object.isString(rawId)) {
+        return;
+    }
 
-var top = function(node, value) {
-    return getJQueryNode(node).css({top: value});
-};
-
-var addClass = function(node, cssClass) {
-    getJQueryNode(node).addClass(cssClass);
-};
-
-var removeClass = function(node, cssClass) {
-    getJQueryNode(node).removeClass(cssClass);
+    if (rawId.charAt(0) !== '#') {
+        return '#' + rawId;
+    } else {
+        return rawId;
+    }
 };
 
 module.exports = {
-    index : index,
-    remove : remove,
-    empty : empty,
     appendSVGElement : appendSVGElement,
     prependSVGElement : prependSVGElement,
-    after : after,
-    before : before,
     insertSVGAfter : insertSVGAfter,
     insertAfterIndex : insertAfterIndex,
     prependToRoot : prependToRoot,
     importSVG : importSVG,
-    cache : cache,
-    draggable : draggable,
-    onDrag : onDrag,
-    text : text,
-    setText : setText,
-    html : html,
-    find : find,
-    clone : clone,
-    get : get,
-    firstChild : firstChild,
-    parent : parent,
     moveDown : moveDown,
     moveUp : moveUp,
-    prev : prev,
     findIncludeSelf : findIncludeSelf,
     parseNodeXML : parseNodeXML,
     parseNodeJSON : parseNodeJSON,
     getAttributes : getAttributes,
-    getAttribute : getAttribute,
-    setAttribute : setAttribute,
-    getFirst : getFirst,
-    children : children,
-    getJQueryNode : getJQueryNode,
-    offset : offset,
-    top : top,
-    left : left,
-    addClass: addClass,
-    removeClass: removeClass
+    getRawId : getRawId,
+    getIdSelector: getIdSelector
 };

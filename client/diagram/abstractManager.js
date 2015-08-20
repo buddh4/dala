@@ -32,7 +32,7 @@ Manager.prototype.getTransitionById = function(id) {
 };
 
 Manager.prototype.getSVG = function(id) {
-    return this.diagram.svg.get(id);
+    return $.svg(id);
 };
 
 Manager.prototype.getNodeMgr = function(command) {

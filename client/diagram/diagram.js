@@ -19,7 +19,7 @@ var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var DockingManager = require('./dockingManager');
 var Config = require('../core/config');
-var xml = require('../xml/xml');
+var xml = require('../util/xml');
 
 var object = util.object;
 var dom = util.dom;
@@ -43,18 +43,17 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     }
 
     this.id = cfg.id || 'not specified';
+    this.projectId = cfg.projectId || 'default';
+    this.title = cfg.title || 'new';
 
     //Diagram intern event context
     this.event = event.sub(this.id);
 
     if(cfg.container) {
-        this.containerNode = $(cfg.container);
+        this.$containerNode = $(cfg.container);
     } else {
-        this.containerNode = $CONTAINER_NODE;
+        this.$containerNode = $CONTAINER_NODE;
     }
-
-    //TODO: Create a diagramId with ts and userid.
-
 
     this.commandMgr = commandManager.sub(this.id, function(cmd) {
         event.trigger('diagram_updated', cfg.id);
@@ -72,14 +71,13 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.dockingMgr = new DockingManager(this);
 
     // Build the SVG stage within the container
-    this.svg = new SVG(this.containerNode.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
+    this.svg = new SVG(this.$containerNode.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
 
     // Init stage related and key events
     this.initEvents();
 
     this.scale = 1;
 
-    //Todo: make the defs id configurable
     //TODO: load defs/marker on demand
     this.loadDefs();
 
@@ -243,8 +241,8 @@ Diagram.prototype.loadDiagram = function(svgString) {
     //TODO: rather handle this per event
     this.selectionMgr.clear();
     this.nodeMgr.clear();
-    dom.empty(this.containerNode);
-    this.svg.setRoot(dom.importSVG(this.svg.containerNode, svgString));
+    this.$containerNode.empty();
+    this.svg.setRoot(dom.importSVG(this.svg.$containerNode, svgString));
     this.activateNodes();
     this.activateTransitions();
     this.initEvents();
@@ -260,7 +258,7 @@ Diagram.prototype.triggerDockingVisibility = function() {
 
 Diagram.prototype.activateNodes = function() {
     var that = this;
-    object.each(dom.get('.element_root'), function(index, value) {
+    $('.element_root').each(function() {
         that.activateNode(this);
     });
 };
@@ -275,7 +273,7 @@ Diagram.prototype.activateNode = function(domNode) {
 
 //TODO: move to transitionmgr
 Diagram.prototype.activateTransitions = function() {
-    this.transitionMgr.activateTransition(dom.get('.transition'));
+    this.transitionMgr.activateTransition($('.transition'));
 };
 
 Diagram.prototype.getNodeById = function(nodeId) {
@@ -317,7 +315,7 @@ Diagram.prototype.getStagePosition = function(x, y) {
         x = x.x;
     }
 
-    var stagePosition = dom.offset(this.containerNode);
+    var stagePosition = this.$containerNode.offset();
     var viewPointAlignment = this.mainPart.position();
 
     //TODO: viewbox alignement ?

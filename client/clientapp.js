@@ -2,15 +2,26 @@
 // Global jQuery
 $ = jQuery = require('jquery');
 require('jquery-ui');
+
+require('./ui/jqueryPlugins');
+
+//jquery-ui / bootstrap conflicts
+$.widget.bridge('uibutton', $.ui.button);
+$.widget.bridge('uitooltip', $.ui.tooltip);
+
 require('jstree');
 
 require('bootstrap');
+
+$.fn.bootstrapBtn = $.fn.button.noConflict();
 
 // Init core modules
 var config = require('./core/config');
 var Diagram = require('./diagram/diagram');
 var event = require('./core/event');
+
 require('./user/userManager').init();
+require('./project/projectManager').init();
 
 // Init UI modules
 require('./ui/gui');
@@ -112,4 +123,4 @@ event.on(document, 'keydown', function(e) {
 
 event.trigger('tab_new');
 event.trigger('app_start');
-event.trigger('info', 'Application started successfully! Either login or use the editor for a standalone session.');
+event.trigger('info', 'Application started successfully!');

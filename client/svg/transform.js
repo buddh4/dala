@@ -1,6 +1,6 @@
 var util = require('../util/util');
 var object = util.object;
-var XMLElement = require('../xml/xmlElement');
+var DomElement = require('../dom/domElement');
 
 var Transform = function(def) {
     if(typeof def !== 'undefined' ) {
@@ -24,7 +24,7 @@ Transform.prototype.setDefinitionFromString = function(value) {
     for(var i = 0;i < transformations.length; i += 2) {
         var transformation = transformations[i].trim();
         if(transformation.length > 0) {
-            var values = XMLElement.getAttributeValueFromStringList(transformations[i+1]);
+            var values = DomElement.getAttributeValueFromStringList(transformations[i+1]);
             for(var i = 0; i < values.length; i++) {
                 // We prefer integer values for calculations
                 if(!isNaN(values[i])) {
@@ -41,12 +41,12 @@ Transform.prototype.toString = function() {
     for(var key in this.definition) {
         if(this.definition.hasOwnProperty((key))) {
             // first we assamble all transformations in an array ['translate(30)','rotate(45 50 50)']
-            var singleTransformation = key+'('+XMLElement.getAttributeString(this.definition[key])+')';
+            var singleTransformation = key+'('+DomElement.getAttributeString(this.definition[key])+')';
             values.push(singleTransformation);
         }
     }
     // merge the transformations to one attributestring
-    var valueStr = XMLElement.getAttributeString(values);
+    var valueStr = DomElement.getAttributeString(values);
 
     if(valueStr.length > 0) {
         return valueStr;

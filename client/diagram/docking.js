@@ -1,5 +1,5 @@
 var object = require('../util/object');
-var dom = require('../util/dom');
+var dom = require('../dom/dom');
 var Transform = require('../svg/transform');
 
 var DEFAULT_FILL = 'black';

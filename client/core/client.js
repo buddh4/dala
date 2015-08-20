@@ -76,7 +76,7 @@ module.exports = {
 
             if(cfg.error) {
                 // "timeout", "error", "abort", "parsererror" or "application"
-                cfg.error(type, errorThrown);
+                cfg.error(errorThrown, errorCode, type);
             }
 
             if(!cfg.error && !cfg.errorMessage) {
@@ -85,20 +85,20 @@ module.exports = {
         };
 
         var success = function(response) {
-            if (cfg.successMessage) {
-                event.trigger('info', cfg.successMessage);
-            }
-
             var responseWrapper = new Response(response);
 
             if(responseWrapper.isError()) {
-                error(undefined,"application",responseWrapper.getError(), responseWrapper.getErrorCode());
+                return error(undefined,"application",responseWrapper.getError(), responseWrapper.getErrorCode());
             } else if(cfg.success) {
                 cfg.success(responseWrapper);
             }
 
             if(!cfg.success && !cfg.successMessage) {
                 console.info('Unhandled ajax success: '+responseWrapper);
+            }
+
+            if (cfg.successMessage) {
+                event.trigger('info', cfg.successMessage);
             }
         };
 

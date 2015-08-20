@@ -15,3 +15,13 @@ module.exports.Project = mongoose.model('Project', new Schema({
     created:        { type: Date, default: Date.now},
     user:          [{user_id : ObjectId, roles:[String]}]
 }));
+
+module.exports.Diagram = mongoose.model('Diagram', new Schema({
+    id:             ObjectId,
+    clientId:       { type: String},
+    project:         { type: ObjectId, required: '{PATH} is required.'},
+    title:          { type: String, required: '{PATH} is required.' },
+    description:    { type: String},
+    created:        { type: Date, default: Date.now},
+    user:          [{user_id : ObjectId, roles:[String]}]
+}));

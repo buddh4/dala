@@ -402,3 +402,54 @@ text, tspan {
     -o-user-select: none;
     user-select: none;
 }
+
+/* GROWL */
+div.ui-tooltip {
+    max-width: 500px;
+}
+
+.growl.ui-tooltip {
+    margin: 0;
+    padding: 10px 10px;
+    border-radius: 10px;
+    background: rgb(48,48,48);
+    background: rgba(16,16,16, 0.75);
+    background: transparent\9;  /* For IE 7 - 8 */
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr=#4b101010, endColorstr=#4b101010); /* For IE 7 */
+    -ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#4b101010, endColorstr=#4b101010)"; /* For IE 8 */
+    box-shadow: 0 0 7px Black;
+}
+.growl.ui-tooltip .ui-tooltip-content {
+    color: white;
+}
+.growl.ui-tooltip.info .ui-tooltip-content {
+    padding-left: 55px;
+    max-width: 500px !important;
+    background: url("/images/icons/growl_info.png") no-repeat 0px 0px;
+}
+
+.growl.ui-tooltip.warn .ui-tooltip-content {
+    padding-left: 55px;
+    max-width: 500px !important;
+    background: url("/images/icons/growl_warning.png") no-repeat 0px 0px;
+}
+
+.growl.ui-tooltip.error .ui-tooltip-content {
+    padding-left: 55px;
+    background: url("/images/icons/growl_error.png") no-repeat 0px 0px;
+}
+
+.growl a.icon-close {
+    display: inline-block;
+    float: right;
+    width: 20px;
+    height: 20px;
+    background: url("/images/icons/close_20.png") no-repeat 0px 0px;
+}
+
+.growl.ui-tooltip .ui-tooltip-close {
+    display: inline-block;
+    position: relative;
+    float: right;
+}
+/* GROWL END*/

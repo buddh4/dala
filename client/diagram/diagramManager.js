@@ -28,15 +28,17 @@ var redoCommand = function(evt) {
 };
 
 var saveDiagram = function(evt) {
-    if(activeDiagramId){
+    var activeDiagram = getActiveDiagram();
+    if(activeDiagram && userManager.isLoggedIn()){
         //TODO: Remove Dockings.....
         //TODO: check if loggedIn, if not login first dialog... or save via browser cache ?
-        var diagramData = getActiveDiagram().asString();
         var data = {
-            "diagram" : diagramData,
-            "diagramId" : 'testId'
+            "diagram" : activeDiagram.asString(),
+            "diagramId" : activeDiagram.id,
+            "projectId" : activeDiagram.projectId,
+            "title" : activeDiagram.title
         };
-        client.post('/diagram/save', data, {
+        client.post('/project/saveDiagram', data, {
             success : function(response) {},
             error : function(status, error, errorcode) {},
             errorMessage : {
@@ -49,11 +51,17 @@ var saveDiagram = function(evt) {
 
 }
 
+var createDiagramId = function() {
+    return Date.now() + '_' +userManager.getUserId();
+}
+
 var newDiagramListener = function(evt) {
-    var diagramId = evt.data.ts;
+    var diagramId = evt.data.diagramId;
     var stageId = evt.data.stageId;
+    var projectId = evt.data.projectId;
+    var title = evt.data.title;
     evt.data.diagramId = diagramId;
-    diagrams[diagramId] = new Diagram({id:diagramId, container:'#'+stageId});
+    diagrams[diagramId] = new Diagram({id:diagramId, container:'#'+stageId, projectId: projectId, title: title});
     event.trigger('diagram_initialized', evt.data);
 };
 
@@ -79,5 +87,6 @@ var getActiveDiagram = function() {
 initListener();
 
 module.exports = {
-    getActiveDiagram: getActiveDiagram
+    getActiveDiagram: getActiveDiagram,
+    createDiagramId : createDiagramId
 };

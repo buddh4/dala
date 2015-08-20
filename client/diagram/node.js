@@ -64,25 +64,36 @@ Node.prototype.activate = function(nodeID) {
     }
 
     //The root element of the node, its supposed to be a group node
-    this.root = this.getRootSVG();
+    this.root = $.svg('#'+this.id);
 
     //TODO: how to import the config when activating ?
     var functions = this.template.getFunctions(this.config);
 
-    //We load the var script of the <functions> element.
-    eval(functions);
-    //the script variable was loaded through the eval function.
-    this.functions = script;
 
-    if(object.isDefined(this.functions)) {
-        this.functions.init(this.config);
-        this.initEventFunctions(this.config);
+    try {
+        //We load the var script of the <functions> element.
+        eval(functions);
+        //the script variable was loaded through the eval function.
+        if(script) {
+            this.functions = script;
+        }
+    } catch(error) {
+        this.functions = {};
     }
+
+    this.exec['init'];
 
     if(this.root) {
         //Note: the order of creation will determine the execution order !
-        new EditAddition(this);
-        new ResizeAddition(this);
+        if(this.template.config.edit) {
+            new EditAddition(this);
+        }
+
+        if(this.template.config.resize) {
+            new ResizeAddition(this);
+        }
+
+        this.initEventFunctions(this.config);
         this.root.attr({'dala:tmpl' : this.template.id});
     }
 
@@ -96,10 +107,10 @@ Node.prototype.initEventFunctions = function() {
     if(this.root.hoverable) {
         this.root.hoverable({
             in : function() {
-                that.functions.mouseover(that);
+                that.exec['mouseover'];
             },
             out : function() {
-                that.functions.mouseout(that);
+                that.exec['mouseout'];
             }
         });
     }
@@ -117,7 +128,7 @@ Node.prototype.initEventFunctions = function() {
 };
 
 Node.prototype.index = function() {
-    return dom.index(this.root.instance());
+    return this.root.$().index();
 };
 
 Node.prototype.firstChild = function() {
@@ -169,12 +180,8 @@ Node.prototype.getRelativePosition = function(x,y) {
     };
 };
 
-Node.prototype.getSVG = function(selector) {
-    return SVG.get(dom.find(this.root.instance(), selector));
-};
-
 Node.prototype.getInnerSVG = function(prefix) {
-    return SVG.get(this.getNodeSelector(prefix));
+    return $.qCache().svg(this.getNodeSelector(prefix));
 };
 
 Node.prototype.updateAdditions = function(type) {
@@ -206,7 +213,7 @@ Node.prototype.removeIncomingTransition = function(transition) {
 };
 
 Node.prototype.getRootSVG = function() {
-    return this.diagram.svg.get('#'+this.id);
+    return this.root;
 };
 
 Node.prototype.instance = function() {
@@ -233,22 +240,22 @@ Node.prototype.getRootNode = function() {
     return this.root.getRootNode();
 };
 
+Node.prototype.exec = function(functionName) {
+    if(this.functions && this.functions[functionName]) {
+        this.functions[functionName](this);
+    }
+}
+
 Node.prototype.select = function() {
     this.selected = true;
-
-    if(object.isDefined(this.functions) && object.isDefined(this.functions.select)) {
-        this.functions.select(this);
-    }
+    this.exec('select');
     this.executeAddition('select');
 
 };
 
 Node.prototype.deselect = function() {
     this.selected = false;
-    if(object.isDefined(this.functions) && object.isDefined(this.functions.deselect)) {
-        this.functions.deselect(this);
-    }
-
+    this.exec('deselect');
     this.executeAddition('deselect');
 };
 

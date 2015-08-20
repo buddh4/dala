@@ -1,13 +1,9 @@
-var mongoose = require('mongoose');
-var object = require('../util/object');
-var bcrypt = require('bcryptjs');
-var userModel = require('./userModel');
-var message = require('../core/message');
-var error = require('../core/error');
-var async = require('async');
-
 var Promise = require('bluebird');
+var DalaError = require('../../common/error');
+var message = require('../core/message');
+var bcrypt = require('bcryptjs');
 
+var userDao = require('./userDao');
 var projectService = require('../project/projectService');
 
 /**
@@ -20,21 +16,20 @@ var projectService = require('../project/projectService');
  */
 var createUserProfile = function(email, username, rawPassword) {
     return new Promise(function(resolve, reject) {
-        // encrypt password
-        var hash = bcrypt.hashSync(rawPassword, 10);
-
         var result = {};
 
         //Create User and default project
-        new userModel.User({
-            username: username,
-            email: email,
-            password: hash
-        }).save()
+        userDao.createUser(email, username, rawPassword)
             .then(function(user) {
                 result.user = user;
                 return _createDefaultProject(user);
-            }, reject)
+            }, function(err) {
+                if(error.code === DalaError.CODES.DB_DUPLICATE) {
+                    reject(new DalaError('Email already registered!', DalaError.CODES.DB_DUPLICATE, err));
+                } else {
+                    reject(new DalaError('An unknown error occured while creating user!', DalaError.CODES.UNKNOWN_APP_ERROR, err));
+                }
+            })
             .then(function(project) {
                 result.project = project;
                 resolve(result);
@@ -43,131 +38,37 @@ var createUserProfile = function(email, username, rawPassword) {
 };
 
 var _createDefaultProject = function(user) {
-    return projectService.createProject(user, 'default', 'This is your default project used for backups and diagrams with no other project relation');
+    return projectService.createProject(user, 'default', 'This is your default project used for backups and diagrams with no other project relation.');
 };
-
-/**
- * Creates a user group for the given roles.
- * This function returns a promise.
- *
- * @param roles an array of roles in with role.userId (String or ObjectId of User) and role.roles ([String])
- * @returns {bluebird|exports|module.exports} Bluebird Promise for the resulting Group
- */
-var createGroup = function(roles) {
-    return new Promise(function(resolve, reject) {
-        var userRoles = [];
-
-        _createRoles(roles, function(error, result) {
-            if(error) {
-                reject(error);
-            } else {
-                userRoles = result;
-            }
-        });
-
-        var group = new userModel.Group({
-            roles: userRoles
-        }).save().then(function(group) {
-            resolve(group);
-        }, function(error){
-            reject(error);
-        });
-    });
-};
-
-/**
- * Creates the userRoles for the individual user/role mappings.
- * @param roles the array of roles with role.uderId (String or ObjectId of User) role.roles ([String])
- * @param callback the callback with error and result parameters.
- * @private
- */
-var _createRoles = function(roles, callback) {
-    async.map(roles, _createUserRole, callback);
-}
-
-/**
- * Creates a single userRole mapping
- * @param role
- * @param callback
- * @returns {*}
- */
-var _createUserRole = function(role, callback) {
-    var userId = role.userId;
-
-    if(object.isString(userId)) {
-        userId = mongoose.Types.ObjectId(userId);
-    }
-
-    return new userModel.UserRole({
-        user: userId,
-        roles: role.roles
-    }).save().then(function(userRole) {
-            callback(null, userRole);
-        }, function(err) {
-            callback(err, userRole);
-        });
-};
-
 
 var loginUser = function(email, password) {
     return new Promise(function(resolve, reject) {
         var result = {};
-        getUserByEmail(email)
+        userDao.getUserByEmail(email)
             .then(function(user){
-                return new Promise(function (resolve, reject) {
-                    if(bcrypt.compareSync(password, user.password)) {
-                        resolve(user);
-                    } else {
-                        throw new error.APPError("Incorrect email and or password!");
-                }});
-            }).then(function(user) {
+                return _checkUserLogin(user, password);
+            }, reject)
+            .then(function(user) {
                 result.user = user;
                 return projectService.getProjectsByUserId(user._id);
-            }).then(function(projects) {
+            }, reject)
+            .then(function(projects) {
                 result.projects = projects;
                 resolve(result);
-            }).catch(function(e) {
-                reject(e);
-            });
+            }, reject);
     });
 };
 
-var getUserByEmail = function(email) {
+var _checkUserLogin = function(user, loginPassword) {
     return new Promise(function (resolve, reject) {
-        userModel.User.findOne({ email: email }, 'id username email password', function(err, user) {
-            if(err) {
-                throw new error.DBError("Error while loading user by email!", err);
-            }else if(!user) {
-                throw new error.APPError("Incorrect email and or password!");
-            } else  {
-                resolve(user);
-            }
-        });
-    });
-};
-
-/**
- * Given a user object:
- *
- *  - Store the user object as a req.user
- *  - Make the user object available to templates as #{user}
- *  - Set a session cookie with the user object
- *
- *  @param {Object} req - The http request object.
- *  @param {Object} res - The http response object.
- *  @param {Object} user - A user object.
- */
-var createUserSession = function(req, res, user) {
-    var cleanUser = {
-        id: user._id.toString(),
-        username: user.username,
-        email:      user.email
-    };
-
-    req.session.user = cleanUser;
-    req.user = cleanUser;
-    res.locals.user = cleanUser;
-};
+        if(!user) {
+            reject(new DalaError("Incorrect email!", DalaError.CODES.USER_LOGIN_INVALID_EMAIL));
+        } else if(!bcrypt.compareSync(loginPassword, user.password)) {
+            reject(new DalaError("Incorrect password!", DalaError.CODES.USER_LOGIN_INCORRECT_PASSWORD));
+        } else {
+            resolve(user);
+    }});
+}
 
 /**
  * A simple authentication middleware for Express.
@@ -205,9 +106,7 @@ var requireLogin = function(req, res, next) {
 
 module.exports = {
     createUserProfile: createUserProfile,
-    createUserSession: createUserSession,
     auth : auth,
     requireLogin : requireLogin,
-    createGroup:createGroup,
     loginUser:loginUser
 };

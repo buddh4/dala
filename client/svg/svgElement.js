@@ -1,4 +1,4 @@
-var XMLElement = require('../xml/xmlElement');
+var DomElement = require('../dom/domElement');
 var Transform = require('./transform');
 var Style = require('./style');
 var PathData = require('./pathData');
@@ -22,6 +22,7 @@ var SVGElement = function(name, svgRoot, cfg, attributeSetter) {
     this.attributeSetter.transform = this.transformationAttributeSetter;
     this.attributeSetter.style = this.styleAttributeSetter;
     this.attributeSetter.d = this.pathDataAttributeSetter;
+    this.SVGElement = true;
 
     // If first attribute is not a string we assume a svg node constructor call.
     if(!object.isString(name)) {
@@ -31,11 +32,11 @@ var SVGElement = function(name, svgRoot, cfg, attributeSetter) {
     }
 
     this.root = svgRoot;
-    XMLElement.call(this, name, cfg, this.attributeSetter);
+    DomElement.call(this, name, cfg, this.attributeSetter);
 };
 
-SVGElement.prototype = Object.create(XMLElement.prototype);
-var _super = XMLElement.prototype;
+SVGElement.prototype = Object.create(DomElement.prototype);
+var _super = DomElement.prototype;
 
 SVGElement.prototype.transformationAttributeSetter = function(trnasformationString) {
     return new Transform(trnasformationString);
@@ -66,11 +67,11 @@ SVGElement.prototype.styleAttributeSetter = function(trnasformationString) {
 };
 
 SVGElement.prototype.remove = function() {
-    dom.remove(this.instance());
+    this.$().remove();
 };
 
 SVGElement.prototype.firstChild = function() {
-    return new SVGElement(dom.firstChild(this.instance()));
+    return $.qCache().svg(this.$().children().first());
 };
 
 SVGElement.prototype.back = function() {

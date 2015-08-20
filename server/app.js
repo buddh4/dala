@@ -6,7 +6,15 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var userService = require('./user/userService');
+var db = require('./core/db');
 //var favicon = require('serve-favicon');
+
+//Database Connection
+db.connect().then(function() {
+  console.log('DB connection established');
+}, function(err) {
+  console.error('Could not connect to database');
+});
 
 var app = express();
 
@@ -20,10 +28,8 @@ app.engine('handlebars', exphbs({
     }
   }
 }));
-app.set('view engine', 'handlebars');
 
-//Database Connection
-mongoose.connect('mongodb://localhost/dala');
+app.set('view engine', 'handlebars');
 
 //Session Setting
 app.use(session({
@@ -54,7 +60,7 @@ app.use(express.static(path.join(__dirname, '../public')));
 app.use('/', require('./core/indexRoute'));
 app.use('/user', require('./user/userRoute'));
 app.use('/service', require('./core/serviceRoute'));
-app.use('/diagram', require('./project/projectRoute'));
+app.use('/project', require('./project/projectRoute'));
 app.use('/template', require('./template/templateRoute'));
 
 // catch 404 and forward to error handler
