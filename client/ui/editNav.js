@@ -94,6 +94,10 @@ var nodeSelectListener = function(evt) {
     editNode = evt.data;
     var diagram = editNode.diagram;
 
+    if(!editNode.additions.edit) {
+        return;
+    }
+
     // Create a dynamic table by means of the edit addition config fields of the current node which is taken from the tmpl.
     var $editTable = $(document.createElement('table'));
     object.each(editNode.additions.edit.config, function(key, value) {
@@ -101,6 +105,14 @@ var nodeSelectListener = function(evt) {
 
         //TODO: we should allow adding new types to allow templates to add edit logic
         switch(editConfigItem.type) {
+            //TODO: we should be able to just define stroke and render stroke-width/color/dash through the same key
+            case 'stroke-width':
+                appendRangeInputRow($editTable, key, editConfigItem, 1, 10);
+                break;
+            case 'stroke-dash':
+                appendRangeInputRow($editTable, key, editConfigItem, 0, 3);
+                break;
+            case 'stroke':
             case 'color':
                 appendColorInputRow($editTable, key, editConfigItem);
                 break;
@@ -125,6 +137,22 @@ var nodeSelectListener = function(evt) {
 var appendColorInputRow = function($editTable, editKey, editConfigItem) {
     var $input = $(document.createElement('input'));
     $input.attr('type', 'color');
+    $input.val(editConfigItem.currentVal);
+    $input.on('change', function() {
+        editNode.diagram.setEditValue(editNode, editKey, $(this).val());
+    });
+    appendRow($editTable, $input, editConfigItem);
+};
+
+/**
+ * Appends a color input field to the given table node with the editConfig values.
+ */
+var appendRangeInputRow = function($editTable, editKey, editConfigItem, min, max) {
+    var $input = $(document.createElement('input'));
+    $input.attr('type', 'range');
+    $input.attr('min', min);
+    $input.attr('max', max);
+    $input.attr('type', 'range');
     $input.val(editConfigItem.currentVal);
     $input.on('change', function() {
         editNode.diagram.setEditValue(editNode, editKey, $(this).val());

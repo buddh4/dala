@@ -1,6 +1,8 @@
 var object = require('../util/object');
 var string = require('../util/string');
 
+var REGEXP_PROPERTY_SUFFIX = ':[a-zA-Z0-9#,\.]*(;|$)';
+
 var Style = function(key, value) {
     if(object.isString(key) && !object.isDefined(value)) {
         this.value = key;
@@ -22,7 +24,7 @@ Style.prototype.set = function(key, value) {
         }
 
         if(this.value.indexOf(key+':') >= 0) {
-            var regExp = new RegExp(key+':[a-zA-Z0-9#\.]*(;|$)', 'gi');
+            var regExp = new RegExp(key+REGEXP_PROPERTY_SUFFIX, 'gi');
             this.value = this.value.replace(regExp, this.createValueString(key,value));
         } else {
             this.value += (string.endsWith(this.value,';')) ? this.createValueString(key,value) : ';' + this.createValueString(key,value);
@@ -33,7 +35,7 @@ Style.prototype.set = function(key, value) {
 };
 
 Style.prototype.get = function(key) {
-    var regExp = new RegExp(key+':[a-zA-Z0-9#\.]*(;|$)', 'gi');
+    var regExp = new RegExp(key+REGEXP_PROPERTY_SUFFIX, 'gi');
     var result = this.value.match(regExp);
     if(object.isArray(result)) {
         var value = result[0];

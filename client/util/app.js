@@ -77,19 +77,34 @@ var createFeatureString = function(feature, value) {
 };
 
 var getPoint = function(x, y) {
-    if(object.isDefined(x) && object.isDefined(x.x) && object.isDefined(x.y)) {
+    if(x && object.isDefined(x.x) && object.isDefined(x.y)) {
         return x;
     } else if(!isNaN(x) && !isNaN(y)) {
         return {
             x : x,
             y : y
         };
+    } else if(object.isDefined(x) && object.isDefined(y)) {
+        return toPoint(x,y);
     }
+};
+
+var isMinDist = function(from, to, minDist) {
+    return Math.abs(to.x - from.x) > minDist || Math.abs(to.y - from.y) > minDist;
+};
+
+var toPoint = function(x,y) {
+    x = (object.isString(x)) ? parseFloat(x) : x;
+    y = (object.isString(y)) ? parseFloat(y) : y;
+
+    return {x:x,y:y};
 };
 
 module.exports = {
     parseFeatureString:parseFeatureString,
     createFeatureString:createFeatureString,
     parseFeatureStrings:parseFeatureStrings,
-    getPoint : getPoint
+    getPoint : getPoint,
+    isMinDist : isMinDist,
+    toPoint : getPoint
 };

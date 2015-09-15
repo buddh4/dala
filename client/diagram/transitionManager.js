@@ -25,7 +25,7 @@ var TransitionManager = function(diagram) {
 
     this.command(CMD_ADD, this.importTransitionAction, this.deleteTransitionAction);
     this.command(CMD_DEL, this.deleteTransitionAction, this.importTransitionAction);
-    this.command(CMD_DOC_CREATED, this.importTransitionAction, this.deleteDockingAction);
+    this.command(CMD_DOC_CREATED, this.importTransitionAction, this.deleteKnobAction);
     this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
 };
 
@@ -36,18 +36,18 @@ TransitionManager.prototype.transitionDockingDropListener = function(evt) {
     if (evt.data) {
         var transition = evt.data.transition;
         var dockingIndex = evt.data.dockingIndex;
-        var docking = this.getTransition(transition).docking.getDockingByIndex(dockingIndex);
+        var docking = this.getTransition(transition).knobManager.getDockingByIndex(dockingIndex);
 
         this.addCmd(CMD_DOC_DROPPED,
-            [transition, dockingIndex, docking.marker.dxSum, docking.marker.dySum],
-            [transition, dockingIndex, (-1 * docking.marker.dxSum), (-1 * docking.marker.dySum)]);
+            [transition, dockingIndex, docking.node.root.dxSum, docking.node.root.dySum],
+            [transition, dockingIndex, (-1 * docking.node.root.dxSum), (-1 * docking.node.root.dySum)]);
     }
 };
 
 TransitionManager.prototype.dropDockingAction = function(transition, dockingIndex, dxSum, dySum) {
     transition = this.getTransition(transition);
     if(transition) {
-        var docking = transition.docking.getDockingByIndex(dockingIndex);
+        var docking = transition.knobManager.getDockingByIndex(dockingIndex);
         docking.triggerDrag(dxSum, dySum);
     }
 }
@@ -60,10 +60,10 @@ TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
     }
 };
 
-TransitionManager.prototype.deleteDockingAction = function(transition, dockingIndex) {
+TransitionManager.prototype.deleteKnobAction = function(transition, dockingIndex) {
     transition = this.getTransition(transition);
     if(transition) {
-        transition.docking.getDockingByIndex(dockingIndex).remove();
+        transition.knobManager.getDockingByIndex(dockingIndex).remove();
     }
 }
 
@@ -131,11 +131,15 @@ TransitionManager.prototype.getTransition = function(id) {
 };
 
 TransitionManager.prototype.startDockingDragListener = function(evt) {
-    this.edgeDockingDragListener(evt, 'Start');
+    if(!this.dragTransition) {
+       // this.edgeDockingDragListener(evt, 'Start');
+    }
 };
 
 TransitionManager.prototype.endDockingDragListener = function(evt) {
-    this.edgeDockingDragListener(evt,'End');
+    if(!this.dragTransition) {
+        //this.edgeDockingDragListener(evt, 'End');
+    }
 };
 
 TransitionManager.prototype.edgeDockingDragListener = function(evt, dockingType) {
@@ -150,7 +154,7 @@ TransitionManager.prototype.edgeDockingDragListener = function(evt, dockingType)
             transition['set'+dockingType+'Node'](hoverNode);
         } else if(hoverNode === transition['get'+dockingType+'Node']()){
             //We are hovering the curretn start/end node so we just set a relative docking position
-            transition['setRelative'+dockingType+'Docking'](mouse.x, mouse.y);
+            transition['setRelative'+dockingType+'Knob'](mouse.x, mouse.y);
             transition.update();
         } else {
             //We are hovering empty space so we just update the

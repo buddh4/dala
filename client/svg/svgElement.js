@@ -6,7 +6,7 @@ var util = require('../util/util');
 var event = require('../core/event');
 
 var dom = util.dom;
-var object = util.object;
+var object = require('../util/object');
 
 /*
  * Constructor for SVG Elements
@@ -35,8 +35,7 @@ var SVGElement = function(name, svgRoot, cfg, attributeSetter) {
     DomElement.call(this, name, cfg, this.attributeSetter);
 };
 
-SVGElement.prototype = Object.create(DomElement.prototype);
-var _super = DomElement.prototype;
+util.inherits(SVGElement, DomElement);
 
 SVGElement.prototype.transformationAttributeSetter = function(trnasformationString) {
     return new Transform(trnasformationString);
@@ -60,6 +59,34 @@ SVGElement.prototype.data = function(pathData) {
 
 SVGElement.prototype.getRootNode = function() {
     return this.root.instance();
+};
+
+SVGElement.prototype.append = function(element) {
+    var result;
+    if(arguments.length > 1) {
+        result = [];
+        var that = this;
+        object.each(arguments, function(index, val) {
+            result.push(that.append(val));
+        })
+    } else if(arguments.length === 1) {
+        result =  util.dom.appendSVGElement(this.instance(), arguments[0]);
+    }
+    return result;
+};
+
+SVGElement.prototype.prepend = function(element) {
+    var result;
+    if(arguments.length > 1) {
+        result = [];
+        var that = this;
+        object.each(arguments, function(index, val) {
+            result.push(that.prepend(val));
+        })
+    } else if(arguments.length === 1) {
+        result =  util.dom.prependSVGElement(this.instance(), arguments[0]);
+    }
+    return result;
 };
 
 SVGElement.prototype.styleAttributeSetter = function(trnasformationString) {
@@ -119,6 +146,60 @@ SVGElement.prototype.hide = function() {
 SVGElement.prototype.show = function() {
     this.style('fill-opacity', '1.0');
     this.style('stroke-opacity', '1.0');
+};
+
+SVGElement.prototype.stroke = function(color) {
+    return this.style('stroke', color);
+};
+
+SVGElement.prototype.strokeDasharray = function(type) {
+    if(!type) {
+        return this.style('stroke-dasharray');
+    }
+    if(object.isString(type)) {
+        this.style('stroke-dasharray', type);
+    } else {
+
+    }
+};
+
+SVGElement.prototype.strokeDashType = function(type) {
+    if(!type) {
+        switch(this.strokeDasharray()) {
+            case "5,5":
+                return 1;
+            case "10,10":
+                return 2;
+            case "20,10,5,5,5,10":
+                return 3;
+            default:
+                return 0;
+        }
+    } else {
+        switch(type) {
+            case '1':
+            case 1:
+                this.strokeDasharray("5,5");
+                break;
+            case '2':
+            case 2:
+                this.strokeDasharray("10,10");
+                break;
+            case '3':
+            case 3:
+                this.strokeDasharray("20,10,5,5,5,10");
+                break;
+            default:
+                this.strokeDasharray("none");
+                break;
+
+        }
+    }
+
+}
+
+SVGElement.prototype.strokeWidth = function(width) {
+    return this.style('stroke-width', width);
 };
 
 SVGElement.prototype.style = function(key, value) {
@@ -217,6 +298,46 @@ SVGElement.prototype.overlays = function() {
     });
     //console.log('result:'+result);
     return result;
+};
+
+/**
+ * Determines the location of a given position relative to the svg element.
+ *
+ * @param node
+ * @param position
+ * @returns {*}
+ */
+SVGElement.prototype.getRelativeLocation = function(position) {
+    var center = this.getCenter();
+    var g = util.math.Line.calcGradient(center, position);
+
+    if(position.y < center.y) { //TOP
+        if (position.x >= center.x) { //RIGHT
+            if (g > -1) {
+                return 'right';
+            } else {
+                return 'top';
+            }
+        } else if (g < 1) {//TOP/LEFT
+            return 'left';
+        } else {
+            return 'top' ;
+        }
+    } else { //BOTTOM
+        if(position.x >= center.x) { //RIGHT
+            if(g < 1) {
+                return 'right';
+            } else {
+                return 'bottom';
+            }
+        } else { //BOTTOM/LEFT
+            if(g < -1) {
+                return 'bottom';
+            } else {
+                return 'left';
+            }
+        }
+    }
 };
 
 SVGElement.prototype.overlayCheck = function(position) {
@@ -333,6 +454,10 @@ SVGElement.prototype.mousedown = function(handler) {
     event.on(this.instance(), 'mousedown', handler);
 };
 
+SVGElement.prototype.mouseup = function(handler) {
+    event.on(this.instance(), 'mouseup', handler);
+};
+
 SVGElement.prototype.mouseover = function(handler) {
     event.on(this.instance(), 'mouseover', handler);
 };
@@ -343,10 +468,6 @@ SVGElement.prototype.mouseout = function(handler) {
 
 SVGElement.prototype.dblclick= function(handler) {
     event.on(this.instance(), 'dblclick', handler);
-};
-
-SVGElement.prototype.mousedown= function(handler) {
-    event.on(this.instance(), 'mousedown', handler);
 };
 
 SVGElement.prototype.mouseenter= function(handler) {

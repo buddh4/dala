@@ -3,7 +3,6 @@ var Resize = require('./resize');
 
 var ResizeAddition = function(node) {
     this.node = node;
-    this.node.additions.resize = this;
     this.resize = new Resize(this.node, this.node.diagram);
 };
 
@@ -43,5 +42,7 @@ ResizeAddition.prototype.contentChanged = function() {
 ResizeAddition.prototype.get = function() {
     return this.resize;
 };
+
+ResizeAddition.requireConfig = true;
 
 module.exports = ResizeAddition;

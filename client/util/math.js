@@ -1,3 +1,5 @@
+var object = require('./object');
+
 var calcLineIntersection = function(pa1, pa2, pb1, pb2) {
     return new Line(pa1,pa2).calcLineIntercept(new Line(pb1,pb2));
 };
@@ -113,24 +115,24 @@ Line.calcDistance = function(p1, p2) {
     return Math.sqrt(Math.pow((p2.y - p1.y),2) + Math.pow((p2.x - p1.x),2));
 }
 
-var Vector = function(x, y) {
+var SimpleVector = function(x, y) {
     this.x = x;
     this.y = y;
 };
 
-Vector.prototype.dot = function(that) {
+SimpleVector.prototype.dot = function(that) {
     return this.x*that.x + this.y*that.y;
 };
 
-Vector.fromPoints = function(p1, p2) {
-    return new Vector(
+SimpleVector.fromPoints = function(p1, p2) {
+    return new SimpleVector(
         p2.x - p1.x,
         p2.y - p1.y
     );
 };
 
-Vector.prototype.subtract = function(that) {
-    return new Vector(this.x - that.x, this.y - that.y);
+SimpleVector.prototype.subtract = function(that) {
+    return new SimpleVector(this.x - that.x, this.y - that.y);
 };
 
 var Ellipse = function(cx, cy, rx, ry) {
@@ -156,12 +158,12 @@ Ellipse.prototype.calcLineIntercept = function(p1,p2) {
         p1 = p1.p1;
     }
 
-    var origin = new Vector(p1.x, p1.y);
-    var dir = Vector.fromPoints(p1, p2);
-    var center = new Vector(this.c.x, this.c.y);
+    var origin = new SimpleVector(p1.x, p1.y);
+    var dir = SimpleVector.fromPoints(p1, p2);
+    var center = new SimpleVector(this.c.x, this.c.y);
     var diff = origin.subtract(center);
-    var mDir = new Vector(dir.x/(this.rx*this.rx),  dir.y/(this.ry*this.ry));
-    var mDiff = new Vector(diff.x/(this.rx*this.rx), diff.y/(this.ry*this.ry));
+    var mDir = new SimpleVector(dir.x/(this.rx*this.rx),  dir.y/(this.ry*this.ry));
+    var mDiff = new SimpleVector(diff.x/(this.rx*this.rx), diff.y/(this.ry*this.ry));
 
     var aDiff = dir.dot(mDir);
     var bDiff = dir.dot(mDiff);
@@ -243,10 +245,124 @@ var lerp = function(a, b, t) {
     };
 };
 
+var Vector = function() {
+    this.vectors = [];
+    var currentArr;
+    for(var i = 0; i < arguments.length; i++) {
+        if(object.isArray(arguments[i])) {
+            if(currentArr) {
+                this.add(currentArr);
+                currentArr = undefined;
+            }
+            this.add(arguments[i]);
+        } else {
+            currentArr = currentArr || [];
+            currentArr.push(arguments[i]);
+        }
+    };
 
+    if(currentArr) {
+        this.add(currentArr);
+        delete currentArr;
+    }
+};
+
+/**
+ * Adds a vector value either by providing seperated arguments or an array of values
+ */
+Vector.prototype.add = function() {
+    var value;
+    if(arguments.length > 1) {
+        value = [];
+        for(var i = 0; i < arguments.length; i++) {
+            value.push(arguments[i]);
+        }
+    } else if(arguments.length === 1) {
+        value = arguments[0];
+    }
+    this.vectors.push(value);
+};
+
+Vector.prototype.value = function() {
+    try {
+        var path = object.isArray(arguments[0]) ? arguments[0] : Array.prototype.slice.call(arguments);
+        return getVectorValue(this.vectors, path);
+    } catch(e) {
+        console.error('get value vector failed - '+this.vectors+' args: '+arguments);
+    }
+};
+
+Vector.prototype.clear = function() {
+    this.vectors = [];
+};
+
+Vector.prototype.setValue = function(pathArr, value) {
+    try {
+        pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+        var parentPath = pathArr.splice(0, pathArr.length -1);
+        this.value(parentPath)[pathArr[pathArr.length -1]] = value;
+    } catch(e) {
+        console.error('set value vector failed - '+this.vectors+' args: '+arguments);
+    }
+};
+
+Vector.prototype.insert = function(pathArr, value) {
+    try {
+        pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+        var parentPath = pathArr.splice(0, pathArr.length -1);
+        this.value(parentPath).splice(pathArr[pathArr.length -1], 0, value);
+    } catch(e) {
+        console.error('set value vector failed - '+this.vectors+' args: '+arguments);
+    }
+};
+
+Vector.prototype.length = function() {
+    return this.vectors.length;
+}
+
+Vector.prototype.remove = function(pathArr) {
+    pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+    var parentPath = pathArr.splice(0, pathArr.length -1);
+    this.value(parentPath).splice(pathArr[pathArr.length -1], 1);
+};
+
+Vector.prototype.last = function() {
+    return this.vectors[this.vectors.length -1];
+};
+
+Vector.prototype.each = function(handler) {
+    object.each(this.vectors, function(index, value) {
+        handler(index,value);
+    });
+};
+
+/**
+ * Note the indexes can be negative to retrieve values from the end of the vector e.g. -1 is the last
+ * @param vectorArr
+ * @param args
+ * @returns {*}
+ */
+var getVectorValue = function(vectorArr, args) {
+    if(!args) {
+        return vectorArr;
+    }else if(object.isArray(args)) {
+        switch(args.length) {
+            case 0:
+                return vectorArr;
+            case 1:
+                return object.valueByIndex(vectorArr, args[0]);
+            default:
+                var index = args[0];
+                return getVectorValue(vectorArr[index], args.splice(1));
+        }
+    } else {
+        return object.valueByIndex(vectorArr, args);
+    }
+};
 module.exports = {
     calcLineIntersection : calcLineIntersection,
     Line : Line,
     Circle : Circle,
-    Ellipse : Ellipse
+    Ellipse : Ellipse,
+    Vector : Vector
 };

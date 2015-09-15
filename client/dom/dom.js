@@ -21,7 +21,12 @@ var getJQueryNode = function(node) {
     if(object.isString(node)) {
         return query(node);
     } else if(node.getAttribute){
-        return $.qCache(node.getAttribute('id'), true);
+        var id = node.getAttribute('id');
+        if(id) {
+            return $.qCache('#'+node.getAttribute('id'), true);
+        } else {
+            return $(node);
+        }
     } else if(node.jQuery) {
         return node;
     } else {
@@ -122,7 +127,7 @@ var addSVGElement = function(container, element, prepend, text, insertAfter) {
     return element;
 };
 
-var importSVG = function(container, svgXML) {
+var importSVG = function(container, svgXML, prepend) {
     var $svgXML, name, attributes;
 
     if(svgXML.jquery) {
@@ -155,7 +160,11 @@ var importSVG = function(container, svgXML) {
         }
     };
 
-    appendSVGElement(container, element, _getChildText($svgXML));
+    if(!prepend) {
+        appendSVGElement(container, element, _getChildText($svgXML));
+    } else {
+        prependSVGElement(container, element, _getChildText($svgXML));
+    }
 
     $svgXML.children().each(function(index, child) {
         importSVG(element.instance(), child);
@@ -198,7 +207,7 @@ var parseNodeXML = function(node) {
 };
 
 var parseXML = function(str) {
-    return $.parseXML(str);
+    return xml.parseXML(str);
 };
 
 var parseNodeJSON = function(node) {

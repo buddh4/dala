@@ -146,6 +146,17 @@ h3 {
      overflow:hidden;
 
  }
+
+ #diagramToolTip {
+     position:fixed;
+     right: 35px;
+     top: 170px;
+ }
+
+ #editNav {
+     padding:5px;
+     margin-bottom:5px;
+ }
  
  #editNav input, #editNav textarea {
      width: 200px;
@@ -187,6 +198,10 @@ h3 {
  #editNav #editSTIco {
      background: url("/images/icons/icon-transitiontext-st.png") 0 0 no-repeat;
      background-position: center; 
+ }
+
+ #infoBox {
+     padding:5px;
  }
  
   .sidebar {

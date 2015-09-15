@@ -6,9 +6,7 @@ var util = require('../util/util');
 var dockingType = require('./dockingType');
 var SVG = require('../svg/svg');
 var event = require('../core/event');
-var TransitionAddition = require('./transitionAddition');
-var ResizeAddition = require('./resizeAddition');
-var EditAddition = require('./editAddition');
+var nodeAdditions = require('./nodeAdditions');
 
 var object = util.object;
 var dom = util.dom;
@@ -24,19 +22,18 @@ var Node = function(tmpl, config, diagram) {
     this.template = tmpl;
     this.config = config;
     this.visible = true;
-    this.additions = {};
-    new TransitionAddition(this);
 };
 
 /**
  * This method renders the node to the stage and initializes all event handlers
- *
+ * With the part argument we can import the node to another svg part than the default which is the main stage.
+ * This is used for example for the defs (which is technically not a real node)
  *
  * @returns {Node_L7.Node.prototype}
  */
-Node.prototype.init = function() {
+Node.prototype.init = function(part, prepend) {
     //ADD Element to stage
-    this.diagram.import(this.template.getSVGString(this.config));
+    this.diagram.import(this.template.getSVGString(this.config), part, prepend);
     return this.activate();
 };
 
@@ -66,38 +63,15 @@ Node.prototype.activate = function(nodeID) {
     //The root element of the node, its supposed to be a group node
     this.root = $.svg('#'+this.id);
 
-    //TODO: how to import the config when activating ?
-    var functions = this.template.getFunctions(this.config);
 
-
-    try {
-        //We load the var script of the <functions> element.
-        eval(functions);
-        //the script variable was loaded through the eval function.
-        if(script) {
-            this.functions = script;
-        }
-    } catch(error) {
-        this.functions = {};
-    }
-
-    this.exec['init'];
+    nodeAdditions.init(this);
 
     if(this.root) {
-        //Note: the order of creation will determine the execution order !
-        if(this.template.config.edit) {
-            new EditAddition(this);
-        }
-
-        if(this.template.config.resize) {
-            new ResizeAddition(this);
-        }
-
         this.initEventFunctions(this.config);
         this.root.attr({'dala:tmpl' : this.template.id});
     }
 
-    this.executeAddition('activate');
+    this.exec('activate');
     return this;
 };
 
@@ -107,23 +81,27 @@ Node.prototype.initEventFunctions = function() {
     if(this.root.hoverable) {
         this.root.hoverable({
             in : function() {
-                that.exec['mouseover'];
+                that.exec('mouseover');
             },
             out : function() {
-                that.exec['mouseout'];
+                that.exec('mouseout');
             }
         });
     }
 
     this.root.dblclick(function(evt) {
-        that.executeAddition('dbclick');
+        that.exec('dbclick');
     });
 
     this.root.mousedown(function(evt) {
         if(!evt.ctrlKey) {
-            that.executeAddition('mousedown', [evt]);
+            that.exec('mousedown', [evt]);
             that.event.trigger('node_mousedown', that, evt);
         }
+    });
+
+    this.root.mouseup(function(evt) {
+        that.exec('mouseup', [evt]);
     });
 };
 
@@ -142,7 +120,7 @@ Node.prototype.moveUp = function() {
 
     //TODO: as command event !
     dom.moveDown(this.root.instance());
-    this.executeAddition('moveUp');
+    this.exec('moveUp');
 };
 
 Node.prototype.moveDown = function() {
@@ -151,32 +129,24 @@ Node.prototype.moveDown = function() {
 
     //TODO: as command event !
     dom.moveUp(this.root.instance());
-    this.executeAddition('moveDown');
+    this.exec('moveDown');
 };
 
 Node.prototype.remove = function() {
     this.event.trigger('node_removed', this);
-    this.executeAddition('remove');
+    this.exec('remove');
     this.root.remove();
-};
-
-Node.prototype.executeAddition = function(func, args) {
-    object.each(this.additions, function(key, addition) {
-        if(object.isDefined(addition) && object.isFunction(addition[func])) {
-            addition[func].apply(addition, args);
-        }
-    });
 };
 
 Node.prototype.moveTo = function(x, y) {
     this.root.moveTo(x, y);
-    this.executeAddition('drag');
+    this.exec('drag');
 };
 
-Node.prototype.getRelativePosition = function(x,y) {
+Node.prototype.position = function(x,y) {
     return {
-        x : x - this.x(),
-        y : y - this.y()
+        x : this.x(),
+        y : this.y()
     };
 };
 
@@ -185,7 +155,7 @@ Node.prototype.getInnerSVG = function(prefix) {
 };
 
 Node.prototype.updateAdditions = function(type) {
-    this.executeAddition('update');
+    this.exec('update');
 };
 
 Node.prototype.getDockingPosition = function(position, orientationIn) {
@@ -240,23 +210,31 @@ Node.prototype.getRootNode = function() {
     return this.root.getRootNode();
 };
 
-Node.prototype.exec = function(functionName) {
-    if(this.functions && this.functions[functionName]) {
-        this.functions[functionName](this);
+Node.prototype.exec = function(func, args) {
+    args = args || this;
+    if(this.template.handler && this.template.handler[func]) {
+        this.template.handler[func](args);
     }
+    this.executeAddition(func, args);
 }
+
+Node.prototype.executeAddition = function(func, args) {
+    object.each(this.additions, function(key, addition) {
+        if(object.isDefined(addition) && object.isFunction(addition[func])) {
+            addition[func].apply(addition, args);
+        }
+    });
+};
 
 Node.prototype.select = function() {
     this.selected = true;
     this.exec('select');
-    this.executeAddition('select');
 
 };
 
 Node.prototype.deselect = function() {
     this.selected = false;
     this.exec('deselect');
-    this.executeAddition('deselect');
 };
 
 Node.prototype.extractNodeId = function(rawId) {
@@ -319,6 +297,17 @@ Node.prototype.getRelativePosition = function(pageX,pageY) {
         x: p.x - this.x(),
         y: p.y - this.y()
     };
+};
+
+/**
+ * Determines the location of a given position relative to the node node.
+ *
+ * @param node
+ * @param position
+ * @returns {*}
+ */
+Node.prototype.getRelativeLocation = function(position) {
+    return this.root.getRelativeLocation(position);
 };
 
 Node.prototype.getOrientation = function(relative) {

@@ -12,14 +12,18 @@ var util = require('../util/util');
 var event = require('../core/event');
 var SVG = require('../svg/svg');
 var PathData = require('../svg/pathData'); //Rather implement svg.createpath().start().line()...
-var templateManager = require('./templateManager');
+var templateManager = require('./templateManager').init();
 var commandManager = require('../core/commandManager');
 var SelectionManager = require('./selectionManager');
 var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
-var DockingManager = require('./dockingManager');
+var KnobManager = require('./knobManager');
+require('./dockingTemplate');
+var Promise = require('bluebird');
 var Config = require('../core/config');
 var xml = require('../util/xml');
+
+var Helper = require('./helper');
 
 var object = util.object;
 var dom = util.dom;
@@ -68,7 +72,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     // This helper class manages the selection of nodes/transitions
     this.selectionMgr = new SelectionManager(this);
     // Responsible for tracking and accessing all dockings on the diagram
-    this.dockingMgr = new DockingManager(this);
+    this.knobMgr = new KnobManager(this);
 
     // Build the SVG stage within the container
     this.svg = new SVG(this.$containerNode.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
@@ -79,9 +83,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.scale = 1;
 
     //TODO: load defs/marker on demand
-    this.loadDefs();
+    this.initDefs();
 
     this.mainPart = this.svg.createPart('main', true);
+    this.helper = new Helper(this);
 };
 
 Diagram.prototype.updateHandler = function(command) {
@@ -137,23 +142,25 @@ Diagram.prototype.initEvents = function() {
             evt.preventDefault();
             var moveSelection = function(evt) {
                 var stagePosition = that.getStagePosition(evt);
-                var path = new PathData().start(startPosition.x, startPosition.y)
-                    .line(startPosition.x, stagePosition.y)
-                    .line(stagePosition.x, stagePosition.y)
-                    .line(stagePosition.x, startPosition.y)
+                var path = new PathData().start(startPosition)
+                    .line(startPosition)
+                    .line(stagePosition)
+                    .line(stagePosition)
                     .complete();
-                if(!object.isDefined(that.dragSelection)) {
+                if(!that.dragSelection) {
                     that.dragSelection = that.svg.path({
                         d : path,
                         style : 'stroke:gray;stroke-width:1px;stroke-dasharray:5,5;fill:none;'
                     });
                 } else {
+                    //Move selection away from mouse pointer
                     var alignedMouseX = stagePosition.x -1;
                     var alignedMouseY = stagePosition.y -1;
-                    that.dragSelection.data().clear().start(startPosition.x, startPosition.y)
-                        .line(startPosition.x, alignedMouseY)
-                        .line(alignedMouseX, alignedMouseY)
-                        .line(alignedMouseX, startPosition.y)
+
+                    that.dragSelection.data().clear().start(startPosition)
+                        .line({x: startPosition.x,  y: alignedMouseY})
+                        .line({x: alignedMouseX,    y: alignedMouseY})
+                        .line({x: alignedMouseX,    y: startPosition.y})
                         .complete();
                     that.dragSelection.update();
 
@@ -165,11 +172,12 @@ Diagram.prototype.initEvents = function() {
                         }
                     });
 
-                    object.each(that.dockingMgr.dockings, function(id, docking) {
+
+                    object.each(that.knobMgr.dockings, function(id, docking) {
                         if(that.dragSelection.overlays(docking.position())) {
-                            that.selectionMgr.addSelectedDocking(docking);
+                            that.selectionMgr.addSelectedNode(docking.node);
                         } else {
-                            that.selectionMgr.removeSelectedDocking(docking);
+                            that.selectionMgr.removeSelectedNode(docking.node);
                         }
                     });
                 }
@@ -198,12 +206,34 @@ Diagram.prototype.part = function(id) {
     return this.svg.part(id);
 };
 
-Diagram.prototype.import = function(svg) {
-    return this.svg.import(svg);
+Diagram.prototype.import = function(svg, part, prepend) {
+    return this.svg.import(svg, part, prepend);
 };
 
 Diagram.prototype.part = function(id) {
     return this.svg.part(id);
+};
+
+Diagram.prototype.initDefs = function() {
+    var that = this;
+    this.templateMgr.getTemplate('defs_marker')
+    .then(function(tmpl) {
+        if(tmpl) {
+            tmpl.createNode({diagramId:that.id}, that).init('root', true);
+        } else {
+            console.error('Could initialize defs template result undefined');
+        }
+    }, function(err) {
+        console.error('Could not initialize defs template :'+err);
+    });
+};
+
+Diagram.prototype.createDocking = function(p, group) {
+    var node = this.templateMgr.getTemplateSync('docking_circle').createNode({node_id:'docking_'+Date.now(), x: p.x, y: p.y}, this).init();
+    if(group) {
+        this.svg.addToGroup(group, node.root);
+    }
+    return node;
 };
 
 Diagram.prototype.getHoverNode = function() {
@@ -226,15 +256,10 @@ Diagram.prototype.isPoint = function(value) {
     return object.isDefined(value.x);
 };
 
-Diagram.prototype.loadDefs = function() {
-    var template = this.templateMgr.getTemplate('defs', 'defs');
-    template.getInstance({diagramId: this.id}, this).init();
-};
-
 Diagram.prototype.newDiagram = function() {
     //TODO: we should unify this with the constructor svg creation technique
     this.loadDiagram('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="svgStage_svg" xmlns:dala="http://www.dala.com" height="100%" width="100%"></svg>');
-    this.loadDefs();
+    this.initDefs();
 };
 
 Diagram.prototype.loadDiagram = function(svgString) {
@@ -249,10 +274,10 @@ Diagram.prototype.loadDiagram = function(svgString) {
 };
 
 Diagram.prototype.triggerDockingVisibility = function() {
-    if(this.dockingMgr.hideDocking) {
-        this.dockingMgr.showDockings();
+    if(this.knobMgr.hideDocking) {
+        this.knobMgr.showKnobs();
     } else {
-        this.dockingMgr.hideDockings();
+        this.knobMgr.hideKnobs();
     }
 };
 
@@ -267,8 +292,12 @@ Diagram.prototype.activateNode = function(domNode) {
     var attributes = dom.getAttributes(domNode);
     var tmplId = attributes['dala:tmpl'];
     var rootId = attributes['id'];
-    var tmpl = this.templateMgr.getTemplate(tmplId);
-    return this.nodeMgr.activateNode(rootId, tmpl);
+
+    var that = this;
+    var tmpl = this.templateMgr.getTemplate(tmplId)
+        .then(function(tmpl) {
+            that.nodeMgr.activateNode(rootId, tmpl);
+        });
 };
 
 //TODO: move to transitionmgr

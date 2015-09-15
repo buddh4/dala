@@ -5,6 +5,13 @@ var event = require('../core/event');
 var object = util.object;
 var dom = util.dom;
 
+var getMouseEventData = function(evt) {
+    if(!evt.clientX) {
+        return event.mouse();
+    }
+    return evt;
+}
+
 SVGElement.prototype.draggable = function(cfg, dragElement) {
     var cfg = cfg || {};
 
@@ -14,17 +21,17 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
 
     var that = this;
 
-    var dragMove = function(event) {
-        if(event.preventDefault) {
-            event.preventDefault();
+    var dragMove = function(evt) {
+        if(evt.preventDefault) {
+            evt.preventDefault();
         }
 
-        var actualdx = (object.isDefined(event.dx)) ? event.dx : event.clientX - that.dragCurrentX;
-        var actualdy = (object.isDefined(event.dy)) ? event.dy : event.clientY - that.dragCurrentY;
+        var actualdx = (object.isDefined(evt.dx)) ? evt.dx : evt.clientX - that.dragCurrentX;
+        var actualdy = (object.isDefined(evt.dy)) ? evt.dy : evt.clientY - that.dragCurrentY;
 
         // DRAG BEFORE HOOK
         if(cfg.dragBeforeMove) {
-            cfg.dragBeforeMove.apply(that, [event, actualdx, actualdy, dragElement]);
+            cfg.dragBeforeMove.apply(that, [evt, actualdx, actualdy, dragElement]);
         }
 
         // DRAG ALIGNMENT
@@ -35,18 +42,8 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         }
 
         // DRAG RESTRICTION
-        var dx, dy;
-        if(cfg.restrictionX) {
-            dx = cfg.restrictionX.apply(that, [event, actualdx, actualdy]);
-        } else {
-            dx = actualdx;
-        }
-
-        if(cfg.restrictionY) {
-            dy = cfg.restrictionY.apply(that, [event, actualdx, actualdy]);
-        } else {
-            dy = actualdy;
-        }
+        var dx = (cfg.restrictionX) ? cfg.restrictionX.apply(that, [evt, actualdx, actualdy]) : actualdx;
+        var dy = (cfg.restrictionY) ? cfg.restrictionY.apply(that, [evt, actualdx, actualdy]) : actualdy;
 
         //TODO: somehow the scale should be determined in a more elegant way perhaps store it in svg instance...
         if(cfg.getScale) {
@@ -60,26 +57,30 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
             that.move(dx, dy);
         }
 
+        var evtData = getMouseEventData(evt);
         // Keep track of current mouse position
-        that.dragCurrentX = event.clientX;
-        that.dragCurrentY = event.clientY;
+        that.dragCurrentX = evtData.clientX;
+        that.dragCurrentY = evtData.clientY;
 
         that.dxSum += dx;
         that.dySum += dy;
 
         // DRAG MOVE HOOK
         if(cfg.dragMove) {
-            cfg.dragMove.apply(that, [event, dx, dy, dragElement]);
+            cfg.dragMove.apply(that, [evt, dx, dy, dragElement]);
         }
     };
 
     var dragEnd = function(evt) {
         evt.preventDefault();
+        //Turn off drag events
         event.off(that.getRootNode(), 'mousemove');
         event.off(document, 'mouseup', dragEnd);
+
         if(cfg.dragAlignment) {
             cfg.dragAlignment.reset();
         }
+
         this.drag = false;
 
         if(cfg.cursor) {
@@ -114,18 +115,22 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
                 $('body').css('cursor', cfg.cursor);
             }
 
-            that.dragCurrentX = e.clientX;
-            that.dragCurrentY = e.clientY;
+            var evtData = getMouseEventData(e);
+            that.dragCurrentX = evtData.clientX;
+            that.dragCurrentY = evtData.clientY;
+
             that.drag = true;
             event.on(that.getRootNode(), 'mousemove', dragMove);
             event.on(document, 'mouseup', dragEnd);
         });
     }
 
+    //Simulates an drag start event
     this.initDrag = function() {
         $(dragElement).trigger('mousedown');
     };
 
+    //For manual dragging a svg element the triggerEvent is used to identify this event was triggered manually
     this.triggerDrag = function(dx, dy) {
         dragMove.apply(this,[{dx:dx, dy:dy, triggerEvent:true}]);
     };

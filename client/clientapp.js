@@ -15,6 +15,17 @@ require('bootstrap');
 
 $.fn.bootstrapBtn = $.fn.button.noConflict();
 
+//INIT GLOBAL DALA
+dala = {};
+
+var globalModules =  {
+    'templateManager': require('./diagram/templateManager')
+};
+
+dala.require = function(id) {
+    return globalModules[id];
+}
+
 // Init core modules
 var config = require('./core/config');
 var Diagram = require('./diagram/diagram');
@@ -32,19 +43,6 @@ config.debug(true);
 
 require('./diagram/diagramManager');
 
-// Init Diagram
-// TODO: try loading user data app state from local storage or remote
-// TODO: use document / project model instead of diagram
-//var diagram = new Diagram();
-
-mouse = {};
-
-event.on(document, 'mousemove', function(e) {
-    mouse.pageX = e.pageX;
-    mouse.pageY = e.pageY;
-
-});
-
 $(window).bind('mousewheel DOMMouseScroll', function(evt){
     if(!evt.ctrlKey) {
         return;
@@ -61,7 +59,7 @@ $(window).bind('mousewheel DOMMouseScroll', function(evt){
 });
 
 event.on(document, 'keydown', function(e) {
-    e.mouse = mouse;
+    e.mouse = event.mouse();
     //console.log('keypress: '+e.keyCode);
     switch(e.keyCode) {
         case 13: //ENTER
@@ -118,8 +116,6 @@ event.on(document, 'keydown', function(e) {
 });
 
 //TODO: move this in gui with diagram handler...
-//var XMLDialog = require('./ui/xmlView');
-//new XMLDialog(diagram);
 
 event.trigger('tab_new');
 event.trigger('app_start');

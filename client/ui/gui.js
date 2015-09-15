@@ -1,4 +1,4 @@
-require('./templateNav').init();
+require('./../diagram/ui/templateNav').init();
 require('./editNav').init();
 require('./infobox').init();
 require('./userNotificationBar').init();

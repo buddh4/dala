@@ -10,7 +10,17 @@ var hasHandler = function(type) {
     return events[type];
 };
 
+mouse = {};
+
+$(document).on( 'mousemove', function(e) {
+    mouse = e;
+});
+
+
 module.exports = {
+    mouse : function() {
+        return mouse;
+    },
     listen:  function(type, handler, module) {
         if(!object.isFunction(handler)) {
             return;
@@ -50,6 +60,7 @@ module.exports = {
     },
 
     trigger: function(type, data, rootEvt) {
+        var that = this;
         return new Promise(function(resolve, reject) {
             var event = rootEvt || {};
 
@@ -58,7 +69,6 @@ module.exports = {
 
             if(hasHandler(event.type)) {
                 var handlerArr = events[event.type];
-                var that = this;
                 object.each(handlerArr, function(index, eventConfig) {
                     var handler = eventConfig.handler;
                     var module;

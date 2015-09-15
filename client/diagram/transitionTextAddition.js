@@ -69,7 +69,7 @@ TransitionTextAddition.prototype.getTextPosition = function(pos) {
         // start/end docking position
         var alignPosition = this.getAlignPosition(pos);
         // the first/last part of the transition
-        var transitionLine = this.transition.getLineByIndex(0, isEndPos(pos));
+        var transitionLine = this.transition.pathManager.getLineByIndex(0, isEndPos(pos));
         // the location of the end/start docking on the node
         var location =  this.getNodeLocation(pos);
         switch(location) {
@@ -105,13 +105,14 @@ TransitionTextAddition.prototype.getTextPosition = function(pos) {
                 textPosition.x += (isTop(pos))
                     ? TRANSITION_DISTANCE
                     : -TRANSITION_DISTANCE;
+
                 break;
         }
 
         return textPosition;
     } else {
         //Mid Position
-        var textPosition = this.transition.docking.getCenter();
+        var textPosition = this.transition.pathManager.getCenter();
         if(isTop(pos)) {
             textPosition.y -= 10;
         } else {
@@ -123,9 +124,9 @@ TransitionTextAddition.prototype.getTextPosition = function(pos) {
 
 TransitionTextAddition.prototype.getAlignPosition = function(pos) {
     if(isStartPos(pos)) {
-        return this.transition.getStartDocking().position();
+        return this.transition.getStartKnob().position();
     } else if(isEndPos(pos)) {
-        return this.transition.getEndDocking().position();
+        return this.transition.getEndKnob().position();
     }
 };
 

@@ -186,9 +186,9 @@ SVG.prototype.add = function(element, part, prepend, text) {
  * @param part
  * @returns {*}
  */
-SVG.prototype.import = function(elementXML, part) {
+SVG.prototype.import = function(elementXML, part, prepend) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return dom.importSVG(part, elementXML);
+    return dom.importSVG(part, elementXML, prepend);
 };
 
 /**
@@ -256,7 +256,15 @@ SVG.prototype.g = function(cfg) {
  * @returns {*}
  */
 SVG.prototype.addToGroup = function(group, element) {
-    return dom.appendSVGElement(group.instance(), element);
+    var result;
+    if(object.isArray(element)) {
+        result = [];
+        object.each(element, function(index, val) {
+            result.push(dom.appendSVGElement(group.instance(), element));
+        })
+    } else {
+        return dom.appendSVGElement(group.instance(), element);
+    }
 };
 
 /**

@@ -1,0 +1,28 @@
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg">
+    <desc>{description}</desc>
+    <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
+        <rect id="node_back_{node_id}" width="{init_width}" height="65"
+              x="0" y="0" rx="2"
+              style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+        <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="5" y="1">
+            <tspan id="title_span_{node_id}" dy="13.0" x="2">{init_title}</tspan>
+        </text>
+        <g id="attributes_g_{node_id}" transform="translate(0 20)">
+            <rect id="attributes_back_{node_id}" width="{init_width}" height="15" fill="white" x="0" y="0"
+                  style="stroke:#000000;fill:{color_second};"
+                  stroke-width="1"/>
+            <text id="attributes_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                <tspan id="attributes_span_{node_id}" dy="11" x="2" >attributes</tspan>
+            </text>
+        </g>
+        <g id="methods_g_{node_id}" transform="translate(0 37)">
+            <rect id="methods_back_{node_id}" width="{init_width}" height="17" fill="white" x="0" y="0"
+                  style="stroke:#000000;fill:{color_second};"
+                  stroke-width="1"/>
+            <text id="methods_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start">
+                <tspan id="methods_span_{node_id}" dy="11" x="2" >operations</tspan>
+            </text>
+        </g>
+    </g>
+</svg>

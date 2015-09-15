@@ -31,6 +31,36 @@ var config = {
     port : 3000
 };
 
+var errorHandler = function(cfg, xhr,type,errorThrown, errorCode) {
+    errorCode = (xhr) ? xhr.status : parseInt(errorCode);
+    console.warn("ajaxError: "+type+" "+errorThrown+" - "+errorCode);
+
+    if(cfg.errorMessage) {
+        if(object.isString(cfg.errorMessage)) {
+            event.trigger('error', cfg.errorMessage);
+        } else if(object.isObject(cfg.errorMessage, errorCode)) {
+            var msg = cfg.errorMessage[errorCode] || cfg.errorMessage['default'];
+            if(object.isDefined(msg)) {
+                event.trigger('error', msg);
+            }
+        }
+    }
+
+    if(cfg.error && object.isFunction(cfg.error)) {
+        // "timeout", "error", "abort", "parsererror" or "application"
+        cfg.error(errorThrown, errorCode, type);
+    } else if(cfg.error) {
+        var msg = cfg.error[errorCode] || cfg.error['default'];
+        if(object.isDefined(msg)) {
+            event.trigger('error', msg);
+        }
+    }
+
+    if(!cfg.error && !cfg.errorMessage) {
+        console.warn('Unhandled ajax error: '+path+" type"+type+" error: "+errorThrown);
+    }
+};
+
 module.exports = {
     test: function(settings) {
         this.ping(settings);
@@ -40,7 +70,7 @@ module.exports = {
         var result = false;
         $.ajax({
             url: "http://"+settings.host+":"+settings.port+"/service/ping",
-            crossDomain: true,
+            //crossDomain: true,
             type : "GET",
             data: {'ping':true},
             async : false,
@@ -61,40 +91,20 @@ module.exports = {
         var dataType = cfg.dataType || "json";
 
         var error = function(xhr,type,errorThrown, errorCode) {
-            console.warn("ajaxError: "+type+" "+errorThrown+" - "+errorCode);
-
-            if(cfg.errorMessage) {
-                if(object.isString(cfg.errorMessage)) {
-                    event.trigger('error', cfg.errorMessage);
-                } else if(object.isObject(cfg.errorMessage, errorCode)) {
-                    var msg = cfg.errorMessage[errorCode] || cfg.errorMessage['default'];
-                    if(object.isDefined(msg)) {
-                        event.trigger('error', msg);
-                    }
-                }
-            }
-
-            if(cfg.error) {
-                // "timeout", "error", "abort", "parsererror" or "application"
-                cfg.error(errorThrown, errorCode, type);
-            }
-
-            if(!cfg.error && !cfg.errorMessage) {
-                console.warn('Unhandled ajax error: '+path+" type"+type+" error: "+errorThrown);
-            }
+            errorHandler(cfg, xhr,type,errorThrown, errorCode);
         };
 
         var success = function(response) {
             var responseWrapper = new Response(response);
 
-            if(responseWrapper.isError()) {
+            if(responseWrapper.isError()) { //Application errors
                 return error(undefined,"application",responseWrapper.getError(), responseWrapper.getErrorCode());
             } else if(cfg.success) {
-                cfg.success(responseWrapper);
-            }
-
-            if(!cfg.success && !cfg.successMessage) {
-                console.info('Unhandled ajax success: '+responseWrapper);
+                if(object.isString(cfg.success)) {
+                    event.trigger('info', cfg.success);
+                } else {
+                    cfg.success(responseWrapper);
+                }
             }
 
             if (cfg.successMessage) {
@@ -105,7 +115,7 @@ module.exports = {
         var that = this;
         $.ajax({
             url: that.getUrl(path),
-            crossDomain: true, //TODO: read from config
+            //crossDomain: true, //TODO: read from config
             type : cfg.type,
             processData : cfg.processData,
             contentType: cfg.contentType,
@@ -117,14 +127,31 @@ module.exports = {
         });
     },
     post: function(path, data, cfg) {
-        var cfg = cfg || {};
+        cfg = cfg || {};
         cfg.type = 'POST';
         this.ajax(path, data, cfg);
     },
     get: function(path, cfg) {
-        var cfg = cfg || {};
+        cfg = cfg || {};
         cfg.type = 'GET';
         this.ajax(path, cfg.data, cfg);
+    },
+    xml: function(path, cfg) {
+        cfg = cfg || {};
+        cfg.dataType = 'xml';
+        return this.get(path,cfg);
+    },
+    getScript: function(path, cfg) {
+        cfg = cfg || {};
+
+        return $.getScript(path)
+            .done(function(s, Status) {
+                if(cfg.success) {
+                    cfg.success(s, Status);
+                }
+            }).fail(function(xhr, settings, exception) {
+                errorHandler(cfg, xhr,'error',exception);
+            });
     },
     restGet: function(path, id, cfg) {
         var path = string.endsWith(path, '/')? path+id : path+'/'+id;

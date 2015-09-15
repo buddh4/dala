@@ -40,7 +40,7 @@ Manager.prototype.getNodeMgr = function(command) {
 };
 
 Manager.prototype.getTransitionMgr = function(command) {
-    return this.diagram.transitoinMgr;
+    return this.diagram.transitionMgr;
 };
 
 Manager.prototype.getSelectionMgr = function(command) {

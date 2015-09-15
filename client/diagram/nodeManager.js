@@ -58,12 +58,15 @@ NodeManager.prototype.createNode = function(tmpl, config) {
     }
 
     config.node_id = Date.now();
-
+    config.diagramId = this.diagram.id;
     return this.exec(CMD_ADD, [tmpl, config], [config.node_id]);
 };
 
 NodeManager.prototype.createNodeCmd = function(tmpl, config) {
-    var node = tmpl.getInstance(config, this.diagram).init().draggable();
+    var node = tmpl.createNode(config, this.diagram).init();
+    if(!config.preventDrag) {
+        node.draggable();
+    }
     this.addNode(node);
 };
 
@@ -73,7 +76,7 @@ NodeManager.prototype.addNode = function(node) {
 };
 
 NodeManager.prototype.activateNode = function(elementId, tmpl) {
-    var node = tmpl.getInstance({}, this.diagram)
+    var node = tmpl.createNode({}, this.diagram)
         .activate(elementId)
         .draggable();
 
@@ -84,7 +87,9 @@ NodeManager.prototype.activateNode = function(elementId, tmpl) {
 NodeManager.prototype.deleteNodeListener = function(evt) {
     try {
         var node = this.getNode(evt.data);
-        if(node) {
+        if(node.isKnob) {
+            node.remove();
+        } else if(node) {
             return this.exec(CMD_DELETE, [node.id], [this.getNodeAsString(node)]);
         }
     } catch(err) {
@@ -153,8 +158,8 @@ NodeManager.prototype.dropNodeListener = function(evt) {
         if(node) {
             //We just add the command since we don't want to execute the drag twice
             this.addCmd(CMD_DROP,
-                [node.id, node.dxSum, node.dySum],
-                [node.id, (-1 * node.dxSum), (-1 * node.dySum)]);
+                [node.id, node.dragContext.dxSum, node.dragContext.dySum],
+                [node.id, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
         }
     } catch(err) {
         console.error(err);

@@ -20,6 +20,37 @@ module.exports = {
         return false;
     },
 
+    sort: function(obj, sort) {
+        var arr;
+        if(!obj) {
+            return;
+        } else if(this.isArray(obj)) {
+            arr = obj;
+        } else if(this.isObject(obj)) {
+            arr = $.map(obj, function (index, val) {
+                return obj[val];
+            });
+        }
+
+        return arr.sort(sort);
+    },
+
+    valueByIndex: function(arr, index) {
+        var index = this.getIndex(arr,index);
+        return arr[index];
+    },
+
+    getIndex: function(arr, index) {
+        var result = index;
+        // for negative indexes we return values counted from the other side so -1 is the last index
+        // if the negative index is out of range we return the last index.
+        if(index < 0) {
+            result = arr.length + index;
+            result = (result > arr.length -1 || result < 0) ? arr.length -1 : result;
+        }
+        return result;
+    },
+
     isFunction: function(obj) {
         return Object.prototype.toString.call(obj) === '[object Function]';
     },

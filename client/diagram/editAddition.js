@@ -6,7 +6,6 @@ var dom = util.dom;
 var EditAddition = function(node) {
     this.node = node;
     this.event = node.event;
-    this.node.additions.edit = this;
     this.config = this.node.template.config.edit;
     this.initEditTrigger();
     //this.$contentNodes = $(node.root.instance()).find('*').filter(function() { return $(this).attr('dala:content'); });
@@ -177,6 +176,13 @@ EditAddition.prototype.getValue = function(key) {
 
 EditAddition.prototype.getValueFromItem = function(item) {
     switch(item.type) {
+        case 'stroke':
+            return this.node.getInnerSVG(item.bind).stroke();
+        case 'stroke-width':
+            return this.node.getInnerSVG(item.bind).strokeWidth();
+        case 'stroke-dash':
+            return this.node.getInnerSVG(item.bind).strokeDashType();
+            break;
         case 'color':
             //TODO: binding can be an array of inner nodes !!
             return this.node.getInnerSVG(item.bind).fill();
@@ -189,6 +195,7 @@ EditAddition.prototype.getValueFromItem = function(item) {
 };
 
 
+//TODO: implement a way to register edit functionality
 EditAddition.prototype.setValue = function(key, newValue) {
     var item = this.config[key];
     switch(item.type) {
@@ -197,6 +204,15 @@ EditAddition.prototype.setValue = function(key, newValue) {
             break;
         case 'text':
             $(this.node.getNodeSelector(item.bind)).text(newValue);
+            break;
+        case 'stroke':
+            this.node.getInnerSVG(item.bind).stroke(newValue);
+            break;
+        case 'stroke-width':
+            this.node.getInnerSVG(item.bind).strokeWidth(newValue);
+            break;
+        case 'stroke-dash':
+            this.node.getInnerSVG(item.bind).strokeDashType(newValue);
             break;
         case 'textarea':
             var $editSVGNode = $(this.node.getNodeSelector(item.bind));
@@ -228,5 +244,11 @@ EditAddition.prototype.remove = function() {
 EditAddition.prototype.update = function() {
     this.remove();
 };
+
+EditAddition.prototype.activate = function() {
+    this.update();
+};
+
+EditAddition.requireConfig = true;
 
 module.exports = EditAddition;

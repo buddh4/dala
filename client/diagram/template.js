@@ -6,20 +6,24 @@ var config = require('../core/config');
 var object = util.object;
 var dom = util.dom;
 
-var Template = function(id, fromDom, tmplRootEl) {
-    tmplRootEl = tmplRootEl || 'g';
+var Template = function(id, cfg) {
+    this.config = cfg || {};
 
-    if(fromDom) {
+    if(this.config.fromDom) { //Load tmpl from dom script node
         this.id = id;
         this.tmplXML = dom.parseNodeXML($.qCache('#'+id));
-    } else {
+    } else if(object.isString(id)) { //Remote tmpl is initialized later (after loading xml)
+        this.id = id;
+        this.tmplXML = (this.config.svg) ? xml.parseXML(this.config.svg) : undefined;
+    } else { //id is templateXML
         this.tmplXML = id;
         this.id = $(this.tmplXML).attr('id');
     }
 
-    this.svg = xml.serializeToString($(this.tmplXML).find(tmplRootEl)[0]);
-    this.parseFunctions();
-    this.parseConfig();
+    //Remote templates are initialized later;
+    if(this.tmplXML) {
+        this.init();
+    }
 
     if(object.isDefined(this.config)) {
         if(object.isDefined(this.config.resize)) {
@@ -28,22 +32,21 @@ var Template = function(id, fromDom, tmplRootEl) {
     }
 };
 
-Template.prototype.parseFunctions = function() {
-    try {
-        this.functions = $(this.tmplXML).find('functions').text() || {};
-    } catch(err) {
-        this.functions = {}//There is probably no function element.
+Template.prototype.init = function(tmplXML) {
+    this.config.rootName = this.config.rootName || 'g';
+
+    if(tmplXML) {
+        this.tmplXML = tmplXML;
     }
+
+    this.svg = xml.serializeToString($(this.tmplXML).find(this.config.rootName)[0]);
+    //TODO: remove this future version does not allow xml config/handler...
+}
+
+Template.prototype.isInitialized = function() {
+    return !!this.svg;
 };
 
-Template.prototype.parseConfig = function() {
-    try {
-        this.config = dom.parseNodeJSON($(this.tmplXML).find('config')) || {};
-    } catch(err) {
-        //There is probably no configuration element.
-        this.config = {};
-    }
-};
 
 /**
  * The resize addition allows to configure a resize behaviour for svg elements
@@ -85,13 +88,13 @@ Template.prototype.resizable = function() {
     return object.isDefined(this.config.resize);
 };
 
-Template.prototype.getInstance = function(config, diagram) {
+Template.prototype.createNode = function(config, diagram) {
     var resultConfig = this.getConfig(config);
-    var newNode = new Node(this, resultConfig, diagram);
-    return newNode;
+    return new Node(this, resultConfig, diagram);
 };
 
 Template.prototype.getSVGString = function(cfg) {
+
     return config.replaceConfigValues(this.svg, cfg);
 };
 

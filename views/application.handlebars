@@ -15,59 +15,6 @@
             </div>
 
             <div id="templateNav"></div>
-
-            <div id="editNav" class="toolbox">
-                <div id="editContent">
-                    <div id="editTransition">
-                        <h3>Edit Transition</h3>
-                        <form action="#">
-                            <fieldset>
-                                <table>
-                                    <tr>
-                                        <th>Start Marker</th>
-                                        <td>
-                                            <select class="edit" name="startMarker" id="startMarker">
-                                                <option data-class="marker-none" value="none">None</option>
-                                                <option data-class="marker-arrow" value="arrow_s">Uni-directional</option>
-                                                <option data-class="marker-triangle" value="triangle_s">Inheritance</option>
-                                                <option data-class="marker-trianglefill" value="trianglefill_s">TriangleFill</option>
-                                                <option data-class="marker-aggr" value="aggr_s">Aggregation</option>
-                                                <option data-class="marker-comp" value="comp_s">Composition</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th>End Marker</th>
-                                        <td>
-                                            <select class="edit" name="endMarker" id="endMarker">
-                                                <option data-class="marker-none" value="none">None</option>
-                                                <option data-class="marker-arrow" value="arrow">Uni-directional</option>
-                                                <option data-class="marker-triangle" value="triangle">Inheritance</option>
-                                                <option data-class="marker-trianglefill" value="trianglefill">TriangleFill</option>
-                                                <option data-class="marker-aggr" value="aggr">Aggregation</option>
-                                                <option data-class="marker-comp" value="comp">Composition</option>
-                                            </select>
-                                        </td>
-                                    </tr>
-                                    <tr><th id="editSTIco"></th><td><input id="edit_ST" data-index="0" class="transTextEdit" type="text" ></td></tr>
-                                    <tr><th id="editMTIco"></th><td><input id="edit_MT" data-index="2" class="transTextEdit" type="text" ></td></tr>
-                                    <tr><th id="editETIco"></th><td><input id="edit_ET" data-index="4" class="transTextEdit" type="text" ></td></tr>
-                                    <tr><th id="editSBIco"></th><td><input id="edit_SB" data-index="1" class="transTextEdit" type="text" ></td></tr>
-                                    <tr><th id="editMBIco"></th><td><input id="edit_MB" data-index="3" class="transTextEdit" type="text" ></td></tr>
-                                    <tr><th id="editEBIco"></th><td><input id="edit_EB" data-index="5" class="transTextEdit" type="text" ></td></tr>
-                                </table>
-                            </fieldset>
-                        </form>
-                    </div>
-                    <div id="editNode">
-                        <h3>Edit Node</h3>
-                        <form id="editNodeForm" action="#">
-                            <div id="editNodeContent"></div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div id="infoBox" class="toolbox">&nbsp</div>
         </div>
 
 
@@ -162,8 +109,64 @@
         </div>
     </div>
 </div>
+
+<div id="diagramToolTip">
+<div id="editNav" class="ui-corner-all ui-widget-content">
+    <div id="editContent">
+        <div id="editTransition">
+            <h3>Edit Transition</h3>
+            <form action="#">
+                <fieldset>
+                    <table>
+                        <tr>
+                            <th>Start Marker</th>
+                            <td>
+                                <select class="edit" name="startMarker" id="startMarker">
+                                    <option data-class="marker-none" value="none">None</option>
+                                    <option data-class="marker-arrow" value="arrow_s">Uni-directional</option>
+                                    <option data-class="marker-triangle" value="triangle_s">Inheritance</option>
+                                    <option data-class="marker-trianglefill" value="trianglefill_s">TriangleFill</option>
+                                    <option data-class="marker-aggr" value="aggr_s">Aggregation</option>
+                                    <option data-class="marker-comp" value="comp_s">Composition</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>End Marker</th>
+                            <td>
+                                <select class="edit" name="endMarker" id="endMarker">
+                                    <option data-class="marker-none" value="none">None</option>
+                                    <option data-class="marker-arrow" value="arrow">Uni-directional</option>
+                                    <option data-class="marker-triangle" value="triangle">Inheritance</option>
+                                    <option data-class="marker-trianglefill" value="trianglefill">TriangleFill</option>
+                                    <option data-class="marker-aggr" value="aggr">Aggregation</option>
+                                    <option data-class="marker-comp" value="comp">Composition</option>
+                                </select>
+                            </td>
+                        </tr>
+                        <tr><th id="editSTIco"></th><td><input id="edit_ST" data-index="0" class="transTextEdit" type="text" ></td></tr>
+                        <tr><th id="editMTIco"></th><td><input id="edit_MT" data-index="2" class="transTextEdit" type="text" ></td></tr>
+                        <tr><th id="editETIco"></th><td><input id="edit_ET" data-index="4" class="transTextEdit" type="text" ></td></tr>
+                        <tr><th id="editSBIco"></th><td><input id="edit_SB" data-index="1" class="transTextEdit" type="text" ></td></tr>
+                        <tr><th id="editMBIco"></th><td><input id="edit_MB" data-index="3" class="transTextEdit" type="text" ></td></tr>
+                        <tr><th id="editEBIco"></th><td><input id="edit_EB" data-index="5" class="transTextEdit" type="text" ></td></tr>
+                    </table>
+                </fieldset>
+            </form>
+        </div>
+        <div id="editNode">
+            <h3>Edit Node</h3>
+            <form id="editNodeForm" action="#">
+                <div id="editNodeContent"></div>
+            </form>
+        </div>
+    </div>
+</div>
+<div id="infoBox" class="ui-corner-all ui-widget-content">&nbsp</div>
+</div>
+
 <!-- XML View Dialog -->
-<div id="xml-view" style="overflow:hidden;" title="SVG View">
+<div id="dom-view" style="overflow:hidden;" title="SVG View">
     <textarea style="width:100%;height:100%; resize: none;"></textarea>
 </div>
 
