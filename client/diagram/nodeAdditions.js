@@ -1,14 +1,14 @@
 var additions = require('./additions');
 
 //Init default additions
-additions.registerAddition('resize', require('./resizeAddition'));
-additions.registerAddition('edit', require('./editAddition'));
-additions.registerAddition('transition', require('./transitionAddition'));
+additions.registerNodeAddition('resize', require('./resizeAddition'));
+additions.registerNodeAddition('edit', require('./editNodeAddition'));
+additions.registerNodeAddition('transition', require('./transitionAddition'));
 
 module.exports = {
     init : function(node) {
-        additions.initAddition('transition', node);
-        additions.initAddition('edit', node);
-        additions.initAddition('resize', node);
+        additions.initNodeAddition('transition', node);
+        additions.initNodeAddition('edit', node);
+        additions.initNodeAddition('resize', node);
     }
 }

@@ -10,7 +10,6 @@ var TransitionTextAddition = function(transition) {
     this.helper = new Helper(transition.diagram);
     this.transition = transition;
     this.diagram = this.transition.diagram;
-    this.transition.additions.text = this;
 };
 
 /**
@@ -39,8 +38,14 @@ TransitionTextAddition.prototype.getText = function(pos) {
  */
 TransitionTextAddition.prototype.setText = function(pos, text) {
     if(!this.textNodes[pos]) {
-        this.textNodes[pos] = this.diagram.svg.text(text);
-        this.diagram.svg.addToGroup(this.transition.group, this.textNodes[pos]);
+        var id = 'text'+pos+'_'+this.transition.id;
+        var textNode = this.textNodes[pos] = this.diagram.svg.text(text, {id : id});
+        this.diagram.svg.addToGroup(this.transition.group, textNode);
+        this.transition.additions.edit.addEditTextTrigger({
+            type : 'text',
+            bind : '#'+id,
+            trigger : '#'+id
+        });
     } else {
         this.textNodes[pos].$().text(text);
     }
@@ -62,64 +67,31 @@ TransitionTextAddition.prototype.updateTextPosition = function(pos) {
 };
 
 TransitionTextAddition.prototype.getTextPosition = function(pos) {
-    // The resulting text position
     var textPosition;
 
     if(isStartPos(pos) || isEndPos(pos)) {
-        // start/end docking position
-        var alignPosition = this.getAlignPosition(pos);
-        // the first/last part of the transition
-        var transitionLine = this.transition.pathManager.getLineByIndex(0, isEndPos(pos));
-        // the location of the end/start docking on the node
-        var location =  this.getNodeLocation(pos);
-        switch(location) {
+        //Move along the transition in the right direction
+        var index = isEndPos(pos) ? -1 : 1;
+        var distance = isEndPos(pos) ? NODE_DISTANCE * -1 : NODE_DISTANCE;
+        textPosition = this.transition.getPath().moveAlong(index, distance);
+
+        switch(this.getLocation(pos)) {
             case 'left':
             case 'right':
-                // Move x along the transition by NODE_DISTANCE
-                textPosition = (location === 'left')
-                    ? transitionLine.calcFX(alignPosition.x - NODE_DISTANCE)
-                    : transitionLine.calcFX(alignPosition.x + NODE_DISTANCE);
-
-                /*
-                 * Move y upwards/downwards by TRANSITION_DISTANCE adjusted by textheight
-                 * away from the transition.
-                 * Note: the svg text height is not precise because of a glyph padding (we assum 5 pixel here)
-                 */
-                textPosition.y += (isTop(pos))
-                    ? -TRANSITION_DISTANCE
-                    : TRANSITION_DISTANCE + (this.textNodes[pos].height() - 5);
+                textPosition.y += (isTop(pos)) ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE + (this.textNodes[pos].height() - 5);
                 break;
             case 'top':
             case 'bottom':
-                // Calculate the y - axis interception for the helper line
-                var t = (location === 'top')
-                    ? alignPosition.y  - NODE_DISTANCE
-                    : alignPosition.y  + NODE_DISTANCE + (this.textNodes[pos].height() - 5);
-
-                // Move y along the transition by means of the y - axis interception
-                textPosition = (!transitionLine.isVertical())
-                    ? transitionLine.calcLineIntercept(new util.math.Line(0, t))
-                    : {x : alignPosition.x, y : t};
-
-                // Move x left/right away from the transition
-                textPosition.x += (isTop(pos))
-                    ? TRANSITION_DISTANCE
-                    : -TRANSITION_DISTANCE;
-
+                textPosition.x += (isTop(pos)) ? TRANSITION_DISTANCE : -TRANSITION_DISTANCE;
                 break;
         }
-
-        return textPosition;
     } else {
         //Mid Position
-        var textPosition = this.transition.pathManager.getCenter();
-        if(isTop(pos)) {
-            textPosition.y -= 10;
-        } else {
-            textPosition.y += 10;
-        }
-        return textPosition;
+        textPosition = this.transition.getPath().getCenter();
+        textPosition.y += isTop(pos) ? -10 : 10;
     }
+
+    return textPosition;
 };
 
 TransitionTextAddition.prototype.getAlignPosition = function(pos) {
@@ -130,7 +102,7 @@ TransitionTextAddition.prototype.getAlignPosition = function(pos) {
     }
 };
 
-TransitionTextAddition.prototype.getNodeLocation = function(pos) {
+TransitionTextAddition.prototype.getLocation = function(pos) {
     if(isStartPos(pos)) {
         return this.transition.getStartDockingLocation();
     } else if(isEndPos(pos)) {
@@ -146,7 +118,7 @@ TransitionTextAddition.prototype.getNodeLocation = function(pos) {
 TransitionTextAddition.prototype.setAnchor = function(pos) {
     var textSVG = this.textNodes[pos];
     if(!isMidPos(pos)) {
-        switch(this.getNodeLocation(pos)) {
+        switch(this.getLocation(pos)) {
             case 'left':
                 textSVG.end();
                 break;

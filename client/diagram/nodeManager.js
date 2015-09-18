@@ -33,7 +33,7 @@ var NodeManager = function(diagram) {
     this.command(CMD_COPY, this.importNodeCmd, this.deleteNodeCmd);
     this.command(CMD_DROP, this.moveNodeCmd, this.moveNodeCmd);
     this.command(CMD_RESIZE, this.resizeCmd, this.resizeCmd);
-    this.command(CMD_EDIT, this.editCmd, this.editCmd);
+    this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
 };
 
 NodeManager.prototype = Object.create(AbstractManager.prototype);
@@ -225,6 +225,13 @@ NodeManager.prototype.getEditItem = function(node, editKey) {
 NodeManager.prototype.editCmd = function(node, editKey, newValue) {
     node = this.getNode(node);
     node.additions.edit.setValue(editKey, newValue);
+    event.trigger('node_edit', node);
+};
+
+NodeManager.prototype.undoEditCmd = function(node, editKey, newValue) {
+    node = this.getNode(node);
+    node.additions.edit.setValue(editKey, newValue);
+    event.trigger('node_edit_undo', node);
 };
 
 NodeManager.prototype.clear = function() {

@@ -1,4 +1,5 @@
 require('./../diagram/ui/templateNav').init();
+require('./toolTip').init();
 require('./editNav').init();
 require('./infobox').init();
 require('./userNotificationBar').init();

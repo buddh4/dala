@@ -148,58 +148,109 @@ h3 {
  }
 
  #diagramToolTip {
-     position:fixed;
-     right: 35px;
-     top: 170px;
+     position:absolute;
+     min-width:200px;
+     right: 30px;
+     top: 160px;
  }
 
- #editNav {
-     padding:5px;
+ .toolTipPanel {
      margin-bottom:5px;
+     width:214px;
+ }
+
+ .toolTipSection {
+     background-color:#F2F2F2;
+     background-image:none !important;
+ }
+
+ .toolTipPanel .ui-widget-content {
+     padding: 2px 2px 0px 2px;
+ }
+
+ .toolTipPanel legend {
+     font-size: 1em;
+     font-weight: bold;
+     margin-bottom:0px;
+     margin-top:2px;
+     background-color:#A0A0A0;
+ }
+
+ .toolTipPanel input, .toolTipPanel select {
+     margin-bottom:2px;
+ }
+
+ .toolTipPanel label {
+    font-weight: normal;
+    margin-top:5px;
+     margin-bottom:0px;
  }
  
- #editNav input, #editNav textarea {
+ .toolTipPanel input, .toolTipPanel textarea {
      width: 200px;
  }
  
- #editNav th {
+ .toolTipPanel th {
      width: 70px;
  }
  
- #editNav td {
+ .toolTipPanel td {
      width: 200px;
  }
  
- #editNav #editEBIco {
+ .toolTipPanel #editEBIco {
      background: url("/images/icons/icon-transitiontext-eb.png") 0 0 no-repeat;
      background-position: center; 
  }
  
- #editNav #editETIco {
+ .toolTipPanel #editETIco {
      background: url("/images/icons/icon-transitiontext-et.png") 0 0 no-repeat;
      background-position: center; 
  }
  
- #editNav #editMBIco {
+ .toolTipPanel #editMBIco {
      background: url("/images/icons/icon-transitiontext-mb.png") 0 0 no-repeat;
      background-position: center; 
  }
  
- #editNav #editMTIco {
+ .toolTipPanel #editMTIco {
      background: url("/images/icons/icon-transitiontext-mt.png") 0 0 no-repeat;
      background-position: center; 
  }
  
- #editNav #editSBIco {
+ .toolTipPanel #editSBIco {
      background: url("/images/icons/icon-transitiontext-sb.png") 0 0 no-repeat;
      background-position: center; 
  }
  
- #editNav #editSTIco {
+ .toolTipPanel #editSTIco {
      background: url("/images/icons/icon-transitiontext-st.png") 0 0 no-repeat;
      background-position: center; 
  }
 
+ .toolTipPanel .ttextPositionLabel {
+     display: inline-block;
+     height:20px;
+     width: 60px;
+     text-align: right;
+     margin:0px;
+ }
+
+ .toolTipPanel .ttextPositionInput {
+     width:140px;
+ }
+
+ /*
+ .toolTipSection .ui-state-default {
+    background:none !important;
+ }
+
+ .toolTipSection .ui-state-focus {
+     background-image:none !important;
+     background-color: #FCFCFC;
+     border: 1px solid #DFDFDF;
+ }
+*/
  #infoBox {
      padding:5px;
  }

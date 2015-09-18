@@ -1,9 +1,13 @@
 var util = require('../util/util');
 var event = require('../core/event');
+var config = require('../core/config');
+
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');
 var TransitionPathManager = require('./curvePathManager');
 var transitionAdditions = require('./transitionAdditions');
+
+var pathManagerFactory = require('./pathManagerFactory');
 
 var STYLE_TRANSITION_ACTIVE = "stroke:red;stroke-width:1;fill:none;";
 var STYLE_TRANSITION_INACTIVE = "stroke:black;stroke-width:1;fill:none;";
@@ -21,11 +25,27 @@ var Transition = function(node) {
         //Initialize the transition docking mechanism (start/end) docking to nodes.
         this.dockingManager = new TransitionDockingManager(this, node);
         //Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.
-        this.pathManager = new TransitionPathManager(this);
+        this.pathManager = pathManagerFactory.get(this);
         //Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions
         this.knobManager = new TransitionKnobManager(this);
 
         transitionAdditions.init(this);
+    }
+};
+
+Transition.prototype.getPath = function() {
+    return this.pathManager.path;
+};
+
+Transition.prototype.type = function(value) {
+    if(value && value !== this.pathManager.type) {
+        var newPathManager = pathManagerFactory.get(this, value);
+        if(newPathManager) {
+            newPathManager.replace(this.pathManager, this.knobManager.getKnobPositions());
+            this.redraw();
+        }
+    } else {
+        return this.pathManager.type;
     }
 };
 
@@ -52,8 +72,20 @@ Transition.prototype.init = function(mouse) {
 };
 
 Transition.prototype.initSVGGroup = function() {
-    this.group = this.svg.g({prepend:true, "class":'transition'});
-}
+    this.group = this.svg.g({prepend:true, "class":'transition', id : this.id});
+};
+
+Transition.prototype.strokeWidth = function(value) {
+    var result = this.line.strokeWidth(value);
+    if(value) {
+        this.lineArea.strokeWidth(value + 10);
+    }
+    return result;
+};
+
+Transition.prototype.getInnerSVG = function(prefix) {
+    return $.qCache().svg(this.getNodeSelector(prefix));
+};
 
 Transition.prototype.initTransitionSVG = function() {
     var path = this.pathManager.path;
@@ -61,11 +93,13 @@ Transition.prototype.initTransitionSVG = function() {
     //Note we share the path between line and lineArea an update
     this.line = this.svg.path({
         d : path,
+        id : 'line_'+this.id,
         style  : STYLE_TRANSITION_ACTIVE
     });
 
     this.lineArea = this.svg.path({
         d : path,
+        id: 'lineArea_'+this.id,
         style  : STYLE_AREA
     });
 
@@ -94,7 +128,7 @@ Transition.prototype.initEvents = function() {
 
         var dragInitiated = false;
         var startPosition = that.diagram.getStagePosition(evt.pageX, evt.pageY);
-        var knobIndex = that.pathManager.getPathIndexForPosition(startPosition);
+        var knobIndex = that.getPath().getPathIndexForPosition(startPosition);
 
         if (knobIndex) {
             event.on(that.diagram.svg.getRootNode(), "mouseup", function(evt) {
@@ -208,14 +242,22 @@ Transition.prototype.endMarker = function(marker) {
     return this.marker('end', marker);
 };
 
+Transition.prototype.endMarkerValue = function() {
+    return this.markerValue('end');
+};
+
 Transition.prototype.startMarker = function(marker) {
     return this.marker('start', marker);
 };
 
+Transition.prototype.startMarkerValue = function() {
+    return this.markerValue('start');
+};
+
 Transition.prototype.marker = function(type, marker) {
     var key = 'marker-'+type;
-    if(marker) {
-        this.line.attr(key, this.getMarkerSelector(marker));
+    if(util.object.isDefined(marker)) {
+        this.line.attr(key, this.getMarkerValueString(marker));
     } else {
         var markerStr = this.line.attr(key);
         if(markerStr) {
@@ -224,9 +266,32 @@ Transition.prototype.marker = function(type, marker) {
     }
 };
 
-Transition.prototype.getMarkerSelector = function(marker) {
-    return 'url(#'+marker+'_'+this.diagram.id+')';
-}
+Node.prototype.getTransitionSelector = function(prefix) {
+    var result = '';
+
+    if(!util.string.startsWith(prefix, '#') && !util.string.startsWith(prefix, '.')) {
+        result = '#'+prefix;
+    } else {
+        result = prefix;
+    }
+
+    return util.string.endsWith(prefix, '_')
+        ? result + this.id
+        : result + '_' + this.id;
+};
+
+Transition.prototype.markerValue = function(type, marker) {
+    var markerString = this.marker(type, marker);
+    if(markerString) { // triangle_s_12312423 --> triangle_s
+        return markerString.substring(0, markerString.length - this.diagram.id.length - 1);
+    }
+};
+
+
+Transition.prototype.getMarkerValueString = function(markerId) {
+    markerId = (util.string.endsWith(markerId, this.diagram.id)) ? markerId : markerId + '_' + this.diagram.id;
+    return 'url(#' + markerId + ')';
+};
 
 Transition.prototype.select = function() {
     this.line.attr({style:STYLE_TRANSITION_ACTIVE});

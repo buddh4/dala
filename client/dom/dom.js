@@ -3,6 +3,22 @@ var object = require('../util/object');
 
 var elementCache = {};
 
+
+var create = function(element, attributes, text) {
+    var $element = $(document.createElement(element));
+
+    if(attributes) {
+        $.each(attributes, function (key, value) {
+            $element.attr(key, value);
+        });
+    }
+
+    if(text) {
+        $element.text(text);
+    }
+    return $element;
+};
+
 var query = function(selector, cache) {
     var result;
     if(cache) {
@@ -243,6 +259,7 @@ module.exports = {
     prependSVGElement : prependSVGElement,
     insertSVGAfter : insertSVGAfter,
     insertAfterIndex : insertAfterIndex,
+    create : create,
     prependToRoot : prependToRoot,
     importSVG : importSVG,
     moveDown : moveDown,

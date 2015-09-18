@@ -3,7 +3,7 @@ var Helper = function(diagram) {
     this.points = {};
 };
 
-Helper.prototype.point = function(id, p, color) {
+Helper.prototype.point = function(id, p, color, prevText) {
     color = color || 'red';
     var text = id+'(x:'+p.x + ' y:'+p.y+')';
     if(!this.points[id]) {
@@ -11,12 +11,16 @@ Helper.prototype.point = function(id, p, color) {
             r:2,
             style:'fill:'+color
         });
-        var text = this.diagram.svg.text(text);
-        var group = this.diagram.svg.g({id:'helper_'+id}, text, point);
+        var t = this.diagram.svg.text(text);
+        var group = this.diagram.svg.g({id:'helper_'+id}, t, point);
         this.points[id] = {
             group : group,
-            text : text,
+            text : t,
             point : point
+        }
+
+        if(prevText) {
+            t.hide();
         }
     }
 

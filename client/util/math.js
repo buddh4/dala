@@ -1,4 +1,5 @@
 var object = require('./object');
+var bezier = require('./bezier');
 
 var calcLineIntersection = function(pa1, pa2, pb1, pb2) {
     return new Line(pa1,pa2).calcLineIntercept(new Line(pb1,pb2));
@@ -364,5 +365,6 @@ module.exports = {
     Line : Line,
     Circle : Circle,
     Ellipse : Ellipse,
-    Vector : Vector
+    Vector : Vector,
+    bezier : bezier
 };

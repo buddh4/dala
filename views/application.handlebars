@@ -111,58 +111,68 @@
 </div>
 
 <div id="diagramToolTip">
-<div id="editNav" class="ui-corner-all ui-widget-content">
-    <div id="editContent">
-        <div id="editTransition">
-            <h3>Edit Transition</h3>
+    <div id="editTransitionPanel" class="toolTipPanel" title="Edit">
+        <h3>Edit Transition</h3>
+        <div id="editTransitionSection" class="toolTipSection">
             <form action="#">
                 <fieldset>
-                    <table>
-                        <tr>
-                            <th>Start Marker</th>
-                            <td>
-                                <select class="edit" name="startMarker" id="startMarker">
-                                    <option data-class="marker-none" value="none">None</option>
-                                    <option data-class="marker-arrow" value="arrow_s">Uni-directional</option>
-                                    <option data-class="marker-triangle" value="triangle_s">Inheritance</option>
-                                    <option data-class="marker-trianglefill" value="trianglefill_s">TriangleFill</option>
-                                    <option data-class="marker-aggr" value="aggr_s">Aggregation</option>
-                                    <option data-class="marker-comp" value="comp_s">Composition</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr>
-                            <th>End Marker</th>
-                            <td>
-                                <select class="edit" name="endMarker" id="endMarker">
-                                    <option data-class="marker-none" value="none">None</option>
-                                    <option data-class="marker-arrow" value="arrow">Uni-directional</option>
-                                    <option data-class="marker-triangle" value="triangle">Inheritance</option>
-                                    <option data-class="marker-trianglefill" value="trianglefill">TriangleFill</option>
-                                    <option data-class="marker-aggr" value="aggr">Aggregation</option>
-                                    <option data-class="marker-comp" value="comp">Composition</option>
-                                </select>
-                            </td>
-                        </tr>
-                        <tr><th id="editSTIco"></th><td><input id="edit_ST" data-index="0" class="transTextEdit" type="text" ></td></tr>
-                        <tr><th id="editMTIco"></th><td><input id="edit_MT" data-index="2" class="transTextEdit" type="text" ></td></tr>
-                        <tr><th id="editETIco"></th><td><input id="edit_ET" data-index="4" class="transTextEdit" type="text" ></td></tr>
-                        <tr><th id="editSBIco"></th><td><input id="edit_SB" data-index="1" class="transTextEdit" type="text" ></td></tr>
-                        <tr><th id="editMBIco"></th><td><input id="edit_MB" data-index="3" class="transTextEdit" type="text" ></td></tr>
-                        <tr><th id="editEBIco"></th><td><input id="edit_EB" data-index="5" class="transTextEdit" type="text" ></td></tr>
-                    </table>
+                    <legend>Marker</legend>
+                    <label for="startMarker">Start:</label>
+                    <select class="edit" name="startMarker" id="startMarker">
+                        <option data-class="marker-none" value="none">None</option>
+                        <option data-class="marker-arrow" value="arrow_s">Uni-directional</option>
+                        <option data-class="marker-triangle" value="triangle_s">Inheritance</option>
+                        <option data-class="marker-trianglefill" value="trianglefill_s">TriangleFill</option>
+                        <option data-class="marker-aggr" value="aggr_s">Aggregation</option>
+                        <option data-class="marker-comp" value="comp_s">Composition</option>
+                    </select>
+                    <label for="endMarker">End:</label>
+                    <select class="edit" name="endMarker" id="endMarker">
+                        <option data-class="marker-none" value="none">None</option>
+                        <option data-class="marker-arrow" value="arrow">Uni-directional</option>
+                        <option data-class="marker-triangle" value="triangle">Inheritance</option>
+                        <option data-class="marker-trianglefill" value="trianglefill">TriangleFill</option>
+                        <option data-class="marker-aggr" value="aggr">Aggregation</option>
+                        <option data-class="marker-comp" value="comp">Composition</option>
+                    </select>
+                </fieldset>
+                <fieldset>
+                    <legend>Style</legend>
+                    <label for="transitionType">Type:</label>
+                    <select class="edit" name="transitionType" id="transitionType">
+                        <option value="straight">line</option>
+                        <option value="curved">curved</option>
+                    </select>
+                </fieldset>
+                <fieldset>
+                    <legend>Text</legend>
+                    <label id="editSTIco" class="ttextPositionLabel" for="edit_ST">&nbsp;</label>
+                    <input id="edit_ST" data-index="0" class="ttextPositionInput" type="text" >
+                    <br />
+                    <label id="editSBIco" class="ttextPositionLabel" for="edit_SB">&nbsp;</label>
+                    <input id="edit_SB" data-index="1" class="ttextPositionInput" type="text" >
+                    <br />
+                    <label id="editMTIco" class="ttextPositionLabel" for="edit_MT">&nbsp;</label>
+                    <input id="edit_MT" data-index="2" class="ttextPositionInput" type="text" >
+                    <br />
+                    <label id="editMBIco" class="ttextPositionLabel" for="edit_MB">&nbsp;</label>
+                    <input id="edit_MB" data-index="3" class="ttextPositionInput" type="text" >
+                    <br />
+                    <label id="editETIco" class="ttextPositionLabel" for="edit_ET">&nbsp;</label>
+                    <input id="edit_ET" data-index="4" class="ttextPositionInput" type="text" >
+                    <br />
+                    <label id="editEBIco" class="ttextPositionLabel" for="edit_EB">&nbsp;</label>
+                    <input id="edit_EB" data-index="5" class="ttextPositionInput" type="text" >
                 </fieldset>
             </form>
         </div>
-        <div id="editNode">
-            <h3>Edit Node</h3>
-            <form id="editNodeForm" action="#">
-                <div id="editNodeContent"></div>
-            </form>
-        </div>
     </div>
-</div>
-<div id="infoBox" class="ui-corner-all ui-widget-content">&nbsp</div>
+    <div id="editNodePanel" class="toolTipPanel">
+        <h3>Edit Node</h3>
+        <div id="editNodeSection" class="toolTipSection"><!-- will be created dynamically--></div>
+    </div>
+
+    <div id="infoBox" class="ui-corner-all ui-widget-content">&nbsp</div>
 </div>
 
 <!-- XML View Dialog -->

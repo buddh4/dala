@@ -9,6 +9,7 @@ var CMD_ADD = "transition_add";
 var CMD_DEL = "transition_delete";
 var CMD_DOC_CREATED = "transition_doc_created";
 var CMD_DOC_DROPPED = "transition_doc_dropped";
+var CMD_EDIT = "transition_edit";
 
 var TransitionManager = function(diagram) {
     // Contains all nodes added to the diagram
@@ -22,15 +23,55 @@ var TransitionManager = function(diagram) {
     event.listen('transition_docking_created', this.transitionDockingCreatedListener, this);
     event.listen('transition_docking_dropped', this.transitionDockingDropListener, this);
 
+    event.listen('transition_edit', this.editTransitionListener, this);
 
     this.command(CMD_ADD, this.importTransitionAction, this.deleteTransitionAction);
     this.command(CMD_DEL, this.deleteTransitionAction, this.importTransitionAction);
     this.command(CMD_DOC_CREATED, this.importTransitionAction, this.deleteKnobAction);
     this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
+    this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
+    this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
 };
 
 TransitionManager.prototype = Object.create(AbstractManager.prototype);
 var _super = AbstractManager.prototype;
+
+TransitionManager.prototype.editTransitionListener = function(evt) {
+    var transition = this.getTransition(evt.data.transition);
+    var key = evt.data.key;
+    var oldValue = transition.additions.edit.getValue(key);
+    this.exec(CMD_EDIT, [transition.id, key, evt.data.value], [transition.id, key, oldValue]);
+};
+
+TransitionManager.prototype.editCmd = function(transition, key, value) {
+    transition = this.getTransition(transition);
+    transition.additions.edit.setValue(key, value);
+    event.trigger('transition_edited', transition);
+};
+
+TransitionManager.prototype.undoEditCmd = function(transition, key, value) {
+    transition = this.getTransition(transition);
+    transition.additions.edit.setValue(key, value);
+    event.trigger('transition_edit_undo', transition);
+};
+
+TransitionManager.prototype.editTransitionAction = function(transition, type, value) {
+    transition = this.getTransition(transition);
+};
+
+var updateMarker = function(markerId, markerValue) {
+    var markerSelector = '#'+markerId;
+
+    if(editTransition[markerId]() !== markerValue) {
+        if(markerValue) {
+            editTransition[markerId](markerValue);
+        } else {
+            editTransition[markerId]('');
+        }
+
+        updateButtonMarker(markerSelector,markerValue);
+    }
+};
 
 TransitionManager.prototype.transitionDockingDropListener = function(evt) {
     if (evt.data) {

@@ -94,7 +94,6 @@ Template.prototype.createNode = function(config, diagram) {
 };
 
 Template.prototype.getSVGString = function(cfg) {
-
     return config.replaceConfigValues(this.svg, cfg);
 };
 

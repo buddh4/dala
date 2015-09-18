@@ -1,6 +1,7 @@
 var object = require('../util/object');
 var appUtil = require('../util/app');
 var Vector = require('../util/math').Vector;
+var math = require('../util/math');
 var util = require("util");
 
 var AbstractPathDataType = function(type, absolute) {
@@ -79,6 +80,10 @@ LineTo.prototype.y = function(value) {
     return this.value(1).y;
 };
 
+LineTo.prototype.moveAlong = function(from, distance, direction) {
+    return math.Line.moveAlong(from, this.to(), distance);
+};
+
 var QBezier = function(controlP, toP, absolute) {
     AbstractPathDataType.call(this, 'l', absolute);
     this.control(controlP);
@@ -132,6 +137,25 @@ CBezier.prototype.to = function(x,y) {
 CBezier.prototype.toString = function() {
     return this.getType()+this.pointToString(this.control1())+this.pointToString(this.control2())+this.pointToString(this.to());
 };
+
+/**
+ * calculates the nearest point of the bezier curve to the given position. since the CBezier does not know its start
+ * point, we have to provide the from position as well as the search base position.
+ * @param from
+ * @param position
+ * @returns {{point, location}|*}
+ */
+CBezier.prototype.getNearestPoint = function(from, position) {
+    return math.bezier.nearestPointOnCurve(position, this.getCurve(from)).point;
+};
+
+CBezier.prototype.moveAlong = function(from, distance) {
+    return math.bezier.moveAlong(this.getCurve(from), distance);
+};
+
+CBezier.prototype.getCurve = function(from) {
+    return [from, this.control1(), this.control2(), this.to()];
+}
 
 var MoveTo = function(toP, absolute) {
     AbstractPathDataType.call(this, 'm', absolute);
@@ -200,6 +224,176 @@ PathData.prototype.polynoms = function() {
     });
     return result;
 };
+
+/**
+ * Returns
+ * @returns {Array}
+ */
+PathData.prototype.getPathParts = function() {
+    var result = [];
+
+    //We start at index 1 because the 0 index of the vector contains the pathpart type
+    for(var i = 1; i <= this.length() - 1; i++) {
+        result.push(this.getPathPart(i));
+    }
+
+    return result;
+};
+
+PathData.prototype.getPathPart = function(index) {
+    var pathPart = this.value(index);
+    return {
+        start: this.value(index - 1).to(),
+        end: pathPart.to(),
+        value: pathPart
+    };
+};
+
+PathData.prototype.moveAlong = function(index, distance, direction) {
+    var pathPart = this.getPathPart(index);
+    if(pathPart.value.moveAlong) {
+        return pathPart.value.moveAlong(pathPart.start, distance, direction);
+    } else {
+        return math.Line.moveAlong(pathPart.start, pathPart.end, distance, direction);
+    }
+};
+
+/**
+ * Calculates the rough center of the path by calculating the total length of the pathparts (as direct lines) and moving
+ * along those lines to the center (total length / 2). Note with this method we just get a exact result for simple
+ * line paths. If the calculated center position is within a cubic bezier path part, we return the nearest point on the curve
+ * to the calculated center.
+ * @returns {*}
+ */
+PathData.prototype.getCenter = function() {
+    var resultD = this.getDistance() / 2;
+    var currentD = 0;
+    var center;
+    object.each(this.getPathParts(), function(index, part) {
+        var lineD = math.Line.calcDistance(part.start, part.end);
+        var nextD = currentD + lineD;
+        if(nextD > resultD) {
+            var diffD =  resultD - currentD;
+            center = math.Line.moveAlong(part.start, part.end, diffD);
+
+            //If we have a cubic bezier path part we calculate the nearest point on the curve
+            if(part.value.is('c')) {
+                center = part.value.getNearestPoint(part.start, center);
+            }
+            return false;
+        }
+        currentD = nextD;
+    });
+    return center;
+};
+
+PathData.prototype.getDistance = function() {
+    var distance = 0;
+    object.each(this.getPathParts(), function(index, part) {
+        distance += math.Line.calcDistance(part.start, part.end);
+    });
+    return distance;
+};
+
+/**
+ * Assuming there are only! cubic bezier curved path parts this function recalculates all control points of the curves
+ * to smoothen the entire path.
+ *
+ * @param polynoms
+ */
+PathData.prototype.smoothen = function(polynoms) {
+    if(!polynoms) {
+        polynoms = this.polynoms();
+    }
+
+    var x = [];
+    var y = [];
+
+    object.each(polynoms, function(index, value) {
+        x[index] = value.x;
+        y[index] = value.y;
+    });
+
+    var px = math.bezier.calculateSmoothControlPoints(x);
+    var py = math.bezier.calculateSmoothControlPoints(y);
+
+    var that = this;
+    object.each(px.p1, function(index, value) {
+        that.value(index + 1).control1(px.p1[index], py.p1[index]);
+        that.value(index + 1).control2(px.p2[index], py.p2[index]);
+    });
+    return this;
+};
+
+PathData.prototype.getLineByPathIndex = function(index, fromEnd) {
+    var startIndex = (fromEnd)  ? (index + 1) * -1 : index;
+    var endIndex =   (fromEnd)  ? (index + 2) * -1 : index + 1;
+    var p1 = this.value(startIndex).to();
+    var p2 = this.value(endIndex).to();
+    return new math.Line(p1, p2);
+};
+
+PathData.prototype.getPathIndexForPosition = function(point) {
+
+    if(this.length() === 2) {
+        //If there is just the start and end docking we know the new index
+        return 1;
+    }
+
+    var dockingIndex = 1;
+    var candidate;
+
+    object.each(this.getPathParts(), function(index, part) {
+        var xMin = Math.min(part.start.x, part.end.x);
+        var xMax = Math.max(part.start.x, part.end.x);
+
+        // If the search point is within the transition part x boundary we calculate y and return the candidate with
+        // the lowest y distance
+        if (point.x <= xMax && point.x >= xMin) {
+            var line = new math.Line(part.start, part.end);
+            var yResult = line.calcFX(point.x);
+
+            var d = Math.abs(yResult - point.y);
+            if (candidate === undefined || candidate[1] > d) {
+                //The dockingindex is the arrayindex + 1 since we return the end index
+                candidate = [index+1, d];
+            }
+        }
+    });
+
+    if (candidate !== undefined) {
+        return candidate[0];
+    }
+};
+
+/*
+ LinePathManager.prototype.getGradien = function(x,y) {
+ var position = util.app.getPoint(x,y);
+ var index = this.transition.getKnobIndexForPoint(position);
+ var p1 = this.data.getDockingByIndex(index).position();
+ var p2 = this.data.getDockingByIndex(index + 1).position();
+ return util.math.Line.calcGradient(p1, p2);
+ };
+
+ LinePathManager.prototype.getGradientByIndex = function(index) {
+ var p1 = this.data.getDockingByIndex(index).position();
+ var p2 = this.data.getDockingByIndex(index + 1).position();
+ return util.math.Line.calcGradient(p1, p2);
+ };
+
+
+ LinePathManager.prototype.getVectorByIndex = function(index, fromEnd) {
+ var p1, p2;
+ if(fromEnd) {
+ p1 = this.data.getDockingByEndIndex(index + 1).position();
+ p2 = this.data.getDockingByEndIndex(index).position();
+ } else {
+ p1 = this.data.getDockingByIndex(index).position();
+ p2 = this.data.getDockingByIndex(index + 1).position();
+ }
+ return util.math.Line.calcNormalizedLineVector(p1, p2);
+ };
+ */
 
 PathData.prototype.getY = function(value) {
     return this.getCorners()[0].y;

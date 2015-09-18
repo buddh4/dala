@@ -17,7 +17,6 @@ var TransitionKnobManager = function(transition) {
 
 TransitionKnobManager.prototype.init = function(start) {
     this.knobs = [];
-    this.pathManager = this.transition.pathManager;
     return this.addKnob(start, 0);
 };
 
@@ -28,12 +27,12 @@ TransitionKnobManager.prototype.addKnob = function(position, index) {
 
     if(index === 0) {
         this.startKnob = knob;
-        this.pathManager.addPathPart(index, position);
+        this.getPathManager().addPathPart(index, position);
     } else if(arguments.length === 1) {
         //we don't need to add an additionalpathpart for the endknob
         this.endKnob = knob;
     } else {
-        this.pathManager.addPathPart(index, position);
+        this.getPathManager().addPathPart(index, position);
     }
 
     this.transition.redraw();
@@ -85,7 +84,7 @@ TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
     // move the corresponding docking
     this.knobs[knobIndex].moveTo(position.x, position.y);
     // update path
-    this.pathManager.updatePathPart(knobIndex, position);
+    this.getPathManager().updatePart(knobIndex, position);
 
 
     // special handling for start and end dockings
@@ -101,7 +100,7 @@ TransitionKnobManager.prototype.removeKnob = function(knob) {
     if(!this.transition.removed) {
         var index = this.getIndexForKnob(knob);
         this.knobs.splice(index, 1);
-        this.pathManager.removePathPart(index);
+        this.getPathManager().removePathPart(index);
         this.transition.update();
     }
 };
@@ -167,6 +166,14 @@ TransitionKnobManager.prototype.getIndexForKnob = function(knob) {
     return this.knobs.indexOf(knob);
 };
 
+TransitionKnobManager.prototype.getKnobPositions = function() {
+    var result = [];
+    object.each(this.knobs, function(index, value) {
+        result.push(value.position());
+    });
+    return result;
+};
+
 TransitionKnobManager.prototype.getDockingByEndIndex = function(indexDif) {
     return this.knobs[(this.knobs.length - 1) - indexDif];
 };
@@ -223,6 +230,10 @@ TransitionKnobManager.prototype.getPosition = function(index) {
         return object.valueByIndex(this.knobs, index).position();
     }
 };
+
+TransitionKnobManager.prototype.getPathManager = function() {
+    return this.transition.pathManager;
+}
 
 TransitionKnobManager.prototype.isInitState = function() {
     return !this.endKnob;

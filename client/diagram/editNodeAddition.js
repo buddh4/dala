@@ -1,6 +1,7 @@
 var util = require('../util/util');
 
 var object = util.object;
+var string = util.string;
 var dom = util.dom;
 
 var EditAddition = function(node) {
@@ -171,56 +172,97 @@ EditAddition.prototype.getItem = function(key) {
 };
 
 EditAddition.prototype.getValue = function(key) {
-    return this.getValueFromItem(this.config[key]);
+    var keyType = this.getKeyType(key);
+    return this.getValueFromItem(this.config[keyType.key], keyType.type);
 };
 
-EditAddition.prototype.getValueFromItem = function(item) {
-    switch(item.type) {
-        case 'stroke':
-            return this.node.getInnerSVG(item.bind).stroke();
-        case 'stroke-width':
-            return this.node.getInnerSVG(item.bind).strokeWidth();
-        case 'stroke-dash':
-            return this.node.getInnerSVG(item.bind).strokeDashType();
-            break;
-        case 'color':
-            //TODO: binding can be an array of inner nodes !!
-            return this.node.getInnerSVG(item.bind).fill();
-        case 'text':
-            return $(this.node.getNodeSelector(item.bind)).text();
-        case 'textarea':
-            return this.getTextAreaContent($(this.node.getNodeSelector(item.bind)));
+EditAddition.prototype.getKeyType = function(key) {
+    var type;
+    if(key.indexOf('_') > -1) {
+        var splitted = key.split('_');
+        key = splitted[0];
+        type = splitted[1];
+    } else {
+        type = this.config[key].type;
     }
-    return item;
+    return {
+        key : key,
+        type : type
+    }
 };
 
+var editFunctions = {
+    stroke : {
+        get : function(binding) {
+            return this.node.getInnerSVG(binding).stroke();
+        },
+        set : function(binding, value) {
+            this.node.getInnerSVG(binding).stroke(value);
+        }
+    },
+    'stroke-width' : {
+        get : function(binding) {
+            return this.node.getInnerSVG(binding).strokeWidth();
+        },
+        set : function(binding, value) {
+            this.node.getInnerSVG(binding).strokeWidth(value);
+        }
+    },
+    'stroke-dash' : {
+        get : function(binding) {
+            return this.node.getInnerSVG(binding).strokeDashType();
+        },
+        set : function(binding, value) {
+            this.node.getInnerSVG(binding).strokeDashType(value);
+        }
+    },
+    text : {
+        get : function(binding) {
+            return $(this.node.getNodeSelector(binding)).text();
+        },
+        set : function(binding, value) {
+            $(this.node.getNodeSelector(binding)).text(value);
+        }
+    },
+    textarea : {
+        get : function(binding) {
+            return $(this.node.getNodeSelector(binding)).text();
+        },
+        set : function(binding, value) {
+            var $editSVGNode = $(this.node.getNodeSelector(binding));
+            this.setTextAreaContent($editSVGNode,value);
+        }
+    },
+    'text-size' : {
+        get : function(binding) {
+            return this.node.getInnerSVG(binding).style('font-size');
+        },
+        set : function(binding, value) {
+            return this.node.getInnerSVG(binding).style('font-size', value);
+        }
+    },
+    color : {
+        get : function(binding) {
+            return this.node.getInnerSVG(binding).fill();
+        },
+        set : function(binding, value) {
+            this.node.getInnerSVG(binding).fill(value);
+        }
+    }
+};
 
-//TODO: implement a way to register edit functionality
+EditAddition.prototype.getValueFromItem = function(item, type) {
+    //If there is no type given we use the configured type the additional type parameter is used for assambled edit
+    //types like text_text, text_color...
+    type = type || item.type;
+    return editFunctions[type].get.call(this, item.bind);
+};
+
 EditAddition.prototype.setValue = function(key, newValue) {
-    var item = this.config[key];
-    switch(item.type) {
-        case 'color':
-            this.node.getInnerSVG(item.bind).fill(newValue);
-            break;
-        case 'text':
-            $(this.node.getNodeSelector(item.bind)).text(newValue);
-            break;
-        case 'stroke':
-            this.node.getInnerSVG(item.bind).stroke(newValue);
-            break;
-        case 'stroke-width':
-            this.node.getInnerSVG(item.bind).strokeWidth(newValue);
-            break;
-        case 'stroke-dash':
-            this.node.getInnerSVG(item.bind).strokeDashType(newValue);
-            break;
-        case 'textarea':
-            var $editSVGNode = $(this.node.getNodeSelector(item.bind));
-            this.setTextAreaContent($editSVGNode,newValue);
-            break;
-    }
+    var keyType = this.getKeyType(key);
+    var item = this.config[keyType.key];
+    editFunctions[keyType.type].set.call(this, item.bind, newValue);
     this.node.executeAddition('edit');
-    this.event.trigger('node_edit',this.node);
 };
 
 EditAddition.prototype.deselect = function() {
