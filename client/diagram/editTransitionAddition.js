@@ -7,7 +7,7 @@ var dom = util.dom;
 
 var editFunctions = {
     stroke : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.line.stroke();
         },
         set : function(binding, value) {
@@ -15,7 +15,7 @@ var editFunctions = {
         }
     },
     'stroke-width' : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.strokeWidth();
         },
         set : function(binding, value) {
@@ -23,60 +23,60 @@ var editFunctions = {
         }
     },
     'stroke-dash' : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.line.strokeDashType();
         },
-        set : function(binding, value) {
+        set : function(editItem, value) {
             this.transition.line.strokeDashType(value);
         }
     },
     text : {
-        get : function(binding) {
-            return $(this.transition.getNodeSelector(binding)).text();
+        get : function(editItem) {
+            return $(this.transition.getTransitionSelector(editItem.bind)).text();
         },
-        set : function(binding, value) {
-            $(this.transition.getNodeSelector(binding)).text(value);
+        set : function(editItem, value) {
+            $(this.transition.getTransitionSelector(editItem.bind)).text(value);
         }
     },
     textarea : {
-        get : function(binding) {
-            return $(this.transition.getNodeSelector(binding)).text();
+        get : function(editItem) {
+            return $(this.transition.getTransitionSelector(editItem.bind)).text();
         },
-        set : function(binding, value) {
-            var $editSVGNode = $(this.transition.getNodeSelector(binding));
+        set : function(editItem, value) {
+            var $editSVGNode = $(this.transition.getTransitionSelector(editItem.bind));
             this.setTextAreaContent($editSVGNode,value);
         }
     },
     'text-size' : {
-        get : function(binding) {
-            return this.transition.getInnerSVG(binding).style('font-size');
+        get : function(editItem) {
+            return this.transition.getInnerSVG(editItem.bind).style('font-size');
         },
-        set : function(binding, value) {
-            this.transition.getInnerSVG(binding).style('font-size', value);
+        set : function(editItem, value) {
+            this.transition.getInnerSVG(editItem.bind).style('font-size', value);
         }
     },
     'type' : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.type();
         },
-        set : function(binding, value) {
+        set : function(editItem, value) {
             this.transition.type(value);
         }
     },
     'startMarker' : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.startMarkerValue();
         },
-        set : function(binding, value) {
+        set : function(editItem, value) {
             value = value || '';
             this.transition.startMarker(value);
         }
     },
     'endMarker' : {
-        get : function(binding) {
+        get : function(editItem) {
             return this.transition.endMarkerValue();
         },
-        set : function(binding, value) {
+        set : function(editItem, value) {
             value = value || '';
             this.transition.endMarker(value);
         }
@@ -84,12 +84,12 @@ var editFunctions = {
 };
 
 var config = {
-    'text0' : {type : 'text', bind : 'text0'},
-    'text1' : {type : 'text', bind : 'text1'},
-    'text2' : {type : 'text', bind : 'text2'},
-    'text3' : {type : 'text', bind : 'text3'},
-    'text4' : {type : 'text', bind : 'text4'},
-    'text5' : {type : 'text', bind : 'text5'},
+    'text0' : {type : 'text', bind : 'text0', trigger : 'text0'},
+    'text1' : {type : 'text', bind : 'text1', trigger : 'text1'},
+    'text2' : {type : 'text', bind : 'text2', trigger : 'text2'},
+    'text3' : {type : 'text', bind : 'text3', trigger : 'text3'},
+    'text4' : {type : 'text', bind : 'text4', trigger : 'text4'},
+    'text5' : {type : 'text', bind : 'text5', trigger : 'text5'},
     'type'  : {type : 'type', bind : 'line'},
     'transition' : { type : 'stroke', bind : 'line'},
     'startMarker' : { type : 'startMarker', bind : 'line'},

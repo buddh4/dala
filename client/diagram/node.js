@@ -192,6 +192,10 @@ Node.prototype.instance = function() {
     }
 };
 
+Node.prototype.selector = function(prefix) {
+    return this.getNodeSelector(prefix);
+};
+
 Node.prototype.getNodeSelector = function(prefix) {
     var result = '';
 

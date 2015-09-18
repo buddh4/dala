@@ -1,6 +1,10 @@
+var dom = require('../dom/dom');
+var object = require('../util/object');
+
 EditPanel = function() {};
 
 EditPanel.prototype.init = function(pageX, pageY, onclose) {
+    var that = this;
     this.close();
 
     //Init Close Button
@@ -10,7 +14,7 @@ EditPanel.prototype.init = function(pageX, pageY, onclose) {
                 onclose.apply();
             }
             //that.node.executeAddition('contentChanged');
-            this.close();
+            that.close();
         });
 
     //Init Form
@@ -28,7 +32,7 @@ EditPanel.prototype.init = function(pageX, pageY, onclose) {
         .append(this.$form);
 
     //Append to body
-    document.getElementsByTagName('body')[0].appendChild($editDiv.get(0));
+    $('body').append(this.$editDiv);
     return this;
 };
 
@@ -48,7 +52,7 @@ EditPanel.prototype.createTextEdit = function(pageX ,pageY, getter, setter) {
             setter($input.val());
         });
 
-    this.initEditPanel(pageX ,pageY);
+    this.init(pageX ,pageY);
     this.$form.append($input);
     $input.focus();
 };
@@ -63,7 +67,7 @@ EditPanel.prototype.createTextAreaEdit = function(pageX ,pageY, getter, setter) 
             this.select();
         });
 
-    this.initEditPanel(pageX ,pageY);
+    this.init(pageX ,pageY);
     this.$form.append($input);
     $input.focus();
 };

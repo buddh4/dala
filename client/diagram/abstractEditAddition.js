@@ -9,18 +9,19 @@ var AbstractEditAddition = function(editable, editFunctions, config) {
     this.config = config;
 };
 
-AbstractEditAddition.prototype.addEditTrigger = function(trigger, editItem) {
+AbstractEditAddition.prototype.addEditTrigger = function(key) {
     switch(type) {
         case 'text':
         case 'textarea':
-            this.addEditTextTrigger(triggerSelector, editItem);
+            this.addEditTextTrigger(key);
             break;
     }
 };
 
-AbstractEditAddition.prototype.addEditTextTrigger = function(editItem) {
+AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
+    var editItem = this.getEditItem(key);
     var that = this;
-    var $triggerNode = $(editItem.trigger);
+    var $triggerNode = $(this.editable.selector(editItem.trigger));
     $triggerNode.css('cursor', 'pointer');
     $triggerNode.on('click', function(evt) {
         if(that.isTriggerAllowed()) {
@@ -28,14 +29,19 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(editItem) {
                 case 'textarea':
                     editPanel.createTextAreaEdit(evt.pageX, evt.pageY,
                         function() {
-                            return that.getValue(editItem);
+                            return that.getValue(key);
                         },
                         function(value) {
-                            that.setValue(editItem, value);
+                            that.setValue(key, value);
                         });
                     break;
                 case 'text':
-                    that.createTextEdit(evt.pageX, evt.pageY, editItem);
+                    editPanel.createTextEdit(evt.pageX, evt.pageY, function() {
+                            return that.getValue(key);
+                        },
+                        function(value) {
+                            that.setValue(key, value);
+                        });
                     break;
             }
         }
@@ -77,7 +83,7 @@ AbstractEditAddition.prototype.getEditItem = function(key) {
 AbstractEditAddition.prototype.isTriggerAllowed = function() {
     //Since the
     var now = Date.now();
-    return (now - this.lastSelect > 200);
+    return !this.lastSelect || (now - this.lastSelect > 200);
 };
 
 //TODO handle svg texts more elegant within a seperated module

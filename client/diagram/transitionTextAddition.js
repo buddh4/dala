@@ -41,11 +41,7 @@ TransitionTextAddition.prototype.setText = function(pos, text) {
         var id = 'text'+pos+'_'+this.transition.id;
         var textNode = this.textNodes[pos] = this.diagram.svg.text(text, {id : id});
         this.diagram.svg.addToGroup(this.transition.group, textNode);
-        this.transition.additions.edit.addEditTextTrigger({
-            type : 'text',
-            bind : '#'+id,
-            trigger : '#'+id
-        });
+        this.transition.additions.edit.addEditTextTrigger('text'+pos);
     } else {
         this.textNodes[pos].$().text(text);
     }

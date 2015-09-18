@@ -42,7 +42,7 @@ Transition.prototype.type = function(value) {
         var newPathManager = pathManagerFactory.get(this, value);
         if(newPathManager) {
             newPathManager.replace(this.pathManager, this.knobManager.getKnobPositions());
-            this.redraw();
+            this.update();
         }
     } else {
         return this.pathManager.type;
@@ -266,7 +266,11 @@ Transition.prototype.marker = function(type, marker) {
     }
 };
 
-Node.prototype.getTransitionSelector = function(prefix) {
+Transition.prototype.selector = function(prefix) {
+    return this.getTransitionSelector(prefix);
+};
+
+Transition.prototype.getTransitionSelector = function(prefix) {
     var result = '';
 
     if(!util.string.startsWith(prefix, '#') && !util.string.startsWith(prefix, '.')) {
