@@ -43,6 +43,7 @@ config.debug(true);
 
 require('./diagram/diagramManager');
 
+//TODO: move this to a controller !
 $(window).bind('mousewheel DOMMouseScroll', function(evt){
     if(!evt.ctrlKey) {
         return;
@@ -56,6 +57,18 @@ $(window).bind('mousewheel DOMMouseScroll', function(evt){
     else {
         event.trigger('view_zoomOut');
     }
+});
+
+var stageFocus = false;
+
+$('html').on('mousedown', function() {
+    stageFocus = false;
+});
+
+//TODO: check other key events for stageFocus
+$(document).on('click', '.svgStage', function(evt) {
+    stageFocus = true;
+    evt.stopPropagation();
 });
 
 event.on(document, 'keydown', function(e) {
@@ -75,7 +88,7 @@ event.on(document, 'keydown', function(e) {
             event.trigger('key_del_press', {}, e);
             break;
         case 67: //c
-            if(e.ctrlKey) {
+            if(e.ctrlKey && !isTextSelected()) {
                 event.trigger('key_copy_press', {}, e);
             }
             break;
@@ -86,7 +99,7 @@ event.on(document, 'keydown', function(e) {
             }
             break;
         case 86: //v
-            if(e.ctrlKey) {
+            if(e.ctrlKey && stageFocus) {
                 event.trigger('key_paste_press', {}, e);
             }
             break;
@@ -114,6 +127,11 @@ event.on(document, 'keydown', function(e) {
             break;
     }
 });
+
+var isTextSelected = function() {
+    var selection =  window.getSelection();
+    return selection && selection.toString().length > 0;
+}
 
 //TODO: move this in gui with diagram handler...
 

@@ -1,5 +1,5 @@
 var config = require('../core/config');
-var CurvePathManager = require('./curvePathManager');
+var CurvePathManager = require('./curvedPathManager');
 var StraightPathManager = require('./straightPathManager');
 var pathManager = {};
 

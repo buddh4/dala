@@ -4,10 +4,15 @@ var Promise = require('bluebird');
 var connect = function() {
     return new Promise(function(resolve, reject) {
         try {
-            mongoose.connect('mongodb://localhost/dala');
-            resolve();
+            mongoose.connect('mongodb://localhost/dala', function(err) {
+                if(err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            });
         } catch (err) {
-            reject();
+            reject(err);
         }
     });
 };

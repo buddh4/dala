@@ -11,7 +11,6 @@ var lastDrag;
 var DragContext = function(node, cfg) {
     this.cfg = cfg || {};
     this.node = node;
-    this.event = node.diagram.event;
 };
 
 DragContext.prototype.dragStart = function(evt) {
@@ -22,7 +21,6 @@ DragContext.prototype.dragStart = function(evt) {
     if(this.cfg.dragStart) {
         this.cfg.dragStart(evt);
     }
-    this.event.trigger('drag_start', {context : this});
 };
 
 DragContext.prototype.dragMove = function(evt, dx, dy) {
@@ -30,11 +28,6 @@ DragContext.prototype.dragMove = function(evt, dx, dy) {
     this.dySum += dy;
     if(this.cfg.dragMove) {
         this.cfg.dragMove(dx,dy);
-    }
-    if(!evt.triggerEvent) {
-        this.event.trigger('drag_move', {context: this, dx: dx, dy: dy});
-    } else {
-        this.event.trigger('drag_move_trigger', {context: this, dx: dx, dy: dy});
     }
 };
 
@@ -44,7 +37,6 @@ DragContext.prototype.dragEnd = function(evt) {
         if (this.cfg.dragEnd) {
             this.cfg.dragEnd(evt);
         }
-        this.event.trigger('drag_end', {context: this});
     }
 };
 
@@ -64,21 +56,14 @@ Node.prototype.draggable = function(cfg) {
     var that = this;
     this.dragContext = new DragContext(this, cfg);
 
-    this.triggerDrag = function(dx,dy) {
-        this.root.triggerDrag(dx,dy);
-    };
+    var dragAlignment = cfg.dragAlignment || new DragAlignment(that.diagram,
+            function() {
+               return [
+                    {source:[that.getOrientation()], target:that.getTransitionAlignmentTargets()},
+                    {source:[that.getCenter()], target:that.getNodeAlignmentTargets()},
+                ];
 
-    var dragAlignment = cfg.dragAlignment || new DragAlignment(that.diagram, {
-                getSource: function() {
-                    //We align the center to all outter transition orientations
-                    //TODO: This will not work for relative transitions implement a dragAlignment with multiple {source, [target]} alignments
-                    return that.getOrientation();
-                },
-                getTargets: function() {
-                    return that.getAlignmentTargets();
-                }
-            }
-        );
+            });
 
     var dragConfig = {
         cursor: 'all-scroll',
@@ -86,14 +71,18 @@ Node.prototype.draggable = function(cfg) {
         dragStart: function(evt) {
             that.dragContext.dragStart(evt);
             lastDrag = that.dragContext;
+            that.exec('dragStart', [evt]);
         },
         dragMove : function(evt, dx , dy) {
-            that.executeAddition('drag');
-            //TODO: perhaps fire every 20 px a node_drag event...
             that.dragContext.dragMove(evt, dx, dy);
+            //that.exec('dragMove', [dx,dy, evt]);
+            //We skip the the domEvent dragMove here cause of performance...
+            that.exec('dragMove', [dx,dy, evt], true);
+
         },
         dragEnd : function(evt) {
             that.dragContext.dragEnd(evt);
+            that.exec('dragEnd', [evt]);
         },
         getScale: function() {
             return that.diagram.scale;
@@ -111,8 +100,21 @@ Node.prototype.draggable = function(cfg) {
     return this;
 };
 
-Node.prototype.getAlignmentTargets = function() {
+Node.prototype.getTransitionAlignmentTargets = function() {
     return this.getOrientations();
+};
+
+Node.prototype.getNodeAlignmentTargets = function() {
+    var result = [];
+    var that = this;
+
+    object.each(this.diagram.getNodes(), function(key, node) {
+        if(node.id !== that.id) {
+            result.push(node.getCenter());
+        }
+    });
+
+    return result;
 };
 
 Node.prototype.getDragElement = function() {

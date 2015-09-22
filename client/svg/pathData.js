@@ -1,8 +1,7 @@
 var object = require('../util/object');
-var appUtil = require('../util/app');
 var Vector = require('../util/math').Vector;
 var math = require('../util/math');
-var util = require("util");
+var util = require("../util/util");
 
 var AbstractPathDataType = function(type, absolute) {
     this.vector = new Vector();
@@ -58,7 +57,7 @@ var LineTo = function(p, absolute) {
 util.inherits(LineTo, AbstractPathDataType);
 
 LineTo.prototype.to = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(1,p);
 };
 
@@ -80,7 +79,7 @@ LineTo.prototype.y = function(value) {
     return this.value(1).y;
 };
 
-LineTo.prototype.moveAlong = function(from, distance, direction) {
+LineTo.prototype.moveAlong = function(from, distance) {
     return math.Line.moveAlong(from, this.to(), distance);
 };
 
@@ -93,12 +92,12 @@ var QBezier = function(controlP, toP, absolute) {
 util.inherits(QBezier, AbstractPathDataType);
 
 QBezier.prototype.to = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(2,p);
 };
 
 QBezier.prototype.control = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(1,p);
 };
 
@@ -120,17 +119,17 @@ CBezier.prototype.control = function(x,y) {
 }
 
 CBezier.prototype.control1 = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(1,p);
 };
 
 CBezier.prototype.control2 = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(2,p);
 };
 
 CBezier.prototype.to = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     return this.getOrSet(3,p);
 };
 
@@ -341,34 +340,47 @@ PathData.prototype.getPathIndexForPosition = function(point) {
     }
 
     var dockingIndex = 1;
-    var candidate;
+    var candidate = [1,Number.POSITIVE_INFINITY ];
 
     object.each(this.getPathParts(), function(index, part) {
-        var xMin = Math.min(part.start.x, part.end.x);
-        var xMax = Math.max(part.start.x, part.end.x);
-
-        // If the search point is within the transition part x boundary we calculate y and return the candidate with
-        // the lowest y distance
-        if (point.x <= xMax && point.x >= xMin) {
+        //Sort out pathparts which are not within the boundary of start/end points with a little tolerance of 10px
+        var p = new util.math.Point(point);
+        if(p.isWithinXInterval(part.start, part.end, 10)) {
+            var d;
             var line = new math.Line(part.start, part.end);
-            var yResult = line.calcFX(point.x);
 
-            var d = Math.abs(yResult - point.y);
+            if(!line.isVertical()) {
+                d = Math.abs(line.calcFX(point.x).y - point.y)
+            } else if(p.isWithinYInterval(part.start, part.end)) {
+                //Since the point is within x (with tolerance) and y interval we calculate the x distance
+                d = Math.abs(part.start.x - p.x);
+            }
+
             if (candidate === undefined || candidate[1] > d) {
-                //The dockingindex is the arrayindex + 1 since we return the end index
-                candidate = [index+1, d];
+                //The pathPartindex is the arrayindex + 1 since we use the end index of the path as identity
+                candidate[0] = [index + 1];
+                candidate[1] = d;
             }
         }
     });
 
-    if (candidate !== undefined) {
+    if (candidate) {
         return candidate[0];
+    }
+};
+
+var _getDForVertical = function(part, point) {
+    if(util.math.checkRange())
+    var min = Math.min(part.start.y, part.end.y);
+    var max = Math.max(part.start.y, part.end.y);
+    if (point.y <= max && point.y >= min) {
+
     }
 };
 
 /*
  LinePathManager.prototype.getGradien = function(x,y) {
- var position = util.app.getPoint(x,y);
+ var position = util.math.getPoint(x,y);
  var index = this.transition.getKnobIndexForPoint(position);
  var p1 = this.data.getDockingByIndex(index).position();
  var p2 = this.data.getDockingByIndex(index + 1).position();
@@ -409,7 +421,6 @@ PathData.prototype.getBottomY = function(value) {
 
 // TODO: NEW IMPLEMENTATION
 PathData.prototype.fromString = function(value) {
-    //Note this is just possible for normal points (x/y) values !
     var type = value.charAt(0);
     var values = value.substring(1,value.length).split(',');
     return {type : type, value:this.toPoint(values[0], values[1]), absolute : (type === type.toUpperCase())};
@@ -486,7 +497,7 @@ PathData.prototype.complete = function() {
 };
 
 PathData.prototype.line = function(x,y) {
-    var p = appUtil.getPoint(x,y);
+    var p = math.getPoint(x,y);
     this.data.add(new LineTo(p, true));
     return this;
 };

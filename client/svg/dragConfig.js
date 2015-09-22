@@ -36,6 +36,14 @@ DragConfig.prototype.dragEnd = function(dreHook) {
     return this;
 };
 
+DragConfig.prototype.restrictionX = function() {
+    return this.hooks.restrictionX;
+};
+
+DragConfig.prototype.restrictionY = function() {
+    return this.hooks.restrictionY;
+};
+
 DragConfig.prototype.get = function() {
     return this.hooks;
 };

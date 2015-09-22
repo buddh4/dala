@@ -5,6 +5,43 @@ var calcLineIntersection = function(pa1, pa2, pb1, pb2) {
     return new Line(pa1,pa2).calcLineIntercept(new Line(pb1,pb2));
 };
 
+var Point = function(x, y) {
+    var p = getPoint(x,y);
+    this.x = p.x;
+    this.y = p.y;
+};
+
+Point.prototype.isWithinInterval = function(start, end, tolerance) {
+    return isPointInInterval(this, start, end, tolerance);
+};
+
+Point.prototype.isWithinXInterval = function(start, end, tolerance) {
+    return _inInterval(this, start, end, tolerance, 'x');
+}
+
+Point.prototype.isWithinYInterval = function(start, end, tolerance) {
+    return _inInterval(this, start, end, tolerance, 'y');
+};;
+
+var isPointInInterval = function(point, start, end, tolerance) {
+    return _inInterval(point, start, end, tolerance, 'x') && _isPointInInterval(point, start, end, tolerance, 'y');
+};
+
+var _inInterval = function(p, start, end, tolerance, dimension) {
+    tolerance = tolerance || 0;
+    var boundary = minMax(start[dimension], end[dimension]);
+    boundary.min -= tolerance;
+    boundary.max += tolerance;
+    return (p[dimension] <= boundary.max && p[dimension] >= boundary.min);
+};
+
+var minMax = function(val1, val2) {
+    return {
+        min :  Math.min(val1, val2),
+        max : Math.max(val1, val2)
+    };
+};
+
 var Line = function(p1, p2) {
     //y = mx + t
     if(p1.x) {
@@ -62,14 +99,25 @@ Line.calcNormalizedLineVector = function(p1, p2) {
     return vector;
 };
 
+/*
+ *  TODO: this is working if you provide start/end and distance (negative or positive) but not tested (and presumably not working)
+ *  when given start/end dist and direction e.g move from start point -30 back.
+ */
 Line.moveAlong = function(p1,p2, dist, direction) {
     var vector = Line.calcNormalizedLineVector(p1,p2);
-    direction = direction || 1;
+
+    //If there is no direction given we handle negative distances as direction -1 (from end to start)
+    direction = direction || (dist < 0) ? -1 : 1;
+
+    if(direction < 1) {
+        dist = Line.calcDistance(p1,p2) + dist;
+    }
+
     return {
-        x : p1.x + vector.x * dist * direction,
-        y : p1.y + vector.y * dist * direction
+        x : p1.x + vector.x * dist,
+        y : p1.y + vector.y * dist
     };
-}
+};
 
 Line.calcGradient = function(p1, p2) {
     return (p2.y - p1.y) / (p2.x - p1.x);
@@ -85,7 +133,7 @@ Line.prototype.calcFX = function(x) {
 
 Line.prototype.calcMidPoint = function() {
     return Line.calcMidPoint(this.p1, this.p2);
-}
+};
 
 Line.calcMidPoint = function(p1, p2) {
     return {
@@ -95,14 +143,12 @@ Line.calcMidPoint = function(p1, p2) {
 };
 
 Line.prototype.isVertical = function(x) {
-    return !isFinite(this.m) || this.m === 0;
+    return !isFinite(this.m);
 };
 
-/*
- Line.prototype.calcLineIntercept = function(other) {
- var x = (this.m * this.p1.x - other.m * other.p1.x - this.p1.y + other.p1.y) / (this.m - other.m);
- return this.calcFX(x);
- }; */
+Line.prototype.isHorizontal = function(x) {
+    return this.m === 0;
+};
 
 Line.prototype.calcLineIntercept = function(other) {
     //mx(1) + t(1) = mx(2) +t(2)
@@ -360,11 +406,50 @@ var getVectorValue = function(vectorArr, args) {
         return object.valueByIndex(vectorArr, args);
     }
 };
+
+/**
+ * Checks if the difference between source and target value is lower than the given range value
+ */
+var checkRangeDiff = function(source, target, range) {
+    return isInDiffRange(target, source, range);
+};
+
+var isInDiffRange = function(p1, p2, range) {
+    return Math.abs(p1 - p2) < range;
+};
+
+var getPoint = function(x, y) {
+    var result;
+    if(x && object.isDefined(x.x) && object.isDefined(x.y)) {
+        result = x;
+    } else if(!isNaN(x) && !isNaN(y)) {
+        result = {
+            x : x,
+            y : y
+        };
+    } else if(object.isDefined(x) && object.isDefined(y)) {
+        result = toPoint(x,y);
+    }
+    return result;
+};
+
+var toPoint = function(x,y) {
+    x = (object.isString(x)) ? parseFloat(x) : x;
+    y = (object.isString(y)) ? parseFloat(y) : y;
+
+    return {x:x,y:y};
+};
+
 module.exports = {
     calcLineIntersection : calcLineIntersection,
     Line : Line,
     Circle : Circle,
     Ellipse : Ellipse,
     Vector : Vector,
+    Point : Point,
+    isPointInInterval : isPointInInterval,
+    minMax : minMax,
+    checkRangeDiff : checkRangeDiff,
+    getPoint : getPoint,
     bezier : bezier
 };

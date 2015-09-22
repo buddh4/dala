@@ -70,7 +70,7 @@ Transform.prototype.scale = function(s) {
 };
 
 Transform.prototype.translate = function(x, y) {
-    var p = util.app.getPoint(x,y);
+    var p = util.math.getPoint(x,y);
 
     if(object.isDefined(p)) {
         this.definition.translate = [p.x, p.y];

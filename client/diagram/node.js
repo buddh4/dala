@@ -56,13 +56,16 @@ Node.prototype.getCorners = function() {
  * @returns itself
  */
 Node.prototype.activate = function(nodeID) {
+
     if(object.isDefined(nodeID)) {
         this.id = this.config.node_id = nodeID;
     }
 
-    //The root element of the node, its supposed to be a group node
-    this.root = $.svg('#'+this.id);
-
+    //Note: there are some special node types without an nodeId like defs.
+    if(this.id) {
+        //The root element of the node, its supposed to be a group node in most cases
+        this.root = $.svg('#'+this.id);
+    }
 
     nodeAdditions.init(this);
 
@@ -79,29 +82,19 @@ Node.prototype.initEventFunctions = function() {
     var that = this;
 
     if(this.root.hoverable) {
-        this.root.hoverable({
-            in : function() {
-                that.exec('mouseover');
-            },
-            out : function() {
-                that.exec('mouseout');
-            }
-        });
+        this.root.hoverable();
     }
 
-    this.root.dblclick(function(evt) {
-        that.exec('dbclick');
+    this.on('dblclick', function(evt) {
+        that.exec('dbclick', [evt], true);
     });
 
-    this.root.mousedown(function(evt) {
+    this.on('mousedown', function(evt) {
         if(!evt.ctrlKey) {
-            that.exec('mousedown', [evt]);
+            evt.stopPropagation();
+            that.exec('mousedown', [evt], true);
             that.event.trigger('node_mousedown', that, evt);
         }
-    });
-
-    this.root.mouseup(function(evt) {
-        that.exec('mouseup', [evt]);
     });
 };
 
@@ -140,7 +133,7 @@ Node.prototype.remove = function() {
 
 Node.prototype.moveTo = function(x, y) {
     this.root.moveTo(x, y);
-    this.exec('drag');
+    this.exec('moveTo');
 };
 
 Node.prototype.position = function(x,y) {
@@ -193,7 +186,18 @@ Node.prototype.instance = function() {
 };
 
 Node.prototype.selector = function(prefix) {
-    return this.getNodeSelector(prefix);
+    var stringSelector;
+    if(object.isArray(prefix)) {
+        stringSelector = [];
+        var that = this;
+        object.each(prefix, function(index, val) {
+            stringSelector.push(that.selector(val));
+        });
+        stringSelector = stringSelector.join(', ');
+    } else {
+        stringSelector = prefix;
+    }
+    return this.getNodeSelector(stringSelector);
 };
 
 Node.prototype.getNodeSelector = function(prefix) {
@@ -214,13 +218,13 @@ Node.prototype.getRootNode = function() {
     return this.root.getRootNode();
 };
 
-Node.prototype.exec = function(func, args) {
+Node.prototype.exec = function(func, args, prevDomEvent) {
     args = args || this;
-    if(this.template.handler && this.template.handler[func]) {
-        this.template.handler[func](args);
-    }
     this.executeAddition(func, args);
-}
+    if(this.root && !prevDomEvent) {
+        this.trigger(func, args);
+    }
+};
 
 Node.prototype.executeAddition = function(func, args) {
     object.each(this.additions, function(key, addition) {
@@ -233,7 +237,20 @@ Node.prototype.executeAddition = function(func, args) {
 Node.prototype.select = function() {
     this.selected = true;
     this.exec('select');
+};
 
+Node.prototype.on = function(evt, handler) {
+    this.root.$().on(evt, handler);
+    return this;
+};
+
+Node.prototype.trigger = function(evt, args) {
+    this.root.$().trigger(evt, args);
+    return this;
+};
+
+Node.prototype.off = function(evt, handler) {
+    this.root.$().off(evt, handler);
 };
 
 Node.prototype.deselect = function() {
@@ -295,8 +312,15 @@ Node.prototype.getCenter = function() {
     return this.root.getCenter();
 };
 
+Node.prototype.getRelativeCenter = function() {
+    return {
+        x: this.width() / 2,
+        y: this.height() / 2
+    }
+};
+
 Node.prototype.getRelativePosition = function(pageX,pageY) {
-    var p = util.app.getPoint(pageX,pageY);
+    var p = util.math.getPoint(pageX,pageY);
     return {
         x: p.x - this.x(),
         y: p.y - this.y()

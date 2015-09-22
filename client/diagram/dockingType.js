@@ -38,14 +38,13 @@ var getDocking = function(node, orientationOut, orientationIn) {
 };
 
 var FREE = function(position , orientationIn) {
-    return this.getOrientation(orientationIn);
+    return orientationIn;
 };
 
 var ELLIPSE = function(position , orientationIn) {
     var firstChild = this.firstChild();
-    orientationIn = this.getOrientation(orientationIn);
-    var rx = firstChild.attr('rx');
-    var ry = firstChild.attr('ry');
+    var rx = firstChild.totalRadiusX() || this.width() / 2;
+    var ry = firstChild.totalRadiusY() || this.height() / 2;
 
     var ellipse = new math.Ellipse(orientationIn, rx, ry);
     var result = ellipse.calcLineIntercept(position, orientationIn);
@@ -55,9 +54,8 @@ var ELLIPSE = function(position , orientationIn) {
 };
 
 var CIRCLE = function(position, orientationIn) {
-    var firstChild = this.firstChild();
-    orientationIn = this.getOrientation(orientationIn);
-    var radius = firstChild.attr('r');
+    //Note the stroke is not included in some browsers...
+    var radius = this.width() / 2;
     var circle = new math.Circle(orientationIn, radius);
     var result = circle.calcLineIntercept(position, orientationIn);
 
@@ -81,7 +79,6 @@ var CIRCLE = function(position, orientationIn) {
  * @returns {DockingType_L20@call;getCenter}
  */
 var SQUARE = function(position, orientationIn) {
-    orientationIn = this.getOrientation(orientationIn);
     if(this.overlays(position)) {
         return orientationIn;
     }
@@ -118,7 +115,7 @@ var SQUARE = function(position, orientationIn) {
         result.y = bottomY;
         return result;
     } else {
-        if(transition.isVertical()) {
+        if(transition.isHorizontal()) {
             return {x:orientationIn.x, y: this.y()};
         }
 
@@ -152,7 +149,6 @@ var CENTER = function(position) {
  */
 var SIMPLE = function(position, orientationIn) {
     //The position is within the node
-    orientationIn = this.getOrientation(orientationIn);
     if(this.overlays(position)) {
         return orientationIn;
     }

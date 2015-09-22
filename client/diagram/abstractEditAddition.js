@@ -1,4 +1,5 @@
 var dom = require('../dom/dom');
+var object = require('../util/object');
 var EditPanel = require('../ui/editPanel');
 
 var editPanel = new EditPanel();
@@ -7,6 +8,16 @@ var AbstractEditAddition = function(editable, editFunctions, config) {
     this.editable = editable;
     this.editFunctions = editFunctions;
     this.config = config;
+    this.initEditTrigger();
+};
+
+AbstractEditAddition.prototype.initEditTrigger = function() {
+    var that = this;
+    object.each(this.config, function(key, editItem) {
+        if(object.isDefined(editItem.trigger)) {
+            that.addEditTextTrigger(key);
+        }
+    });
 };
 
 AbstractEditAddition.prototype.addEditTrigger = function(key) {
@@ -21,9 +32,13 @@ AbstractEditAddition.prototype.addEditTrigger = function(key) {
 AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
     var editItem = this.getEditItem(key);
     var that = this;
-    var $triggerNode = $(this.editable.selector(editItem.trigger));
-    $triggerNode.css('cursor', 'pointer');
-    $triggerNode.on('click', function(evt) {
+
+    var selector = this.editable.selector(editItem.trigger);
+    //$triggerNode.css('cursor', 'pointer');
+
+    //TODO: evtl move this to text.editable();
+    /*
+    this.editable.root.$.on('click', selector,  function(evt) {
         if(that.isTriggerAllowed()) {
             switch(editItem.type) {
                 case 'textarea':
@@ -33,6 +48,7 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                         },
                         function(value) {
                             that.setValue(key, value);
+                            that.editable.exec('contentChanged');
                         });
                     break;
                 case 'text':
@@ -41,11 +57,12 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                         },
                         function(value) {
                             that.setValue(key, value);
+                            that.editable.exec('contentChanged');
                         });
                     break;
             }
         }
-    });
+    });*/
 };
 
 AbstractEditAddition.prototype.getValue = function(key) {

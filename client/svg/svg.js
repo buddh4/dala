@@ -48,7 +48,7 @@ var SVG = function(containerId, cfg) {
     this.svgId = this.containerId+'_svg';
 
     // Create SVG root element with given settings.
-    this.root = new SVGElement('svg', this.$containerNode, {
+    this.root = new SVGElement('svg', undefined, {
         xmlns : NAMESPACE_SVG,
         'xmlns:xlink' : NAMESPACE_XLINK,
         version : '1.1',
@@ -84,7 +84,7 @@ SVG.prototype.getRootNode = function() {
  * @returns {*}
  */
 SVG.prototype.$ = function() {
-    return $.qCache(this.svgId);
+    return $.qCache('#'+this.svgId);
 };
 
 /**
@@ -186,9 +186,9 @@ SVG.prototype.add = function(element, part, prepend, text) {
  * @param part
  * @returns {*}
  */
-SVG.prototype.import = function(elementXML, part, prepend) {
+SVG.prototype.import = function(svgStr, part, prepend) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return dom.importSVG(part, elementXML, prepend);
+    return dom.importSVG(part, svgStr, prepend);
 };
 
 /**
@@ -276,6 +276,14 @@ SVG.prototype.addToGroup = function(group, element) {
 SVG.prototype.path = function(cfg, part) {
     var part = this.svgParts[part] || this.getDefaultPart();
     return this.add(new SVGElement('path', this.root, cfg), part);
+};
+
+SVG.prototype.empty = function() {
+    $(this.root.instance()).empty();
+};
+
+SVG.prototype.asString = function() {
+    return this.root.toString();
 };
 
 /**

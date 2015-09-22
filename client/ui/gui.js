@@ -8,6 +8,7 @@ require('./../diagram/ui/stage').init();
 require('./../project/ui/fileBrowser').init();
 require('./overviewBox').init();
 require('./../user/ui/userLogin').init();
+require('./svgTester').init();
 
 var ClientSettingDialog = require('./clientSettingDialog');
 new ClientSettingDialog();

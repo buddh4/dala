@@ -40,19 +40,15 @@ TransitionKnobManager.prototype.addKnob = function(position, index) {
 };
 
 TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
-    var knob = new Knob(this.transition.diagram, position, {group : this.transition.group});
+    var knob = new Knob(this.transition.diagram, position, {r:5}, this.transition.group);
     var that = this;
     var initialDrag = true;
     knob.draggable({
         dragAlignment : new DragAlignment(that.transition.diagram,
-            {
-                getSource: function() {
-                    return knob.position();
-                },
-                getTargets: function() {
-                    return that.getJoiningOrientation(knob);
-                }
-            }),
+            function() { return [{source: [knob.position()], target: that.getJoiningOrientation(knob)}];}),
+        dragStart : function() {
+            that.transition.activeStyle();
+        },
         dragMove : function() {
             //We just update boundary knobs if they are not in within multiselection
             if(!(that.transition.diagram.isMultiSelection() && that.isBoundaryIndex(knobIndex))) {
@@ -70,11 +66,26 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
         }
     });
 
-    knob.onRemove(function() {
-        that.removeKnob(knob);
+    knob.on('remove', function() {
+        that.transition.removeKnobListener(knob);
     });
 
-    knob.selectable();
+    knob.on('deselect', function() {
+        that.transition.deselect();
+    });
+
+    //To prevent hiding the hoverknobs we adobt the transition hovering
+    knob.hoverable({
+        in : function() {
+            that.transition.hover();
+            if(!knob.isSelected()) {
+                knob.fill('#9E9E9E');
+            }
+        },
+        out : function() {
+            that.transition.hoverOut();
+        }
+    });
     return knob;
 };
 
@@ -96,7 +107,7 @@ TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
     }
 };
 
-TransitionKnobManager.prototype.removeKnob = function(knob) {
+TransitionKnobManager.prototype.removeKnobListener = function(knob) {
     if(!this.transition.removed) {
         var index = this.getIndexForKnob(knob);
         this.knobs.splice(index, 1);
@@ -142,18 +153,18 @@ TransitionKnobManager.prototype.getJoiningDockings = function(docking) {
     return [this.knobs[index - 1], this.knobs[index + 1]];
 };
 
-TransitionKnobManager.prototype.getJoiningOrientation = function(docking) {
-    var index = this.getIndexForKnob(docking);
+TransitionKnobManager.prototype.getJoiningOrientation = function(knob) {
+    var index = this.getIndexForKnob(knob);
     var result = [];
     if(index <= 1) { //start or second docking
-        result.push(this.transition.dockingManager.startNode.getOrientation(this.startKnob.relativeOrientation()));
+        result.push(this.transition.dockingManager.startOrientationKnob.position());
     } else if(index !== 0){
         var orientation = this.knobs[index - 1];
         result.push({x : orientation.x(), y : orientation.y()});
     }
 
     if(index >= this.knobs.length -2) { //end or one before end docking
-        result.push(this.transition.dockingManager.endNode.getOrientation(this.endKnob.relativeOrientation()));
+        result.push(this.transition.dockingManager.endOrientationKnob.position());
     } else {
         var orientation = this.knobs[index + 1];
         result.push({x : orientation.x(), y : orientation.y()});
@@ -223,6 +234,28 @@ TransitionKnobManager.prototype.calculateStartDockingPosition = function(mouse) 
         : undefined;
 
     return this.transition.startNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
+};
+
+TransitionKnobManager.prototype.hide = function() {
+    object.each(this.knobs, function(index, knob) {
+        if(!knob.isSelected()) {
+            knob.hide();
+        }
+    });
+};
+
+TransitionKnobManager.prototype.activeStyle = function() {
+    object.each(this.knobs, function(index, knob) {
+        knob.activeStyle();
+    });
+};
+
+TransitionKnobManager.prototype.inactiveStyle = function() {
+    object.each(this.knobs, function(index, knob) {
+        if(!knob.isSelected()) {
+            knob.inactiveStyle();
+        }
+    });
 };
 
 TransitionKnobManager.prototype.getPosition = function(index) {

@@ -6,5 +6,6 @@ module.exports = {
     dom: require('./../dom/dom'),
     app: require('./app'),
     math: require('./math'),
+    xml : require('./xml'),
     inherits: util.inherits
 }

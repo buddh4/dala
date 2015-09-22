@@ -11,6 +11,12 @@ module.exports = {
         return $.isArray(obj);
     },
 
+    toArray : function(obj) {
+        return $.map(obj, function(value, index) {
+            return [value];
+        });
+    },
+
     removeFromArray: function(arr, item) {
         var index = arr.indexOf(item);
         if(index >= 0) {

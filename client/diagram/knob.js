@@ -3,26 +3,28 @@ var app = require('../util/app');
 var dom = require('../dom/dom');
 var Transform = require('../svg/transform');
 
-var DEFAULT_FILL = 'black';
+var DEFAULT_FILL = 'silver';
 var DEFAULT_FILL_SELECT = 'green';
+var DEFAULT_OPACITY = 0.5;
+var DEFAULT_KNOB_RADIUS = 5;
 
-var Knob = function(diagram, p, cfg) {
+var Knob = function(diagram, p, cfg, group) {
     this.diagram = diagram;
     this.event = diagram.event;
-    this.selected = false;
-    this.hideDocking = false;
-
-    if(object.isDefined(cfg)) {
-        this.group = cfg.group;
-    }
+    this.config = cfg;
+    this.group = group;
 
     if(p.x && p.y) {
-        this.init(p);
+        this.init(p, cfg);
     }
 };
 
 Knob.prototype.clearRelativeOrientation = function() {
     delete this.relativePosition;
+};
+
+Knob.prototype.isSelected = function() {
+    return this.node.selected;
 };
 
 Knob.prototype.relativeOrientation = function(position) {
@@ -35,21 +37,21 @@ Knob.prototype.relativeOrientation = function(position) {
     return this.relativePosition;
 };
 
-Knob.prototype.init = function(position) {
-    this.node = this.diagram.createDocking(position, this.group);
-    this.node.isKnob = true;
+Knob.prototype.init = function(position, cfg) {
+    var config = object.extend({r : DEFAULT_KNOB_RADIUS}, cfg);
+    this.node = this.diagram.createKnob(position, this.group, config);
+    this.node.knob = this;
+
     var that = this;
-    this.node.additions['knob'] = {
-        deselect : function() {
-            that.deselect();
-        },
-        select : function() {
-            that.select();
-        },
-        remove : function() {
-            that.remove();
+    this.on('select', function() {
+        that.selected = true;
+        that.activeStyle();
+    }).on('deselect', function() {
+        that.selected = false;
+        if(!that.selected) {
+            that.inactiveStyle();
         }
-    };
+    });
     this.event.trigger('knob_created', this);
 };
 
@@ -80,68 +82,88 @@ Knob.prototype.initDrag = function(evt) {
 };
 
 Knob.prototype.hide = function() {
-    this.hideDocking = true;
-    if(!this.selected) {
+    if(!this.node.selected) {
         this.node.root.hide();
     }
 };
 
-Knob.prototype.show = function() {
-    this.hideDocking = false;
-    this.node.root.show();
+Knob.prototype.show = function(opacity) {
+    opacity = opacity || DEFAULT_OPACITY;
+    this.node.root.show(DEFAULT_OPACITY);
 };
 
 Knob.prototype.select = function() {
-    this.selected = true;
-    this.node.root.fill(DEFAULT_FILL_SELECT);
-    this.node.root.show();
+    this.node.trigger('select');
     return this;
 };
 
 Knob.prototype.deselect = function() {
-    this.node.root.fill(DEFAULT_FILL);
-    this.selected = false;
-    if(this.hideDocking && !this.selected) {
-        this.node.root.hide();
-    }
+    this.node.trigger('deselect');
     return this;
 };
 
-Knob.prototype.selectable = function() {
+Knob.prototype.fill = function(color) {
+    this.node.root.fill(color);
+};
+
+Knob.prototype.stroke = function(color) {
+    this.node.root.stroke(color);
+    this.node.root.strokeWidth(1);
+};
+
+Knob.prototype.activeStyle = function() {
+    this.fill(DEFAULT_FILL_SELECT);
+    this.show();
+};
+
+Knob.prototype.deselect = function() {
+    this.inactiveStyle();
+    return this;
+};
+
+Knob.prototype.inactiveStyle = function() {
+    this.fill(DEFAULT_FILL);
+    this.show();
+};
+
+Knob.prototype.hoverable = function(handler) {
     var that = this;
-    this.isSelectable = true;
+    handler = handler || {};
     this.node.root.hoverable({
         in: function() {
-            that.node.root.show();
-            that.node.root.fill(DEFAULT_FILL_SELECT);
+            that.activeStyle();
+            if(handler && handler.in) {
+                handler.in(that);
+            }
         },
         out: function() {
-            if(!that.selected && !this.selected) {
-                if(that.hideDocking) {
-                    that.node.root.hide();
+            if(!that.selected ) {
+                that.inactiveStyle();
+                if(handler && handler.out) {
+                    handler.out(that);
                 }
-                that.node.root.fill(DEFAULT_FILL);
             }
         }
     });
 };
 
-Knob.prototype.onRemove = function(handler) {
-    this.removeHandler = handler;
+Knob.prototype.on = function(handler, args) {
+    this.node.on(handler, args);
+    return this;
 };
 
 Knob.prototype.remove = function() {
-    if(object.isDefined(this.removeHandler)) {
-        this.removeHandler.apply();
-    }
+    this.node.trigger('remove');
 };
 
 Knob.prototype.move = function(dx,dy) {
     this.node.root.move(dx,dy);
+    this.node.trigger('move' [dx,dy]);
 };
 
 Knob.prototype.moveTo = function(x,y) {
     this.node.root.moveTo(x,y);
+    this.node.trigger('moveTo', [x,y]);
 };
 
 Knob.prototype.toString = function() {

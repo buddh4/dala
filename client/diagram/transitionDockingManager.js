@@ -1,13 +1,45 @@
 var util = require('../util/util');
+var Knob = require('./Knob');
+
 var TransitionDocking = function(transition, startNode) {
     this.startNode = startNode;
+    this.diagram = transition.diagram;
     this.transition = transition;
+
+    var that = this;
+    this.startOrientationKnob = new Knob(that.transition.diagram, that.startNode.getCenter(), {r:3, fill:'orange'}, that.transition.group);
+    this.startOrientationKnob.draggable({
+        dragMove : function(evt, dx ,dy) {
+            that.transition.update();
+        }
+    });
 };
 
 TransitionDocking.prototype.init = function(startKnob) {
     this.startKnob = startKnob;
     //TODO: add draggable listener for start and end knobs
     this.setStartNodeFeature();
+
+    var that = this;
+    this.transition.on('select', function() {
+        that.startOrientationKnob.show();
+        if(this.endOrientationKnob) {
+            this.endOrientationKnob.show();
+        }
+    }).on('deselect', function() {
+        that.startOrientationKnob.hide();
+        if(this.endOrientationKnob) {
+            this.endOrientationKnob.hide();
+        }
+    });
+};
+
+TransitionDocking.prototype.dragStartOrientation = function(dx,dy) {
+    this.startOrientationKnob.triggerDrag(dx,dy);
+};
+
+TransitionDocking.prototype.dragEndOrientation = function(dx,dy) {
+    this.endOrientationKnob.triggerDrag(dx,dy);
 };
 
 /**
@@ -26,8 +58,7 @@ TransitionDocking.prototype.setStartNodeFeature = function(feature) {
 
 TransitionDocking.prototype.calculateStart = function(mouse) {
     var outerOrientation = mouse || this.transition.knobManager.getPosition(1);
-    var relativeInnerOrientation = (this.startKnob) ? this.startKnob.relativeOrientation() : undefined;
-    return this.startNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
+    return this.startNode.getDockingPosition(outerOrientation, this.startOrientationKnob.position());
 };
 
 
@@ -36,8 +67,7 @@ TransitionDocking.prototype.calculateEnd = function(mouse) {
         return this.getEndPositionForMouse(mouse);
     } else {
         var outerOrientation = this.transition.knobManager.getPosition(-2);
-        var relativeInnerOrientation = (this.endKnob) ? this.endKnob.relativeOrientation() : undefined;
-        return this.endNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
+        return this.endNode.getDockingPosition(outerOrientation, this.endOrientationKnob.position());
     }
 };
 
@@ -56,6 +86,16 @@ TransitionDocking.prototype.setEndNode = function(node) {
 
     // Init node connection and check dom position
     this.endNode = node;
+
+    var that = this;
+    //TODO: this.endNode.config.docking --> add class --> just update if endNode change not create anotherone
+    this.endOrientationKnob = new Knob(this.transition.diagram, this.endNode.getCenter(), {r:3, fill:'orange'}, this.transition.group);
+    this.endOrientationKnob.draggable({
+        dragMove : function(evt, dx ,dy) {
+            that.transition.update();
+        }
+    });
+
     this.endNode.addIncomingTransition(this.transition);
     this.setEndNodeFeature();
 };
@@ -86,7 +126,7 @@ TransitionDocking.prototype.start = function(value) {
 }
 
 TransitionDocking.prototype.setRelativeEndDocking = function(x,y) {
-    var p = util.app.getPoint(x,y);
+    var p = util.math.getPoint(x,y);
     this.setEndNodeFeature({
         value : [p.x, p.y]
     });

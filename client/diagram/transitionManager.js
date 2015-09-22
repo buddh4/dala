@@ -91,7 +91,7 @@ TransitionManager.prototype.dropDockingAction = function(transition, dockingInde
         var docking = transition.knobManager.getDockingByIndex(dockingIndex);
         docking.triggerDrag(dxSum, dySum);
     }
-}
+};
 
 TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
     if (evt.data) {
@@ -106,7 +106,7 @@ TransitionManager.prototype.deleteKnobAction = function(transition, dockingIndex
     if(transition) {
         transition.knobManager.getDockingByIndex(dockingIndex).remove();
     }
-}
+};
 
 TransitionManager.prototype.importTransitionAction = function(transitionStr, transition) {
     if(transition) {

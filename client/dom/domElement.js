@@ -134,7 +134,7 @@ Element.getAttributeValueFromStringList = function(value) {
 };
 
 Element.prototype.attr = function(attribute) {
-    if(arguments.length > 1) {
+    if(arguments.length > 1 && arguments[1]) {
         //TODO: implement for mor thant 2
         var obj = {};
         obj[arguments[0]] = arguments[1];

@@ -4,7 +4,17 @@ var dom = require('../dom/dom');
 
 var ID_SECTION = 'editNodeSection';
 var ID_PANEL = 'editNodePanel';
-var ID_FORM = 'editNodeForm'
+var ID_FORM = 'editNodeForm';
+
+var TEXT_SIZE_MIN = 1;
+var TEXT_SIZE_MAX = 40;
+
+var STROKE_WIDTH_MIN = 0;
+var STROKE_WIDTH_MAX = 20;
+
+//TODO: More Settings with perhaps with dropdown images
+var DASH_SETTING_MIN = 0;
+var DASH_SETTING_MAX = 3;
 
 var section, panel, editNode, $form;
 
@@ -36,20 +46,18 @@ var update = function() {
 
 var createForm = function(node) {
     editNode = node;
-    var diagram = node.diagram;
+    var editAddition = node.additions.edit;
 
     if(!node.additions.edit) {
         return;
     }
 
     // Create a dynamic table by means of the edit addition config fields of the current node which is taken from the tmpl.
-    //var $editTable = $(document.createElement('fieldset'));
-    object.each(node.additions.edit.config, function(key, value) {
-        var editConfigItem = diagram.getEditItem(node, key);
+    object.each(editAddition.config, function(key, value) {
+        var editConfigItem = editAddition.getEditItem(key);
 
-        //TODO: we should allow adding new types to allow templates to add edit logic
+        //TODO: implement way to register new edit panels register(function(editNodeMenu) {...})
         switch(editConfigItem.type) {
-            //TODO: we should be able to just define stroke and render stroke-width/color/dash through the same key
             case 'stroke':
                 appendStrokeFieldSet(key, editConfigItem);
                 break;
@@ -71,7 +79,7 @@ var appendTextFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     appendInput($fieldSet, editConfigItem, 'Text', editKey+'_text', {type : 'text'});
     appendInput($fieldSet, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'text'});
+    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
     $form.append($fieldSet);
 };
 
@@ -79,29 +87,43 @@ var appendTextareaFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     appendInput($fieldSet, editConfigItem, 'Text', editKey+'_textarea', {rows: 5}, 'textarea');
     appendInput($fieldSet, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'text'});
+    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
     $form.append($fieldSet);
 };
 
 var appendStrokeFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     appendInput($fieldSet, editConfigItem, 'Color', editKey+'_stroke', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : 0, max : 10});
-    appendInput($fieldSet, editConfigItem, 'Dash', editKey+'_stroke-dash', {type : 'range', min : 0, max : 3});
+    appendInput($fieldSet, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
+    appendInput($fieldSet, editConfigItem, 'Dash', editKey+'_stroke-dash', {type : 'range', min : DASH_SETTING_MIN, max : DASH_SETTING_MAX}, undefined, true);
     $form.append($fieldSet);
-}
+};
 
-var appendInput = function($fieldSet, editConfigItem, label, key, attributes, overwriteElementName) {
+var appendInput = function($fieldSet, editConfigItem, label, key, attributes, overwriteElementName, output, outputUnit) {
     var name = overwriteElementName || 'input';
-    var $label = dom.create('label', undefined, label);
+    var $label = dom.create('label', undefined, label+':');
     var $input = dom.create(name, attributes);
     var currentVal = editNode.additions.edit.getValue(key);
-    currentVal = (currentVal)? currentVal.trim() : currentVal;
+    currentVal = (object.isString(currentVal)) ? currentVal.trim() : currentVal;
     $input.val(currentVal);
     $input.on('change', function() {
+        //We set the value trough the diagram/nodeMgr since we need to fire command events
         editNode.diagram.setEditValue(editNode, key, $(this).val());
     });
-    $fieldSet.append($label, $input);
+
+    if(output) {
+        outputUnit = outputUnit || '';
+        outputUnit = ' '+outputUnit;
+        var outputInitValue = (currentVal) ? currentVal+outputUnit : 'none';
+        var $output = dom.create('output', undefined, outputInitValue);
+        $input.on("change paste keyup input", function() {
+            var $this = $(this);
+            $this.prev('output').text($this.val()+outputUnit);
+        });
+        $fieldSet.append($label, $output, $input);
+    } else {
+        $fieldSet.append($label, $input);
+    }
     return $input;
 };
 

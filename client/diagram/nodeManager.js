@@ -87,7 +87,8 @@ NodeManager.prototype.activateNode = function(elementId, tmpl) {
 NodeManager.prototype.deleteNodeListener = function(evt) {
     try {
         var node = this.getNode(evt.data);
-        if(node.isKnob) {
+        if(node.knob) {
+            //CMD is handled by transitionMgr
             node.remove();
         } else if(node) {
             return this.exec(CMD_DELETE, [node.id], [this.getNodeAsString(node)]);
@@ -122,7 +123,7 @@ NodeManager.prototype.importNodeCmd = function(nodeStr, cfg) {
     this.addNode(node);
 
     //If set we move the new node to a given position
-    if(object.isDefined(cfg.mouse)) {
+    if(cfg.mouse) {
         var stagePosition = this.diagram.getStagePosition(cfg.mouse);
         node.moveTo(stagePosition.x, stagePosition.y);
     }
@@ -209,6 +210,20 @@ NodeManager.prototype.getNode = function(id) {
     }
 };
 
+NodeManager.prototype.getNodes = function(filter) {
+    if(!filter) {
+        return object.toArray(this.nodes);
+    } else {
+        var result = [];
+        object.each(this.nodes, function(key, value) {
+            if(filter(value)) {
+                result.push[value];
+            }
+        });
+        return result;
+    }
+};
+
 NodeManager.prototype.setEditValue = function(node, editKey, newValue) {
     node = this.getNode(node);
     if(node) {
@@ -219,7 +234,7 @@ NodeManager.prototype.setEditValue = function(node, editKey, newValue) {
 
 NodeManager.prototype.getEditItem = function(node, editKey) {
     node = this.getNode(node);
-    return node.additions.edit.getItem(editKey);
+    return node.additions.edit.getEditItem(editKey);
 };
 
 NodeManager.prototype.editCmd = function(node, editKey, newValue) {

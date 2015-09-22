@@ -31,7 +31,7 @@ var SVGElement = function(name, svgRoot, cfg, attributeSetter) {
         name = name.tagName;
     }
 
-    this.root = svgRoot;
+    this.root = svgRoot || this;
     DomElement.call(this, name, cfg, this.attributeSetter);
 };
 
@@ -138,14 +138,28 @@ SVGElement.prototype.fill = function(color) {
     return this.style('fill', color);
 };
 
-SVGElement.prototype.hide = function() {
-    this.style('fill-opacity', '0.0');
-    this.style('stroke-opacity', '0.0');
+SVGElement.prototype.fillOpacity = function(opacity) {
+    return this.style('fill-opacity', opacity);
 };
 
-SVGElement.prototype.show = function() {
-    this.style('fill-opacity', '1.0');
-    this.style('stroke-opacity', '1.0');
+SVGElement.prototype.strokeOpacity = function(opacity) {
+    return this.style('stroke-opacity', opacity);
+};
+
+SVGElement.prototype.isVisible = function() {
+    return (!this.fillOpacity() || this.fillOpacity() > 0)
+        && (!this.strokeOpacity() || this.strokeOpacity() > 0);
+};
+
+SVGElement.prototype.hide = function() {
+    this.fillOpacity(0);
+    this.strokeOpacity(0);
+};
+
+SVGElement.prototype.show = function(opacity) {
+    opacity = opacity || 1;
+    this.fillOpacity(opacity);
+    this.strokeOpacity(opacity);
 };
 
 SVGElement.prototype.stroke = function(color) {
@@ -161,6 +175,10 @@ SVGElement.prototype.strokeDasharray = function(type) {
     } else {
 
     }
+};
+
+SVGElement.prototype.toString = function() {
+    return util.xml.serializeToString(this.instance());
 };
 
 SVGElement.prototype.strokeDashType = function(type) {
@@ -196,10 +214,10 @@ SVGElement.prototype.strokeDashType = function(type) {
         }
     }
 
-}
+};
 
 SVGElement.prototype.strokeWidth = function(width) {
-    return this.style('stroke-width', width);
+    return util.app.parseNumberString(this.style('stroke-width', width));
 };
 
 SVGElement.prototype.style = function(key, value) {
@@ -207,12 +225,15 @@ SVGElement.prototype.style = function(key, value) {
         && object.isDefined(this.attributes.style)) {
         //GETTER CALL
         return this.attributes.style.get(key);
-    } else if(!object.isDefined(this.attributes.style)) {
+    } else if(!object.isDefined(this.attributes.style) && object.isDefined(value)) {
         this.attributes.style = new Style(key, value);
-    } else {
+    } else if(object.isDefined(value)) {
         this.attributes.style.set(key, value);
+    } else {
+        return;
     }
     this.update();
+    return this;
 };
 
 //TODO how to handle cx cy ?
@@ -404,17 +425,56 @@ SVGElement.prototype.move = function(dx, dy) {
 };
 
 SVGElement.prototype.moveTo = function(x, y) {
-    //TODO: we do not calculate the innitial x/y
-    //We could set x and y to 0 ?
-    //TODO: just move if the values changed
-
-    var p = util.app.getPoint(x,y);
+    var p = util.math.getPoint(x,y);
 
     var translate = this.translate();
     if(!(translate.x === p.x && translate.y === p.y)) {
         this.translate(p);
     }
     return this;
+};
+
+SVGElement.prototype.totalRadiusX = function() {
+    var strokeWith = this.strokeWidth();
+    var radius = this.rx();
+    if(radius) {
+        radius += (strokeWith) ? strokeWith : 0;
+    }
+
+    return radius;
+};
+
+
+SVGElement.prototype.totalRadiusY = function() {
+    var strokeWith = this.strokeWidth();
+    var radius = this.ry();
+    if(radius) {
+        radius += (strokeWith) ? strokeWith : 0;
+    }
+
+    return radius;
+};
+
+SVGElement.prototype.r = function(value) {
+    return util.app.parseNumberString(this.attr('r', value));
+};
+
+SVGElement.prototype.rx = function(value) {
+    return util.app.parseNumberString(this.attr('rx', value));
+};
+
+SVGElement.prototype.ry = function(value) {
+    return util.app.parseNumberString(this.attr('ry', value));
+};
+
+SVGElement.prototype.totalRadius = function() {
+    var strokeWith = this.strokeWidth();
+    var radius = this.r();
+    if(radius) {
+        radius += (strokeWith) ? strokeWith : 0;
+    }
+
+    return radius;
 };
 
 SVGElement.prototype.moveX = function(x) {
@@ -446,40 +506,19 @@ SVGElement.prototype.getTransformation = function() {
     return this.attributes.transform;
 };
 
-SVGElement.prototype.click = function(handler) {
-    event.on(this.instance(), 'click', handler);
+SVGElement.prototype.on = function(evt, handler) {
+    this.$().on(evt, handler);
+    return this;
 };
 
-SVGElement.prototype.mousedown = function(handler) {
-    event.on(this.instance(), 'mousedown', handler);
+SVGElement.prototype.off = function(evt) {
+    this.$().off(evt);
+    return this;
 };
 
-SVGElement.prototype.mouseup = function(handler) {
-    event.on(this.instance(), 'mouseup', handler);
-};
-
-SVGElement.prototype.mouseover = function(handler) {
-    event.on(this.instance(), 'mouseover', handler);
-};
-
-SVGElement.prototype.mouseout = function(handler) {
-    event.on(this.instance(), 'mouseout', handler);
-};
-
-SVGElement.prototype.dblclick= function(handler) {
-    event.on(this.instance(), 'dblclick', handler);
-};
-
-SVGElement.prototype.mouseenter= function(handler) {
-    event.on(this.instance(), 'mouseenter', handler);
-};
-
-SVGElement.prototype.mouseleave= function(handler) {
-    event.on(this.instance(), 'mouseleave', handler);
-};
-
-SVGElement.prototype.mouseup= function(handler) {
-    event.on(this.instance(), 'mouseup', handler);
+SVGElement.prototype.trigger = function(evt) {
+    this.$().trigger(evt);
+    return this;
 };
 
 module.exports = SVGElement;

@@ -4,8 +4,6 @@ var event = require('../core/event');
 var object = util.object;
 var dom = util.dom;
 
-var dragContext = require('./draggable').dragContext;
-
 var SelectionManager = function(diagram) {
     this.diagram = diagram;
     this.event = diagram.event;
@@ -29,23 +27,9 @@ var SelectionManager = function(diagram) {
     this.event.listen('node_removed', this.removedNodeListener, this);
     this.event.listen('node_mousedown', this.selectNodeListener, this);
 
-    this.event.listen('drag_move', this.dragListener, this);
-
     //These are currently global events not diagram context events
     event.listen('element_hoverIn', this.hoverInElementListener, this);
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
-};
-
-SelectionManager.prototype.dragListener = function(evt) {
-    var dragNode = evt.data.context.node;
-    var dx = evt.data.dx;
-    var dy = evt.data.dy;
-
-    object.each(this.selectedNodes, function(index, currentNode) {
-        if(dragNode.id !== currentNode.id) {
-            currentNode.triggerDrag(dx,dy);
-        }
-    });
 };
 
 SelectionManager.prototype.copyListener = function(evt) {
@@ -159,13 +143,13 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
     //TODO MULTIPLE SELECTIONS DIFFERENT TYPES (TRANSITION/NODES)...
     // we could provide the whole selection instead of the single node
     if(!this.containsNode(selectedNode)) {
+        var that = this;
         this.event.trigger('node_selected',selectedNode);
-
         //Clear the current selection
         if(!(object.isDefined(shifted) && shifted)) {
             this.selectedNodes = object.grep(this.selectedNodes, function(currentSelection) {
                 if(currentSelection.id !== selectedNode.id) {
-                    currentSelection.deselect();
+                    that.deselectNode(currentSelection);
                     return false;
                 }
                 return true;
@@ -178,6 +162,20 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
         //Add the resize addition to the node which is removed after deselection
         this.selectedTemplate = selectedNode.template;
         selectedNode.select();
+
+        var that = this;
+        //We use additon style instead of on event for a performance gain (on.dragMove is deactivated see draggable.js)
+        selectedNode.additions['multiSelectionDrag'] = {
+            dragMove : function(dx,dy, evt) {
+                if (!evt.triggerEvent) {
+                    object.each(that.selectedNodes, function (index, node) {
+                        if (selectedNode.id !== node.id) {
+                            node.triggerDrag(dx, dy);
+                        }
+                    });
+                }
+            }
+        }
         this.selectedNodes.push(selectedNode);
     } else if(object.isDefined(shifted) && shifted) {
         this.removeSelectedNode(selectedNode);
@@ -205,7 +203,7 @@ SelectionManager.prototype.addSelectedNode = function(selectedNode) {
 SelectionManager.prototype.removeSelectedNode = function(node) {
     var index = this.selectedNodes.indexOf(node);
     if(index >= 0) {
-        node.deselect();
+        this.deselectNode(node);
         this.selectedNodes.splice(index, 1);
     }
 };
@@ -221,23 +219,27 @@ SelectionManager.prototype.clear = function() {
 };
 
 SelectionManager.prototype.clearNodes = function() {
+    var that = this;
     object.each(this.selectedNodes, function(index, node) {
-        node.deselect();
+        that.deselectNode(node);
     });
     this.selectedNodes = [];
 };
 
+SelectionManager.prototype.deselectNode = function(node) {
+    node.deselect();
+};
+
 SelectionManager.prototype.clearTransition = function() {
-    if(object.isDefined(this.selectedTransition)) {
+    if(this.selectedTransition && !this.selectedTransition.preventDeselect) {
         this.selectedTransition.deselect();
+        delete this.selectedTransition;
     }
-    delete this.selectedTransition;
 };
 
 SelectionManager.prototype.isMultiSelection = function() {
     var count = 0;
     count += this.selectedNodes.length;
-    count += (object.isDefined(this.selectedTransition)) ? 1 : 0;
     return count > 1;
 };
 

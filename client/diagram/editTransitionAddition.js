@@ -1,9 +1,12 @@
 var util = require('../util/util');
 var AbstractEditAddition = require('./abstractEditAddition');
 
-var object = util.object;
-var string = util.string;
-var dom = util.dom;
+var EditTransitionAddition = function(transition) {
+    AbstractEditAddition.call(this, transition, editFunctions, config);
+    this.transition = transition;
+};
+
+util.inherits(EditTransitionAddition, AbstractEditAddition );
 
 var editFunctions = {
     stroke : {
@@ -49,10 +52,13 @@ var editFunctions = {
     },
     'text-size' : {
         get : function(editItem) {
-            return this.transition.getInnerSVG(editItem.bind).style('font-size');
+            var definition = this.transition.getInnerSVG(editItem.bind).style('font-size');
+            if(definition) {
+                return definition.substring(0, definition.length - 2);
+            }
         },
         set : function(editItem, value) {
-            this.transition.getInnerSVG(editItem.bind).style('font-size', value);
+            this.transition.getInnerSVG(editItem.bind).style('font-size', value+'px');
         }
     },
     'type' : {
@@ -95,14 +101,5 @@ var config = {
     'startMarker' : { type : 'startMarker', bind : 'line'},
     'endMarker' : { type : 'endMarker', bind : 'line'}
 };
-
-var EditTransitionAddition = function(transition) {
-    AbstractEditAddition.call(this, transition, editFunctions, config);
-    this.transition = transition;
-    this.event = transition.event;
-    //this.$contentNodes = $(node.root.instance()).find('*').filter(function() { return $(this).attr('dala:content'); });
-};
-
-util.inherits(EditTransitionAddition, AbstractEditAddition );
 
 module.exports = EditTransitionAddition;

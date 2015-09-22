@@ -4,7 +4,7 @@ var config = require('../core/config');
 
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');
-var TransitionPathManager = require('./curvePathManager');
+var TransitionPathManager = require('./curvedPathManager');
 var transitionAdditions = require('./transitionAdditions');
 
 var pathManagerFactory = require('./pathManagerFactory');
@@ -72,7 +72,15 @@ Transition.prototype.init = function(mouse) {
 };
 
 Transition.prototype.initSVGGroup = function() {
-    this.group = this.svg.g({prepend:true, "class":'transition', id : this.id});
+    this.root = this.group = this.svg.g({prepend:true, "class":'transition', id : this.id});
+};
+
+Transition.prototype.dragStartOrientation = function(dx, dy) {
+    this.dockingManager.dragStartOrientation(dx, dy);
+};
+
+Transition.prototype.dragEndOrientation = function(dx, dy) {
+    this.dockingManager.dragEndOrientation(dx, dy);
 };
 
 Transition.prototype.strokeWidth = function(value) {
@@ -113,17 +121,16 @@ Transition.prototype.initEvents = function() {
     var that = this;
     this.lineArea.hoverable({
         in: function() {
-            that.line.attr({style:STYLE_TRANSITION_ACTIVE});
+            that.hover();
         },
         out: function() {
-            if(!that.selected) {
-                that.line.attr({style:STYLE_TRANSITION_INACTIVE});
-            }
+            that.hoverOut();
         }
     });
 
-    this.lineArea.mousedown(function(evt) {
+    this.on('mousedown', function(evt) {
         evt.preventDefault();
+        evt.stopPropagation();
         that.event.trigger('transition_select', that);
 
         var dragInitiated = false;
@@ -131,7 +138,8 @@ Transition.prototype.initEvents = function() {
         var knobIndex = that.getPath().getPathIndexForPosition(startPosition);
 
         if (knobIndex) {
-            event.on(that.diagram.svg.getRootNode(), "mouseup", function(evt) {
+            event.once(document, "mouseup", function(evt) {
+                that.preventDeselect = false;
                 event.off(that.diagram.svg.getRootNode(), "mousemove");
             });
             event.on(that.diagram.svg.getRootNode(),"mousemove", function(event) {
@@ -139,6 +147,7 @@ Transition.prototype.initEvents = function() {
 
                 //We just start the drag event in case we move more thant 5px away
                 if(!dragInitiated && util.app.isMinDist(startPosition, movePosition, 5)) {
+                    that.preventDeselect = true;
                     var knob = that.knobManager.addKnob(startPosition, knobIndex);
                     knob.initDrag(event);
                     dragInitiated = true;
@@ -220,6 +229,16 @@ Transition.prototype.remove = function() {
     this.event.trigger('transition_removed', this);
 };
 
+/**
+ * Needed by Interface editable // See abstractEditAddition
+ */
+Transition.prototype.exec = function(func, args, prevDomEvent) {
+    this.executeAddition(func, args);
+    if(!prevDomEvent) {
+        this.trigger(func, args);
+    }
+};
+
 Transition.prototype.executeAddition = function(func, args) {
     object.each(this.additions, function(key, addition) {
         if(object.isDefined(addition) && object.isFunction(addition[func])) {
@@ -267,7 +286,18 @@ Transition.prototype.marker = function(type, marker) {
 };
 
 Transition.prototype.selector = function(prefix) {
-    return this.getTransitionSelector(prefix);
+    var stringSelector;
+    if(object.isArray(prefix)) {
+        stringSelector = [];
+        var that = this;
+        object.each(prefix, function(index, val) {
+            stringSelector.push(that.selector(val));
+        });
+        stringSelector = stringSelector.join(', ');
+    } else {
+        stringSelector = prefix;
+    }
+    return this.getTransitionSelector(stringSelector);
 };
 
 Transition.prototype.getTransitionSelector = function(prefix) {
@@ -298,13 +328,39 @@ Transition.prototype.getMarkerValueString = function(markerId) {
 };
 
 Transition.prototype.select = function() {
-    this.line.attr({style:STYLE_TRANSITION_ACTIVE});
+    this.exec('select');
+    this.activeStyle();
     this.selected = true;
 };
 
+Transition.prototype.hover = function() {
+    this.knobManager.inactiveStyle();
+};
+
+Transition.prototype.hoverOut = function() {
+    if(!this.selected) {
+        this.knobManager.hide();
+    }
+};
+
+
+Transition.prototype.activeStyle = function() {
+    this.line.attr({style:STYLE_TRANSITION_ACTIVE});
+    //Knobs are just active if selected
+    this.knobManager.inactiveStyle();
+};
+
 Transition.prototype.deselect = function() {
+    if(!this.preventDeselect) {
+        this.inactiveStyle();
+        this.knobManager.hide();
+        this.selected = false;
+    }
+};
+
+Transition.prototype.inactiveStyle = function() {
     this.line.attr({style:STYLE_TRANSITION_INACTIVE});
-    this.selected = false;
+    this.knobManager.inactiveStyle();
 };
 
 Transition.prototype.getEndKnob = function() {
@@ -321,6 +377,21 @@ Transition.prototype.getStartDockingLocation = function() {
 
 Transition.prototype.getEndDockingLocation = function() {
     return this.dockingManager.getEndDockingLocation();
+};
+
+Transition.prototype.on = function(evt, handler) {
+    this.lineArea.on(evt, handler);
+    return this;
+};
+
+Transition.prototype.trigger = function(evt) {
+    this.lineArea.trigger(evt);
+    return this;
+};
+
+Transition.prototype.off = function(evt) {
+    this.lineArea.off(evt);
+    return this;
 };
 
 module.exports = Transition;

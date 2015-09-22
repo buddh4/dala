@@ -40,8 +40,7 @@ Template.prototype.init = function(tmplXML) {
     }
 
     this.svg = xml.serializeToString($(this.tmplXML).find(this.config.rootName)[0]);
-    //TODO: remove this future version does not allow xml config/handler...
-}
+};
 
 Template.prototype.isInitialized = function() {
     return !!this.svg;

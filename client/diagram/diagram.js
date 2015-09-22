@@ -18,7 +18,7 @@ var SelectionManager = require('./selectionManager');
 var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var KnobManager = require('./knobManager');
-require('./dockingTemplate');
+require('./knobTemplate');
 var Promise = require('bluebird');
 var Config = require('../core/config');
 var xml = require('../util/xml');
@@ -89,9 +89,9 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.helper = new Helper(this);
 };
 
-Diagram.prototype.updateHandler = function(command) {
-    this.event
-}
+Diagram.prototype.getNodes = function(filter) {
+    return this.nodeMgr.getNodes(filter);
+};
 
 /*
  * Initializes Stage Mouse and Key events.
@@ -228,8 +228,9 @@ Diagram.prototype.initDefs = function() {
     });
 };
 
-Diagram.prototype.createDocking = function(p, group) {
-    var node = this.templateMgr.getTemplateSync('docking_circle').createNode({node_id:'docking_'+Date.now(), x: p.x, y: p.y}, this).init();
+Diagram.prototype.createKnob = function(p, group, cfg) {
+    var config = object.extend({node_id:'docking_'+Date.now(), x: p.x, y: p.y}, cfg);
+    var node = this.templateMgr.getTemplateSync('knob_circle').createNode(config, this).init();
     if(group) {
         this.svg.addToGroup(group, node.root);
     }
@@ -373,7 +374,7 @@ Diagram.prototype.overlaysNode = function(position) {
 };
 
 Diagram.prototype.asString = function() {
-    return xml.serializeToString(this.svg.getRootNode());
+    return this.svg.asString();
 };
 
 Diagram.prototype.undoCommand = function() {

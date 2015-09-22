@@ -18,8 +18,19 @@ var TransitionAddition = function(node) {
     this.incomingTransitions = [];
 };
 
-TransitionAddition.prototype.drag = function() {
+TransitionAddition.prototype.dragMove = function(dx, dy) {
+    this.updateOrientations(dx ,dy);
     this.update();
+};
+
+TransitionAddition.prototype.updateOrientations = function(dx ,dy) {
+    this.executeOnOutgoingTransitions(function(transition) {
+        transition.dragStartOrientation(dx,dy);
+    });
+
+    this.executeOnIncomingTransitions(function(transition) {
+        transition.dragEndOrientation(dx,dy);
+    });
 };
 
 TransitionAddition.prototype.resize = function() {
@@ -44,6 +55,9 @@ TransitionAddition.prototype.moveUp = function() {
     });
 };
 
+/**
+ * Node dbclick triggers the creation of a transition.
+ */
 TransitionAddition.prototype.dbclick = function() {
     //Start Transition Init Drag Event
     if(!this.transitionMgr.dragTransition) {
@@ -57,7 +71,7 @@ TransitionAddition.prototype.dbclick = function() {
 TransitionAddition.prototype.transitionDrag = function(evt) {
     var mouse = this.diagram.getStagePosition(evt);
 
-    //Initialize or update the new transition
+    //Initialize a new transition or update the current dragTransition
     if (!this.transitionMgr.dragTransition) {
         this.transitionMgr.dragTransition = this.addOutgoingTransition(mouse);
     } else {
@@ -65,12 +79,9 @@ TransitionAddition.prototype.transitionDrag = function(evt) {
     }
 };
 
-TransitionAddition.prototype.addOutgoingTransition = function(value) {
-    var transition = (value instanceof Transition) ? value : new Transition(this.node).init(value);
-    this.outgoingTransitions.push(transition);
-    return transition;
-};
-
+/**
+ * Node mousedown ends a transitionDrag even (if there is one) and sets this node as endnode
+ */
 TransitionAddition.prototype.mousedown = function(evt) {
     // Stop transition drag event and set end node
     if(this.transitionMgr.dragTransition) {
@@ -82,6 +93,12 @@ TransitionAddition.prototype.mousedown = function(evt) {
         delete this.transitionMgr.dragTransition;
         event.off(this.diagram.svg.getRootNode(), 'mousemove');
     }
+};
+
+TransitionAddition.prototype.addOutgoingTransition = function(value) {
+    var transition = (value instanceof Transition) ? value : new Transition(this.node).init(value);
+    this.outgoingTransitions.push(transition);
+    return transition;
 };
 
 TransitionAddition.prototype.undockStart = function(transition) {
@@ -140,7 +157,7 @@ TransitionAddition.prototype.getOrientations = function() {
         if(object.isDefined(transition)) {
             if(!transition.knobManager.hasInnerKnobs()) {
                 // Return the endNode orientation inclusive the end docking relative orientation for alignment
-                result.push(transition.dockingManager.endNode.getOrientation(transition.getEndKnob().relativeOrientation()));
+                result.push(transition.dockingManager.endOrientationKnob.position());
             } else {
                 var docking = transition.knobManager.getDockingByIndex(1);
                 result.push({x: docking.x(), y: docking.y()});
@@ -152,7 +169,7 @@ TransitionAddition.prototype.getOrientations = function() {
         if (object.isDefined(transition)) {
             if(!transition.knobManager.hasInnerKnobs()) {
                 // Return the startNode orientation inclusive the start docking relative orientation for alignment
-                result.push(transition.dockingManager.startNode.getOrientation(transition.getStartKnob().relativeOrientation()));
+                result.push(transition.dockingManager.startOrientationKnob.position());
             } else {
                 var docking = transition.knobManager.getDockingByEndIndex(1);
                 result.push({x: docking.x(), y: docking.y()});

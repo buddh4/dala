@@ -18,7 +18,7 @@ ResizeAddition.prototype.remove = function() {
     this.deselect();
 };
 
-ResizeAddition.prototype.drag = function() {
+ResizeAddition.prototype.dragMove = function() {
     this.resize.updateKnobs();
 };
 

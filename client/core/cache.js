@@ -45,6 +45,8 @@ Cache.prototype.cacheCheck = function(key, obj, cache, preventCache) {
     preventCache = preventCache || false;
     if(key && obj) {
         return (!preventCache) ? cache[key] = obj : obj;
+    } else {
+        return obj;
     }
 }
 

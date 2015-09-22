@@ -15,17 +15,23 @@ KnobManager.prototype.addDockingListener = function(evt) {
 
 KnobManager.prototype.hideKnobs = function() {
     this.hideDocking = true;
-    object.each(this.dockings, function(index, docking) {
+    this.executeOnAllKnobs(function(docking) {
         docking.hide();
     });
 };
 
 KnobManager.prototype.showKnobs = function() {
     this.hideDocking = false;
-    object.each(this.dockings, function(index, docking) {
+    this.executeOnAllKnobs(function(docking) {
         docking.show();
     });
 };
+
+KnobManager.prototype.executeOnAllKnobs = function(func) {
+    object.each(this.dockings, function(index, docking) {
+        func(docking);
+    });
+}
 
 KnobManager.prototype.deleteKnob = function(evt) {
     if(object.isDefined(evt.data)) {
@@ -36,4 +42,5 @@ KnobManager.prototype.deleteKnob = function(evt) {
         evt.data.remove();
     }
 };
+
 module.exports = KnobManager;

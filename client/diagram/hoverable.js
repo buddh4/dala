@@ -6,18 +6,18 @@ SVGElement.prototype.hoverable = function(handler) {
     handler = handler || {};
     var that = this;
 
-    this.mouseenter(function(evt) {
+    this.on('mouseenter', function(evt) {
         that.hovered = true;
         event.trigger('element_hoverIn', that);
-        if(object.isDefined(handler.in)) {
+        if(handler.in) {
             handler.in.apply(that, [evt]);
         }
     });
 
-    this.mouseleave(function(evt) {
+    this.on('mouseleave', function(evt) {
         that.hovered = false;
         event.trigger('element_hoverOut', that);
-        if(object.isDefined(handler.out)) {
+        if(handler.out) {
             handler.out.apply(that, [evt]);
         }
     });

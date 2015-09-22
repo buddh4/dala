@@ -13,7 +13,7 @@ var db = require('./core/db');
 db.connect().then(function() {
   console.log('DB connection established');
 }, function(err) {
-  console.error('Could not connect to database');
+  console.error('ERROR: Could not connect to database.');
 });
 
 var app = express();

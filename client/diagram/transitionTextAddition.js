@@ -2,8 +2,9 @@ var util = require('../util/util');
 var object = util.object;
 var Helper = require('./helper');
 
-var NODE_DISTANCE = 10;
+var NODE_DISTANCE = 11;
 var TRANSITION_DISTANCE = 10;
+var DEF_TEXT_HEIGHT = 13;
 
 var TransitionTextAddition = function(transition) {
     this.textNodes = [];
@@ -41,7 +42,7 @@ TransitionTextAddition.prototype.setText = function(pos, text) {
         var id = 'text'+pos+'_'+this.transition.id;
         var textNode = this.textNodes[pos] = this.diagram.svg.text(text, {id : id});
         this.diagram.svg.addToGroup(this.transition.group, textNode);
-        this.transition.additions.edit.addEditTextTrigger('text'+pos);
+        //this.transition.additions.edit.addEditTextTrigger('text'+pos);
     } else {
         this.textNodes[pos].$().text(text);
     }
@@ -65,8 +66,10 @@ TransitionTextAddition.prototype.updateTextPosition = function(pos) {
 TransitionTextAddition.prototype.getTextPosition = function(pos) {
     var textPosition;
 
+    var textHeight = this.getTextHeight(pos);
+
     if(isStartPos(pos) || isEndPos(pos)) {
-        //Move along the transition in the right direction
+        //Move along the transition in the right direction the index -1 searches the last transitionPart
         var index = isEndPos(pos) ? -1 : 1;
         var distance = isEndPos(pos) ? NODE_DISTANCE * -1 : NODE_DISTANCE;
         textPosition = this.transition.getPath().moveAlong(index, distance);
@@ -74,7 +77,7 @@ TransitionTextAddition.prototype.getTextPosition = function(pos) {
         switch(this.getLocation(pos)) {
             case 'left':
             case 'right':
-                textPosition.y += (isTop(pos)) ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE + (this.textNodes[pos].height() - 5);
+                textPosition.y += (isTop(pos)) ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE + (textHeight);
                 break;
             case 'top':
             case 'bottom':
@@ -84,10 +87,14 @@ TransitionTextAddition.prototype.getTextPosition = function(pos) {
     } else {
         //Mid Position
         textPosition = this.transition.getPath().getCenter();
-        textPosition.y += isTop(pos) ? -10 : 10;
+        textPosition.y += isTop(pos) ? TRANSITION_DISTANCE * -1 : TRANSITION_DISTANCE + textHeight;
     }
 
     return textPosition;
+};
+
+TransitionTextAddition.prototype.getTextHeight = function(pos) {
+    return (this.textNodes[pos]) ? this.textNodes[pos].height() : DEF_TEXT_HEIGHT;
 };
 
 TransitionTextAddition.prototype.getAlignPosition = function(pos) {
