@@ -7,7 +7,7 @@
  *  <config>
  *      {
  *          "nodeID" : "eer_entityDefault",
- *          "dockingType" : "SQUARE", 
+ *          "docking" : {type: 'RECT', orientation:'center', ...}
  *          ...
  *      }
  * </config>
@@ -18,7 +18,8 @@ var dom = util.dom;
 var math = util.math;
 
 var getDocking = function(node, orientationOut, orientationIn) {
-    switch(node.config.dockingType.toUpperCase()) {
+    var dockingType = (node.config.docking && node.config.docking.type) ? node.config.docking.type : 'RECT';
+    switch(node.config.docking.type.toUpperCase()) {
         case 'SIMPLE':
             return SIMPLE.call(node, orientationOut, orientationIn);
         case 'CENTER':
@@ -28,7 +29,8 @@ var getDocking = function(node, orientationOut, orientationIn) {
         case 'ELLIPSE':
             return ELLIPSE.call(node, orientationOut, orientationIn);
         case 'SQUARE':
-            return SQUARE.call(node,orientationOut, orientationIn);
+        case 'RECT':
+            return RECT.call(node,orientationOut, orientationIn);
         case 'FREE':
             return FREE.call(node,orientationOut, orientationIn);
         default:
@@ -78,12 +80,12 @@ var CIRCLE = function(position, orientationIn) {
  * @param {type} position the outer orientation point
  * @returns {DockingType_L20@call;getCenter}
  */
-var SQUARE = function(position, orientationIn) {
+var RECT = function(position, orientation) {
     if(this.overlays(position)) {
-        return orientationIn;
+        return orientation;
     }
 
-    var transition = new math.Line(position, orientationIn);
+    var transition = new math.Line(position, orientation);
 
     if(this.isRightOf(position)) {
         var result = transition.calcFX(this.x());
@@ -103,11 +105,11 @@ var SQUARE = function(position, orientationIn) {
         var bottomY = this.getBottomY();
 
         if(transition.isVertical()) {
-            return {x: orientationIn.x, y: bottomY};
+            return {x: orientation.x, y: bottomY};
         }
 
-        if(orientationIn.x === position.x) {
-            return {x:orientationIn.x, y:bottomY};
+        if(orientation.x === position.x) {
+            return {x:orientation.x, y:bottomY};
         }
         var bottomLine = new math.Line({x:1,y:bottomY}, {x:2,y:bottomY});
         var result = transition.calcLineIntercept(bottomLine);
@@ -116,11 +118,11 @@ var SQUARE = function(position, orientationIn) {
         return result;
     } else {
         if(transition.isHorizontal()) {
-            return {x:orientationIn.x, y: this.y()};
+            return {x:orientation.x, y: this.y()};
         }
 
-        if(orientationIn.x === position.x) {
-            return {x:orientationIn.x, y:this.y()};
+        if(orientation.x === position.x) {
+            return {x:orientation.x, y:this.y()};
         }
         var topLine = new math.Line({x:1,y:this.y()}, {x:2,y:this.y()});
         var result = transition.calcLineIntercept(topLine);

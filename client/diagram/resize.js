@@ -4,6 +4,7 @@ var Command = require('../core/command');
 var Transform = require('../svg/transform');
 var SVG = require('../svg/svg');
 var DragConfig = require('../svg/dragConfig');
+var Knob = require('./knob');
 
 var object = util.object;
 var dom = util.dom;
@@ -43,8 +44,12 @@ var Resize = function(node, diagram) {
  * Renders the knobs around the node.
  */
 Resize.prototype.activateKnobs = function() {
-
     var positions = this.calculateKnobPosition();
+
+    var translX = this.node.root.x() - DIF_REL;
+    var translY = this.node.root.y() - DIF_REL;
+    this.group = this.diagram.svg.g({}).translate(translX, translY);
+
     //Initialize the different knobs with different drag restricitons
     this.createKnob(KNOB_NW,positions[KNOB_NW],new DragConfig());
     this.createKnob(KNOB_N, positions[KNOB_N],new DragConfig().yOnly());
@@ -55,14 +60,7 @@ Resize.prototype.activateKnobs = function() {
     this.createKnob(KNOB_SW,positions[KNOB_SW],new DragConfig());
     this.createKnob(KNOB_W, positions[KNOB_W],new DragConfig().xOnly());
 
-    var translX = this.node.root.x() - DIF_REL;
-    var translY = this.node.root.y() - DIF_REL;
 
-    //Add all knobs to a group element
-    this.group = this.diagram.svg.g({
-            transform : new Transform().translate(translX, translY)
-        }, this.knobs[KNOB_NW], this.knobs[KNOB_N], this.knobs[KNOB_NE], this.knobs[KNOB_E],
-        this.knobs[KNOB_SE], this.knobs[KNOB_S], this.knobs[KNOB_SW], this.knobs[KNOB_W]);
 };
 
 /**
@@ -78,46 +76,25 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
             that.dx = 0;
             that.dy = 0;
             that.dragKnob = knob;
-           // that.resizeElements = that.getResizeElements();
         })
         .dragMove(function(evt, dx, dy) {
             //We keep track of the total drag movement
             that.dx += dx;
             that.dy += dy;
-            that.resize(dx,dy, that.knob);
+            that.resize(dx,dy);
         })
         .dragEnd(function(evt) {
-            if(!this.hovered) {
-                this.fill('black');
-            }
-
             that.event.trigger('node_resized', that.node);
-
-           // delete that.resizeElements;
-
         })
         .getScale(function() {
             return that.diagram.scale;
         }).get();
 
+    dragHook.preventAlignment = true;
+
     // Render the knob on stage
-    this.knobs[knob] = this.diagram.svg.rect({
-        x: 0,
-        y: 0,
-        class: 'knob',
-        transform : new Transform().translate(p.x,p.y),
-        width: SIZE,
-        height: SIZE
-    }).draggable(dragHook).hoverable({
-        in: function(evt) {
-            this.fill('green');
-        },
-        out: function(evt) {
-            if(!this.drag) {
-                this.fill('black');
-            }
-        }
-    });
+    this.knobs[knob] = new Knob(this.diagram, p, {type:'rect', fill:'black', stroke:'none', selectable:false, 'stroke-width':0, size:SIZE, 'fill-opacity':1}, this.group)
+        .draggable(dragHook).hoverable();
 };
 
 /**
@@ -169,7 +146,7 @@ Resize.prototype.updateKnobs = function(resizeKnob) {
             this.knobs[KNOB_S].moveTo(positions[KNOB_S]);
             this.knobs[KNOB_SW].moveTo(positions[KNOB_SW]);
             this.knobs[KNOB_W].moveTo(positions[KNOB_W]);
-            this.node.executeAddition('resize');
+            this.node.exec('resize');
         } else {
             //If the flag is not set we just do an update probably from simple node drag/drop
             var translX = this.node.root.getTransformation().translate().x - DIF_REL;

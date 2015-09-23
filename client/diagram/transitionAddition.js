@@ -60,7 +60,7 @@ TransitionAddition.prototype.moveUp = function() {
  */
 TransitionAddition.prototype.dbclick = function() {
     //Start Transition Init Drag Event
-    if(!this.transitionMgr.dragTransition) {
+    if(!this.transitionMgr.isDragTransition()) {
         var that = this;
         event.on(this.diagram.svg.getRootNode(), "mousemove", function(event) {
             that.transitionDrag(event);
@@ -72,10 +72,10 @@ TransitionAddition.prototype.transitionDrag = function(evt) {
     var mouse = this.diagram.getStagePosition(evt);
 
     //Initialize a new transition or update the current dragTransition
-    if (!this.transitionMgr.dragTransition) {
-        this.transitionMgr.dragTransition = this.addOutgoingTransition(mouse);
+    if(!this.transitionMgr.isDragTransition()) {
+        this.transitionMgr.startDragTransition(new Transition(this.node, mouse));
     } else {
-        this.transitionMgr.dragTransition.update(mouse);
+        this.transitionMgr.getDragTransition().update(mouse);
     }
 };
 
@@ -84,19 +84,15 @@ TransitionAddition.prototype.transitionDrag = function(evt) {
  */
 TransitionAddition.prototype.mousedown = function(evt) {
     // Stop transition drag event and set end node
-    if(this.transitionMgr.dragTransition) {
-        //TODO: mouse position is needed for relative positions
-        //var mouse = this.diagram.getStagePosition(evt);
-        var transition = this.transitionMgr.dragTransition;
-        transition.setEndNode(this.node);
-        this.transitionMgr.addTransition(transition);
-        delete this.transitionMgr.dragTransition;
+    if(this.transitionMgr.isDragTransition()) {
+        var transition = this.transitionMgr.getDragTransition();
+        transition.setEndNode(this.node, this.diagram.getStagePosition(evt));
+        this.transitionMgr.endDragTransition();
         event.off(this.diagram.svg.getRootNode(), 'mousemove');
     }
 };
 
-TransitionAddition.prototype.addOutgoingTransition = function(value) {
-    var transition = (value instanceof Transition) ? value : new Transition(this.node).init(value);
+TransitionAddition.prototype.addOutgoingTransition = function(transition) {
     this.outgoingTransitions.push(transition);
     return transition;
 };
@@ -136,7 +132,7 @@ TransitionAddition.prototype.executeOnAllTransitions = function(handler) {
 
 TransitionAddition.prototype.executeOnOutgoingTransitions = function(handler) {
     object.each(this.outgoingTransitions, function(index, transition) {
-        if (object.isDefined(transition)) {
+        if(transition) {
             handler(transition);
         }
     });
@@ -144,7 +140,7 @@ TransitionAddition.prototype.executeOnOutgoingTransitions = function(handler) {
 
 TransitionAddition.prototype.executeOnIncomingTransitions = function(handler) {
     object.each(this.incomingTransitions, function(index, transition) {
-        if (object.isDefined(transition)) {
+        if(transition) {
             handler(transition);
         }
     });
@@ -157,7 +153,7 @@ TransitionAddition.prototype.getOrientations = function() {
         if(object.isDefined(transition)) {
             if(!transition.knobManager.hasInnerKnobs()) {
                 // Return the endNode orientation inclusive the end docking relative orientation for alignment
-                result.push(transition.dockingManager.endOrientationKnob.position());
+                result.push(transition.dockingManager.endDocking.position());
             } else {
                 var docking = transition.knobManager.getDockingByIndex(1);
                 result.push({x: docking.x(), y: docking.y()});
@@ -169,7 +165,7 @@ TransitionAddition.prototype.getOrientations = function() {
         if (object.isDefined(transition)) {
             if(!transition.knobManager.hasInnerKnobs()) {
                 // Return the startNode orientation inclusive the start docking relative orientation for alignment
-                result.push(transition.dockingManager.startOrientationKnob.position());
+                result.push(transition.dockingManager.startDocking.position());
             } else {
                 var docking = transition.knobManager.getDockingByEndIndex(1);
                 result.push({x: docking.x(), y: docking.y()});

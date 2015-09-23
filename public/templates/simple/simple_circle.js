@@ -4,6 +4,10 @@
         dockingType : "CIRCLE",
         title : "circle",
         color_main : "#FFFFFF",
+        docking : {
+            type: 'circle',
+            orientation: 'center'
+        },
         resize : [
             {bind:"#body_back", value:"circle", min:"parent"},
             {bind:"#title_t", position: "center"}

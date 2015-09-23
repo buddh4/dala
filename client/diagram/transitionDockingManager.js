@@ -1,171 +1,191 @@
 var util = require('../util/util');
 var Knob = require('./Knob');
 
-var TransitionDocking = function(transition, startNode) {
-    this.startNode = startNode;
-    this.diagram = transition.diagram;
-    this.transition = transition;
+var TransitionDocking = function(dockingManager, node, mouse) {
+    this.node = node;
+    this.transition = dockingManager.transition;
+    this.dockingManager = dockingManager;
+    this.initOrientation(mouse);
+};
 
+TransitionDocking.prototype.initOrientation = function(startPosition, dragAlignment) {
     var that = this;
-    this.startOrientationKnob = new Knob(that.transition.diagram, that.startNode.getCenter(), {r:3, fill:'orange'}, that.transition.group);
-    this.startOrientationKnob.draggable({
-        dragMove : function(evt, dx ,dy) {
-            that.transition.update();
-        }
-    });
-};
+    var orientationPosition = _getStartOrientationPosition(this.node, startPosition);
 
-TransitionDocking.prototype.init = function(startKnob) {
-    this.startKnob = startKnob;
-    //TODO: add draggable listener for start and end knobs
-    this.setStartNodeFeature();
-
-    var that = this;
-    this.transition.on('select', function() {
-        that.startOrientationKnob.show();
-        if(this.endOrientationKnob) {
-            this.endOrientationKnob.show();
-        }
-    }).on('deselect', function() {
-        that.startOrientationKnob.hide();
-        if(this.endOrientationKnob) {
-            this.endOrientationKnob.hide();
-        }
-    });
-};
-
-TransitionDocking.prototype.dragStartOrientation = function(dx,dy) {
-    this.startOrientationKnob.triggerDrag(dx,dy);
-};
-
-TransitionDocking.prototype.dragEndOrientation = function(dx,dy) {
-    this.endOrientationKnob.triggerDrag(dx,dy);
-};
-
-/**
- * The startnodefeature
- * @param feature
- */
-TransitionDocking.prototype.setStartNodeFeature = function(feature) {
-    if(feature && feature.value && this.transition.group) {
-        this.transition.group.attr({'dala:start':util.app.createFeatureString(this.startNode.id, feature.value)});
-        this.startKnob.relativeOrientation(this.startNode.getRelativePosition(feature.value[0], feature.value[1]));
-    } else if(this.transition.group) {
-        this.transition.group.attr({'dala:start':this.startNode.id});
-        this.startKnob.clearRelativeOrientation();
-    }
-};
-
-TransitionDocking.prototype.calculateStart = function(mouse) {
-    var outerOrientation = mouse || this.transition.knobManager.getPosition(1);
-    return this.startNode.getDockingPosition(outerOrientation, this.startOrientationKnob.position());
-};
-
-
-TransitionDocking.prototype.calculateEnd = function(mouse) {
-    if(!this.endNode && mouse) {
-        return this.getEndPositionForMouse(mouse);
-    } else {
-        var outerOrientation = this.transition.knobManager.getPosition(-2);
-        return this.endNode.getDockingPosition(outerOrientation, this.endOrientationKnob.position());
-    }
-};
-
-TransitionDocking.prototype.getEndPositionForMouse = function(mouse) {
-    //This prevents the line rendering to overlap the exact mouse position
-    return {
-        x : (this.startKnob.x() < mouse.x) ? mouse.x - 1 : mouse.x + 1,
-        y : (this.startKnob.y() < mouse.y) ? mouse.y - 1 : mouse.y + 1
-    };
-};
-
-TransitionDocking.prototype.setEndNode = function(node) {
-    if(this.endNode) {
-        this.endNode.removeIncomingTransition(this);
-    }
-
-    // Init node connection and check dom position
-    this.endNode = node;
-
-    var that = this;
-    //TODO: this.endNode.config.docking --> add class --> just update if endNode change not create anotherone
-    this.endOrientationKnob = new Knob(this.transition.diagram, this.endNode.getCenter(), {r:3, fill:'orange'}, this.transition.group);
-    this.endOrientationKnob.draggable({
-        dragMove : function(evt, dx ,dy) {
-            that.transition.update();
-        }
-    });
-
-    this.endNode.addIncomingTransition(this.transition);
-    this.setEndNodeFeature();
-};
-
-TransitionDocking.prototype.setStartNode = function(node, feature) {
-    if(object.isDefined(this.startNode)) {
-        this.startNode.removeOutgoingTransition(this);
-    }
-
-    // Init node connection and check dom position
-    this.startNode = node;
-    this.startNode.addOutgoingTransition(this);
-
-    // Set relative startnode orientation and update
-    this.setStartNodeFeature(feature);
-}
-
-TransitionDocking.prototype.setEndKnob = function(endKnob) {
-    this.endKnob = endKnob;
-};
-
-TransitionDocking.prototype.start = function(value) {
-    if(value) {
-        this.start = value;
-    } else {
-        return this.start;
-    }
-}
-
-TransitionDocking.prototype.setRelativeEndDocking = function(x,y) {
-    var p = util.math.getPoint(x,y);
-    this.setEndNodeFeature({
-        value : [p.x, p.y]
-    });
-};
-
-TransitionDocking.prototype.setEndNodeFeature = function(feature) {
-    if(this.endNode) {
-        if(feature && feature.value) {
-            this.transition.group.attr({'dala:end':util.app.createFeatureString(this.endNode.id, feature.value)});
-            this.endKnob.relativeOrientation(this.endNode.getRelativePosition(feature.value[0], feature.value[1]));
-        } else {
-            this.transition.group.attr({'dala:end':this.endNode.id});
-            if(this.endKnob) {
-                this.endKnob.clearRelativeOrientation();
+    this.orientationKnob = new Knob(this.transition.diagram, orientationPosition, {r:3, fill:'orange'}, this.transition.group);
+    this.orientationKnob.draggable({
+            restrictionX : function(evt, dx, dy) {
+                var currentX = this.xBBox();
+                var currentRightX = this.getRightX();
+                return ((currentX > that.node.x() || dx > 0)&& (currentRightX < that.node.getRightX() || dx < 0))? dx : 0;
+            },
+            restrictionY : function(evt, dx, dy) {
+                var currentY = this.yBBox();
+                var currentBottomY = this.getBottomY();
+                return ((currentY > that.node.y() || dy > 0) && (currentBottomY < that.node.getBottomY() || dy < 0))? dy : 0;
+            },
+            dragAlignment : function() {
+                var otherDocking = (that.dockingManager.startDocking === that)
+                                    ? that.dockingManager.endDocking : that.dockingManager.startDocking;
+                return [
+                    {source:[that.position()], target: [that.node.getCenter(), otherDocking.position()]}
+                ];
+            },
+            dragMove : function(evt, dx ,dy) {
+                that.transition.update();
             }
-        }
+        });
+};
+
+var _getStartOrientationPosition = function(node, mouse) {
+    var orientationType = (node.config.docking && node.config.docking.orientation)
+                          ? node.config.docking.orientation : 'center';
+    switch(orientationType.toUpperCase()) {
+        case 'FREE':
+            return mouse;
+        case  'CENTER':
+        default:
+            return node.getCenter();
     }
+
+};
+
+TransitionDocking.prototype.position = function() {
+    return this.orientationKnob.position();
+};
+
+TransitionDocking.prototype.triggerDrag = function(dx, dy) {
+    this.orientationKnob.triggerDrag(dx,dy);
+};
+
+TransitionDocking.prototype.calculateDockingPosition = function(outerOrientation) {
+    return this.node.getDockingPosition(outerOrientation, this.position());
+};
+
+TransitionDocking.prototype.inactiveStyle = function() {
+    this.orientationKnob.inactiveStyle();
+};
+
+TransitionDocking.prototype.hide = function() {
+    this.orientationKnob.hide();
 };
 
 TransitionDocking.prototype.remove = function() {
+    this.orientationKnob.remove();
+};
+
+/**
+ *
+ */
+var TransitionDockingManager = function(transition, startNode, mouse) {
+    this.diagram = transition.diagram;
+    this.transition = transition;
+    this.setStartNode(startNode, mouse);
+
+    var that = this;
+    this.transition.additions['dockingManager'] = {
+        select : function() {
+            that.inactiveStyle();
+        },
+        deselect : function() {
+            that.hide();
+        },
+        hover : function() {
+            that.inactiveStyle();
+        },
+        hoverOut : function() {
+            if(!that.transition.selected) {
+                that.knobManager.hide();
+            }
+        }
+
+    };
+};
+
+TransitionDockingManager.prototype.setStartNode = function(node, mousePosition) {
     if(this.startNode) {
         this.startNode.removeOutgoingTransition(this.transition);
     }
 
+    this.startNode = node;
+    this.startNode.addOutgoingTransition(this.transition);
+    this.startDocking = new TransitionDocking(this, node, mousePosition);
+    this.setStartNodeFeature();
+};
+
+TransitionDockingManager.prototype.setStartNodeFeature = function() {
+    this.transition.group.dala('start', this.startNode.id);
+};
+
+TransitionDockingManager.prototype.calculateStart = function(outerOrientation) {
+    return this.startDocking.calculateDockingPosition(outerOrientation);
+};
+
+TransitionDockingManager.prototype.dragStartOrientation = function(dx,dy) {
+    this.startDocking.triggerDrag(dx,dy);
+};
+
+TransitionDockingManager.prototype.setEndNode = function(node, mousePosition) {
     if(this.endNode) {
         this.endNode.removeIncomingTransition(this.transition);
     }
+
+    this.endNode = node;
+    this.endNode.addIncomingTransition(this.transition);
+    this.endDocking = new TransitionDocking(this, node, mousePosition);
+    this.setEndNodeFeature();
 };
 
-TransitionDocking.prototype.getStartDockingLocation = function() {
-    if(this.startNode && this.startKnob) {
+TransitionDockingManager.prototype.dragEndOrientation = function(dx,dy) {
+    this.endDocking.triggerDrag(dx,dy);
+};
+
+TransitionDockingManager.prototype.calculateEnd = function(outerOrientation) {
+    return this.endDocking.calculateDockingPosition(outerOrientation);
+};
+
+TransitionDockingManager.prototype.setEndNodeFeature = function() {
+    if(this.endNode) {
+        this.transition.group.dala('end', this.endNode.id);
+    }
+};
+
+TransitionDockingManager.prototype.getStartDockingLocation = function() {
+    if(this.startNode) {
         return this.startNode.getRelativeLocation(this.startKnob.position());
     }
 };
 
-TransitionDocking.prototype.getEndDockingLocation = function() {
-    if(this.endNode && this.endKnob) {
+TransitionDockingManager.prototype.getEndDockingLocation = function() {
+    if(this.endNode) {
         return this.endNode.getRelativeLocation(this.endKnob.position());
     }
 };
 
-module.exports = TransitionDocking;
+TransitionDockingManager.prototype.inactiveStyle = function() {
+    this.startDocking.inactiveStyle();
+    if(this.endDocking) {
+        this.endDocking.inactiveStyle();
+    }
+};
+
+TransitionDockingManager.prototype.hide = function() {
+    this.startDocking.hide();
+    if(this.endDocking) {
+        this.endDocking.hide();
+    }
+};
+
+TransitionDockingManager.prototype.remove = function() {
+    if(this.startNode) {
+        this.startNode.removeOutgoingTransition(this.transition);
+        this.startDocking.remove();
+    }
+
+    if(this.endNode) {
+        this.endNode.removeIncomingTransition(this.transition);
+        this.endDocking.remove();
+    }
+};
+
+module.exports = TransitionDockingManager;

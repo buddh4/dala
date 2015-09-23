@@ -133,6 +133,23 @@ TransitionManager.prototype.activateTransition = function(value) {
     }
 };
 
+TransitionManager.prototype.isDragTransition = function(transition) {
+    return object.isDefined(this.dragTransition);
+};
+
+TransitionManager.prototype.startDragTransition = function(transition) {
+    this.dragTransition = transition;
+};
+
+TransitionManager.prototype.getDragTransition = function() {
+    return this.dragTransition;
+};
+
+TransitionManager.prototype.endDragTransition = function() {
+    this.addTransition(this.dragTransition);
+    delete this.dragTransition;
+};
+
 TransitionManager.prototype.addTransition = function(transition) {
     this.addCmd(CMD_ADD, [this.getTransitionString(transition)], [transition.id]);
     return this.transitions[transition.id] = transition;

@@ -46,6 +46,8 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
         console.warn('Created diagram without id');
     }
 
+    this.uniqueIds = [];
+
     this.id = cfg.id || 'not specified';
     this.projectId = cfg.projectId || 'default';
     this.title = cfg.title || 'new';
@@ -229,12 +231,35 @@ Diagram.prototype.initDefs = function() {
 };
 
 Diagram.prototype.createKnob = function(p, group, cfg) {
-    var config = object.extend({node_id:'docking_'+Date.now(), x: p.x, y: p.y}, cfg);
-    var node = this.templateMgr.getTemplateSync('knob_circle').createNode(config, this).init();
+    var knobId = this.uniqueId();
+    var config = object.extend({node_id:'docking_'+knobId, x: p.x, y: p.y, type:'circle'}, cfg);
+    var tmpl;
+    switch(config.type) {
+        case 'circle':
+            tmpl = this.templateMgr.getTemplateSync('knob_circle');
+            break;
+        case 'rect':
+            tmpl = this.templateMgr.getTemplateSync('knob_rect');
+            break;
+    }
+    var node = tmpl.createNode(config, this).init();
     if(group) {
         this.svg.addToGroup(group, node.root);
     }
     return node;
+};
+
+Diagram.prototype.uniqueId = function() {
+    var newId = this.checkId(Date.now() + '');
+    this.uniqueIds.push(newId);
+    return newId;
+};
+
+/**
+ * Prevent duplicates
+ */
+Diagram.prototype.checkId = function(id) {
+    return ($.inArray(id, this.uniqueIds) > -1) ? this.checkId('u'+id) : id;
 };
 
 Diagram.prototype.getHoverNode = function() {

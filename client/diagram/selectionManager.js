@@ -140,10 +140,14 @@ SelectionManager.prototype.isElementHover = function() {
 };
 
 SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
-    //TODO MULTIPLE SELECTIONS DIFFERENT TYPES (TRANSITION/NODES)...
-    // we could provide the whole selection instead of the single node
+    //some templates or nodes are should not affect the selection (e.g. resize knobs)
+    if(!selectedNode.selectable) {
+        return;
+    };
+
     if(!this.containsNode(selectedNode)) {
         var that = this;
+        // we could provide the whole selection instead of the single node
         this.event.trigger('node_selected',selectedNode);
         //Clear the current selection
         if(!(object.isDefined(shifted) && shifted)) {
@@ -156,7 +160,7 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
             });
         }
 
-        this.clearTransition();
+        this.clearTransition(selectedNode);
 
 
         //Add the resize addition to the node which is removed after deselection
@@ -230,8 +234,8 @@ SelectionManager.prototype.deselectNode = function(node) {
     node.deselect();
 };
 
-SelectionManager.prototype.clearTransition = function() {
-    if(this.selectedTransition && !this.selectedTransition.preventDeselect) {
+SelectionManager.prototype.clearTransition = function(node) {
+    if(this.selectedTransition && !(node && node.knob && this.selectedTransition.ownsKnobNode(node))) {
         this.selectedTransition.deselect();
         delete this.selectedTransition;
     }

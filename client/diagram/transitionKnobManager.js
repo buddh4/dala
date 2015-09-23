@@ -13,6 +13,25 @@ var object = util.object;
 var TransitionKnobManager = function(transition) {
     this.transition = transition;
     this.event = transition.event;
+
+    var that = this;
+    this.transition.additions['knobManager'] = {
+        select : function() {
+            that.inactiveStyle();
+        },
+        deselect : function() {
+            that.hide();
+        },
+        hover : function() {
+            that.inactiveStyle();
+        },
+        hoverOut : function() {
+            if(!that.transition.selected) {
+                that.knobManager.hide();
+            }
+        }
+
+    };
 };
 
 TransitionKnobManager.prototype.init = function(start) {
@@ -40,7 +59,7 @@ TransitionKnobManager.prototype.addKnob = function(position, index) {
 };
 
 TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
-    var knob = new Knob(this.transition.diagram, position, {r:5}, this.transition.group);
+    var knob = new Knob(this.transition.diagram, position, {radius:5}, this.transition.group);
     var that = this;
     var initialDrag = true;
     knob.draggable({
@@ -87,6 +106,14 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
         }
     });
     return knob;
+};
+
+TransitionKnobManager.prototype.updateStartKnob = function(position) {
+    this.updateKnob(0, position);
+};
+
+TransitionKnobManager.prototype.updateEndKnob = function(position) {
+    this.updateKnob(-1, position);
 };
 
 TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
@@ -157,14 +184,14 @@ TransitionKnobManager.prototype.getJoiningOrientation = function(knob) {
     var index = this.getIndexForKnob(knob);
     var result = [];
     if(index <= 1) { //start or second docking
-        result.push(this.transition.dockingManager.startOrientationKnob.position());
+        result.push(this.transition.dockingManager.startDocking.position());
     } else if(index !== 0){
         var orientation = this.knobs[index - 1];
         result.push({x : orientation.x(), y : orientation.y()});
     }
 
     if(index >= this.knobs.length -2) { //end or one before end docking
-        result.push(this.transition.dockingManager.endOrientationKnob.position());
+        result.push(this.transition.dockingManager.endDocking.position());
     } else {
         var orientation = this.knobs[index + 1];
         result.push({x : orientation.x(), y : orientation.y()});
@@ -244,18 +271,23 @@ TransitionKnobManager.prototype.hide = function() {
     });
 };
 
-TransitionKnobManager.prototype.activeStyle = function() {
-    object.each(this.knobs, function(index, knob) {
-        knob.activeStyle();
-    });
-};
-
 TransitionKnobManager.prototype.inactiveStyle = function() {
     object.each(this.knobs, function(index, knob) {
         if(!knob.isSelected()) {
             knob.inactiveStyle();
         }
     });
+};
+
+TransitionKnobManager.prototype.ownsKnobNode = function(node) {
+    var result = false;
+    object.each(this.knobs, function(index, knob) {
+        if(knob.node.id === node.id) {
+            result = true;
+            return false;
+        }
+    });
+    return result;
 };
 
 TransitionKnobManager.prototype.getPosition = function(index) {

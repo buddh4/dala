@@ -16,21 +16,13 @@ var STYLE_AREA = "stroke:grey;stroke-opacity:0.0;stroke-width:11;fill:none;";
 var object = util.object;
 var dom = util.dom;
 
-var Transition = function(node) {
+var Transition = function(node, startPosition) {
     if(node) {
         this.diagram = node.diagram;
         this.event = node.event;
         this.svg = this.diagram.svg;
-
-        //Initialize the transition docking mechanism (start/end) docking to nodes.
-        this.dockingManager = new TransitionDockingManager(this, node);
-        //Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.
-        this.pathManager = pathManagerFactory.get(this);
-        //Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions
-        this.knobManager = new TransitionKnobManager(this);
-
-        transitionAdditions.init(this);
     }
+    this.init(node, startPosition);
 };
 
 Transition.prototype.getPath = function() {
@@ -54,20 +46,31 @@ Transition.prototype.type = function(value) {
  *
  * @param {type} mouse
  */
-Transition.prototype.init = function(mouse) {
+Transition.prototype.init = function(node, mouse) {
     //TODO: user UUID.new or something
     this.id = Date.now();
     //Initializes the transition group container
     this.initSVGGroup();
+
+    transitionAdditions.init(this);
+
+    //Initialize the transition docking mechanism (start/end) docking to nodes.
+    this.dockingManager = new TransitionDockingManager(this, node, mouse);
+    //Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.
+    this.pathManager = pathManagerFactory.get(this);
+
+    //Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions
+    this.knobManager = new TransitionKnobManager(this);
+
     //Calculate start position for outer orientation (mouse position)
-    var start = this.dockingManager.calculateStart(mouse);
+    var startDockingPosition = this.dockingManager.calculateStart(mouse);
+
     //Init knob for startPosition
-    var startKnob = this.knobManager.init(start);
+    var startKnob = this.knobManager.init(startDockingPosition);
+
     //Create SVG Elements in dom and transition events
     this.initTransitionSVG();
     this.initEvents();
-    //This will initiate the node docking feature note: this is dependent on the svg creation.
-    this.dockingManager.init(startKnob);
     return this;
 };
 
@@ -86,7 +89,7 @@ Transition.prototype.dragEndOrientation = function(dx, dy) {
 Transition.prototype.strokeWidth = function(value) {
     var result = this.line.strokeWidth(value);
     if(value) {
-        this.lineArea.strokeWidth(value + 10);
+        this.lineArea.strokeWidth(value + 11);
     }
     return result;
 };
@@ -157,15 +160,15 @@ Transition.prototype.initEvents = function() {
     });
 };
 
-Transition.prototype.isInitState = function() {
-    return !this.dockingManager.endNode;
+Transition.prototype.ownsKnobNode = function(knobNode) {
+    return this.knobManager.ownsKnobNode(knobNode);
 };
 
 Transition.prototype.update = function(mouse) {
     this.updateEnd(mouse);
     this.updateStart(mouse);
     this.redraw();
-    this.executeAddition('update');
+    this.exec('update',[], true);
 };
 
 Transition.prototype.redraw = function() {
@@ -176,16 +179,30 @@ Transition.prototype.redraw = function() {
 };
 
 Transition.prototype.updateStart = function(mouse) {
-    this.knobManager.updateKnob(0, this.dockingManager.calculateStart(mouse));
+    var outerOrientation = mouse || this.knobManager.getPosition(1);
+    this.knobManager.updateStartKnob(this.dockingManager.calculateStart(outerOrientation));
 };
 
 Transition.prototype.updateEnd = function(mouse) {
-    var end = this.dockingManager.calculateEnd(mouse);
-    if(this.isInitState()) { //In initstate we dont have a endKnob yet so we update the pathManager by hand
-        this.pathManager.dragLine(end);
+    if(this.isInitState()) {
+        mouse = this.alignEndPositionForMouse(mouse);
+        this.pathManager.dragLine(mouse);
     } else {
-        this.knobManager.updateKnob(-1, end);
+        var outerOrientation = this.knobManager.getPosition(-2);
+        this.knobManager.updateEndKnob(this.dockingManager.calculateEnd(outerOrientation));
     }
+};
+
+Transition.prototype.isInitState = function() {
+    return !this.dockingManager.endNode;
+};
+
+Transition.prototype.alignEndPositionForMouse = function(mouse) {
+    //This prevents the line rendering to overlap the exact mouse position
+    return {
+        x : (this.knobManager.startKnob.x() < mouse.x) ? mouse.x - 1 : mouse.x + 1,
+        y : (this.knobManager.startKnob.y() < mouse.y) ? mouse.y - 1 : mouse.y + 1
+    };
 };
 
 Transition.prototype.setStartNode = function(node, feature) {
@@ -194,22 +211,17 @@ Transition.prototype.setStartNode = function(node, feature) {
     if(!this.isInitState()) {
         this.checkDomPosition();
     }
-
     this.update();
 };
 
-Transition.prototype.setEndNode = function(node) {
-    this.dockingManager.setEndNode(node);
+Transition.prototype.setEndNode = function(node, mousePosition) {
+    this.dockingManager.setEndNode(node, mousePosition);
 
     if(this.knobManager.isInitState()) {
-        var endPosition = this.dockingManager.calculateEnd();
-        this.dockingManager.setEndKnob(this.knobManager.addKnob(endPosition));
+        this.knobManager.addKnob(this.dockingManager.calculateEnd(mousePosition));
     }
 
     this.checkDomPosition();
-
-    //TODO: ?? rather use this.inactivate or something
-    this.line.attr({style:STYLE_TRANSITION_INACTIVE});
     this.update();
 };
 
@@ -334,33 +346,27 @@ Transition.prototype.select = function() {
 };
 
 Transition.prototype.hover = function() {
-    this.knobManager.inactiveStyle();
+    this.trigger('hover');
 };
 
 Transition.prototype.hoverOut = function() {
-    if(!this.selected) {
-        this.knobManager.hide();
-    }
+    this.trigger('hoverOut');
 };
-
 
 Transition.prototype.activeStyle = function() {
     this.line.attr({style:STYLE_TRANSITION_ACTIVE});
-    //Knobs are just active if selected
-    this.knobManager.inactiveStyle();
 };
 
 Transition.prototype.deselect = function() {
     if(!this.preventDeselect) {
+        this.exec('deselect');
         this.inactiveStyle();
-        this.knobManager.hide();
         this.selected = false;
     }
 };
 
 Transition.prototype.inactiveStyle = function() {
     this.line.attr({style:STYLE_TRANSITION_INACTIVE});
-    this.knobManager.inactiveStyle();
 };
 
 Transition.prototype.getEndKnob = function() {

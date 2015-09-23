@@ -236,7 +236,35 @@ SVGElement.prototype.style = function(key, value) {
     return this;
 };
 
-//TODO how to handle cx cy ?
+SVGElement.prototype.bBoxPosition = function() {
+    return {
+        x : this.xBBox(),
+        y : this.yBBox()
+    }
+}
+
+SVGElement.prototype.xBBox = function() {
+    switch(this.getType()) {
+        case 'circle':
+            return this.x() -  this.r();
+        case 'ellipse':
+            return this.x() -  this.rx();
+        default:
+            return this.x();
+    }
+};
+
+SVGElement.prototype.yBBox = function() {
+    switch(this.getType()) {
+        case 'circle':
+            return this.y() -  this.r();
+        case 'ellipse':
+            return this.y() -  this.ry();
+        default:
+            return this.y();
+    }
+};
+
 SVGElement.prototype.x = function() {
     if(this.name === 'path') {
         return this.data().getX();
@@ -287,25 +315,38 @@ SVGElement.prototype.position = function() {
 };
 
 SVGElement.prototype.getRightX = function() {
-    if(this.name === 'path') {
-        return this.data().getRightX();
-    } else if(this.name === 'text') {
-        var anchor = this.attr('text-anchor');
-        switch(anchor) {
-            case 'end':
-                return this.x();
-            case 'middle':
-                return this.x() + (this.width() / 2);
-        }
+    switch(this.getType()) {
+        case 'path':
+            return this.data().getRightX();
+        case 'circle':
+            return this.x() +  this.r();
+        case 'ellipse':
+            return this.x() +  this.rx();
+        case 'text':
+            var anchor = this.attr('text-anchor');
+            switch(anchor) {
+                case 'middle':
+                    return this.x() + (this.width() / 2);
+                case 'end':
+                default:
+                    return this.x();
+            }
+        default:
+            return this.x() + this.width();
     }
-    return this.x() + this.width();
 };
 
 SVGElement.prototype.getBottomY = function() {
-    if(this.name === 'path') {
-        return this.data().getBottomY();
+    switch(this.getType()) {
+        case 'path':
+            return this.data().getBottomY();
+        case 'circle':
+            return this.y() +  this.r();
+        case 'ellipse':
+            return this.y() +  this.ry();
+        default:
+            return this.y() + this.height();
     }
-    return this.y() + this.height();
 };
 
 SVGElement.prototype.overlays = function() {
@@ -319,6 +360,16 @@ SVGElement.prototype.overlays = function() {
     });
     //console.log('result:'+result);
     return result;
+};
+
+
+SVGElement.prototype.overlayCheck = function(position) {
+    return position.x >= this.xBBox() && position.x <= this.getRightX()
+        && position.y >= this.yBBox() && position.y <= this.getBottomY();
+};
+
+SVGElement.prototype.dala = function(key, value) {
+    return this.attr('dala:'+key, value);
 };
 
 /**
@@ -359,11 +410,6 @@ SVGElement.prototype.getRelativeLocation = function(position) {
             }
         }
     }
-};
-
-SVGElement.prototype.overlayCheck = function(position) {
-    return position.x >= this.x() && position.x <= this.getRightX()
-        && position.y >= this.y() && position.y <= this.getBottomY();
 };
 
 SVGElement.prototype.getCenter = function() {

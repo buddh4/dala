@@ -3,20 +3,14 @@ var app = require('../util/app');
 var dom = require('../dom/dom');
 var Transform = require('../svg/transform');
 
-var DEFAULT_FILL = 'silver';
-var DEFAULT_FILL_SELECT = 'green';
 var DEFAULT_OPACITY = 0.5;
 var DEFAULT_KNOB_RADIUS = 5;
 
 var Knob = function(diagram, p, cfg, group) {
     this.diagram = diagram;
     this.event = diagram.event;
-    this.config = cfg;
     this.group = group;
-
-    if(p.x && p.y) {
-        this.init(p, cfg);
-    }
+    this.init(p, cfg);
 };
 
 Knob.prototype.clearRelativeOrientation = function() {
@@ -38,20 +32,24 @@ Knob.prototype.relativeOrientation = function(position) {
 };
 
 Knob.prototype.init = function(position, cfg) {
-    var config = object.extend({r : DEFAULT_KNOB_RADIUS}, cfg);
-    this.node = this.diagram.createKnob(position, this.group, config);
+    this.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
+    this.node = this.diagram.createKnob(position, this.group, this.config);
+    this.root = this.node.root;
     this.node.knob = this;
 
     var that = this;
-    this.on('select', function() {
-        that.selected = true;
-        that.activeStyle();
-    }).on('deselect', function() {
-        that.selected = false;
-        if(!that.selected) {
-            that.inactiveStyle();
+    var select = cfg.select || function() {
+            that.activeStyle();
+        };
+
+    var deselect = cfg.select || function() {
+            if (!that.selected) {
+                that.inactiveStyle();
+            }
         }
-    });
+
+
+    this.on('select', deselect).on('deselect', select);
     this.event.trigger('knob_created', this);
 };
 
@@ -75,6 +73,7 @@ Knob.prototype.draggable = function(handler) {
     this.triggerDrag = function(dx,dy) {
         this.node.triggerDrag(dx,dy);
     };
+    return this;
 };
 
 Knob.prototype.initDrag = function(evt) {
@@ -84,20 +83,24 @@ Knob.prototype.initDrag = function(evt) {
 Knob.prototype.hide = function() {
     if(!this.node.selected) {
         this.node.root.hide();
+        this.node.root.attr('r', 0);
     }
 };
 
 Knob.prototype.show = function(opacity) {
-    opacity = opacity || DEFAULT_OPACITY;
+    opacity = opacity || this.config['fill-opcaity'] || 1;
     this.node.root.show(DEFAULT_OPACITY);
+    this.node.root.attr('r', this.config['radius']);
 };
 
 Knob.prototype.select = function() {
+    this.selected = true;
     this.node.trigger('select');
     return this;
 };
 
 Knob.prototype.deselect = function() {
+    this.selected = false;
     this.node.trigger('deselect');
     return this;
 };
@@ -112,7 +115,7 @@ Knob.prototype.stroke = function(color) {
 };
 
 Knob.prototype.activeStyle = function() {
-    this.fill(DEFAULT_FILL_SELECT);
+    this.fill(this.config['fill-active']);
     this.show();
 };
 
@@ -122,29 +125,15 @@ Knob.prototype.deselect = function() {
 };
 
 Knob.prototype.inactiveStyle = function() {
-    this.fill(DEFAULT_FILL);
+    this.fill(this.config['fill']);
     this.show();
 };
 
 Knob.prototype.hoverable = function(handler) {
     var that = this;
     handler = handler || {};
-    this.node.root.hoverable({
-        in: function() {
-            that.activeStyle();
-            if(handler && handler.in) {
-                handler.in(that);
-            }
-        },
-        out: function() {
-            if(!that.selected ) {
-                that.inactiveStyle();
-                if(handler && handler.out) {
-                    handler.out(that);
-                }
-            }
-        }
-    });
+    this.node.root.hoverable();
+    return this;
 };
 
 Knob.prototype.on = function(handler, args) {

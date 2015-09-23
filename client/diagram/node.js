@@ -3,7 +3,7 @@
  * a template defining the type of the node.
  */
 var util = require('../util/util');
-var dockingType = require('./dockingType');
+var dockingType = require('./docking');
 var SVG = require('../svg/svg');
 var event = require('../core/event');
 var nodeAdditions = require('./nodeAdditions');
@@ -16,11 +16,12 @@ var dom = util.dom;
  * the init method has to be called.
  */
 var Node = function(tmpl, config, diagram) {
+    this.config = config || {};
     this.diagram = diagram;
     this.event = diagram.event;
     this.id = config.node_id;
     this.template = tmpl;
-    this.config = config;
+    this.selectable = object.isDefined(this.config.selectable) ? this.config.selectable : true;
     this.visible = true;
 };
 
@@ -90,12 +91,24 @@ Node.prototype.initEventFunctions = function() {
     });
 
     this.on('mousedown', function(evt) {
-        if(!evt.ctrlKey) {
+        if(!evt.ctrlKey && that.isVisible()) {
             evt.stopPropagation();
             that.exec('mousedown', [evt], true);
             that.event.trigger('node_mousedown', that, evt);
         }
     });
+};
+
+Node.prototype.isVisible = function() {
+    return this.root.isVisible();
+};
+
+Node.prototype.hide = function() {
+    this.root.hide();
+};
+
+Node.prototype.show = function(opacity) {
+    this.root.show(opacity);
 };
 
 Node.prototype.index = function() {

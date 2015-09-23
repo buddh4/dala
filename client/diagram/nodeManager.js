@@ -57,7 +57,7 @@ NodeManager.prototype.createNode = function(tmpl, config) {
         return;
     }
 
-    config.node_id = Date.now();
+    config.node_id = this.diagram.uniqueId();
     config.diagramId = this.diagram.id;
     return this.exec(CMD_ADD, [tmpl, config], [config.node_id]);
 };

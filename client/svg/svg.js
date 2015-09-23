@@ -231,8 +231,7 @@ SVG.prototype.circle = function(cfg, part) {
  * @returns {*}
  */
 SVG.prototype.g = function(cfg) {
-    var prepend = (object.isDefined(cfg.prepend))?cfg.prepend:false;
-    delete cfg.prepend;
+    var cfg = cfg ||{};
 
     var parentPart = this.svgParts[cfg.parentPart] || this.getDefaultPart();
 
@@ -242,6 +241,7 @@ SVG.prototype.g = function(cfg) {
 
     if(arguments.length > 1) {
         for(var i = 1;i < arguments.length; i++) {
+            console.log('addToGroup: '+group.attr('id')+' - '+ arguments[i].attr('id'));
             dom.appendSVGElement(group.instance(), arguments[i]);
         }
     }

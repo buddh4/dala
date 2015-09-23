@@ -27,7 +27,7 @@ DragContext.prototype.dragMove = function(evt, dx, dy) {
     this.dxSum += dx;
     this.dySum += dy;
     if(this.cfg.dragMove) {
-        this.cfg.dragMove(dx,dy);
+        this.cfg.dragMove(evt, dx,dy);
     }
 };
 
@@ -56,18 +56,8 @@ Node.prototype.draggable = function(cfg) {
     var that = this;
     this.dragContext = new DragContext(this, cfg);
 
-    var dragAlignment = cfg.dragAlignment || new DragAlignment(that.diagram,
-            function() {
-               return [
-                    {source:[that.getOrientation()], target:that.getTransitionAlignmentTargets()},
-                    {source:[that.getCenter()], target:that.getNodeAlignmentTargets()},
-                ];
-
-            });
-
     var dragConfig = {
         cursor: 'all-scroll',
-        dragAlignment: dragAlignment ,
         dragStart: function(evt) {
             that.dragContext.dragStart(evt);
             lastDrag = that.dragContext;
@@ -86,8 +76,29 @@ Node.prototype.draggable = function(cfg) {
         },
         getScale: function() {
             return that.diagram.scale;
-        }
+        },
+        restrictionX : cfg.restrictionX,
+        restrictionY : cfg.restrictionY,
+        cursor : cfg.cursor
     };
+
+    if(!cfg.preventAlignment) {
+        var dragAlignment;
+        if(cfg.dragAlignment) {
+            dragAlignment = (cfg.dragAlignment instanceof DragAlignment)
+                ? cfg.dragAlignment : new DragAlignment(this.diagram, cfg.dragAlignment);
+        } else {
+            dragAlignment = new DragAlignment(that.diagram,
+                function() {
+                    return [
+                        {source:[that.getOrientation()], target:that.getTransitionAlignmentTargets()},
+                        {source:[that.getCenter()], target:that.getNodeAlignmentTargets()},
+                    ];
+                });
+        }
+        dragConfig.dragAlignment = dragAlignment;
+    }
+
 
     this.root.draggable(dragConfig, this.getDragElement());
 
@@ -109,7 +120,7 @@ Node.prototype.getNodeAlignmentTargets = function() {
     var that = this;
 
     object.each(this.diagram.getNodes(), function(key, node) {
-        if(node.id !== that.id) {
+        if(node.id !== that.id && !node.knob) {
             result.push(node.getCenter());
         }
     });

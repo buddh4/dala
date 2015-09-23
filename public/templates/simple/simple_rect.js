@@ -1,7 +1,10 @@
 (function() {
     dala.require('templateManager').registerTemplate('simple_rect', {
         description : "Simple rectangle with text",
-        dockingType : "SQUARE",
+        docking : {
+            type: 'rect',
+            orientation: 'center'
+        },
         title : "RECTANGLE",
         color_main : "#FFFFFF",
         resize : [
