@@ -77,7 +77,7 @@ TransitionManager.prototype.transitionDockingDropListener = function(evt) {
     if (evt.data) {
         var transition = evt.data.transition;
         var dockingIndex = evt.data.dockingIndex;
-        var docking = this.getTransition(transition).knobManager.getDockingByIndex(dockingIndex);
+        var docking = this.getTransition(transition).knobManager.getKnob(dockingIndex);
 
         this.addCmd(CMD_DOC_DROPPED,
             [transition, dockingIndex, docking.node.root.dxSum, docking.node.root.dySum],
@@ -88,7 +88,7 @@ TransitionManager.prototype.transitionDockingDropListener = function(evt) {
 TransitionManager.prototype.dropDockingAction = function(transition, dockingIndex, dxSum, dySum) {
     transition = this.getTransition(transition);
     if(transition) {
-        var docking = transition.knobManager.getDockingByIndex(dockingIndex);
+        var docking = transition.knobManager.getKnob(dockingIndex);
         docking.triggerDrag(dxSum, dySum);
     }
 };
@@ -104,7 +104,7 @@ TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
 TransitionManager.prototype.deleteKnobAction = function(transition, dockingIndex) {
     transition = this.getTransition(transition);
     if(transition) {
-        transition.knobManager.getDockingByIndex(dockingIndex).remove();
+        transition.knobManager.getKnob(dockingIndex).remove();
     }
 };
 

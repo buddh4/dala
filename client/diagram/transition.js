@@ -78,6 +78,26 @@ Transition.prototype.initSVGGroup = function() {
     this.root = this.group = this.svg.g({prepend:true, "class":'transition', id : this.id});
 };
 
+Transition.prototype.getStartAlignment = function() {
+    var result = {source:[this.dockingManager.startDocking.position()]};
+    if(!this.knobManager.hasInnerKnobs()) {
+        result.target = [this.dockingManager.endDocking.position()];
+    } else {
+        result.target = [this.knobManager.getKnob(1).position()];
+    }
+    return result;
+};
+
+Transition.prototype.getEndAlignment = function() {
+    var result = {source:[this.dockingManager.endDocking.position()]};
+    if(!this.knobManager.hasInnerKnobs()) {
+        result.target = [this.dockingManager.startDocking.position()];
+    } else {
+        result.target = [this.knobManager.getKnob(-2).position()];
+    }
+    return result;
+};
+
 Transition.prototype.dragStartOrientation = function(dx, dy) {
     this.dockingManager.dragStartOrientation(dx, dy);
 };

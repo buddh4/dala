@@ -172,10 +172,6 @@ Node.prototype.addOutgoingTransition = function(value) {
     return this.additions.transition.addOutgoingTransition(value);
 };
 
-Node.prototype.getOrientations = function() {
-    return this.additions.transition.getOrientations();
-};
-
 Node.prototype.removeOutgoingTransition = function(transition) {
     this.additions.transition.removeOutgoingTransition(transition);
 };

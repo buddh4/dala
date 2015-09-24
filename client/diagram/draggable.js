@@ -90,10 +90,9 @@ Node.prototype.draggable = function(cfg) {
         } else {
             dragAlignment = new DragAlignment(that.diagram,
                 function() {
-                    return [
-                        {source:[that.getOrientation()], target:that.getTransitionAlignmentTargets()},
-                        {source:[that.getCenter()], target:that.getNodeAlignmentTargets()},
-                    ];
+                    var alignments = that.getTransitionAlignmentTargets();
+                    alignments.push({source:[that.getCenter()], target:that.getNodeAlignmentTargets()});
+                    return alignments;
                 });
         }
         dragConfig.dragAlignment = dragAlignment;
@@ -112,7 +111,7 @@ Node.prototype.draggable = function(cfg) {
 };
 
 Node.prototype.getTransitionAlignmentTargets = function() {
-    return this.getOrientations();
+    return this.additions.transition.getTransitionAlignmentTargets();
 };
 
 Node.prototype.getNodeAlignmentTargets = function() {

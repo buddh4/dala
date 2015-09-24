@@ -146,31 +146,17 @@ TransitionAddition.prototype.executeOnIncomingTransitions = function(handler) {
     });
 };
 
-TransitionAddition.prototype.getOrientations = function() {
-    //TODO: outsource this to transition.getStartOrientation() getEndOrientation()
+TransitionAddition.prototype.getTransitionAlignmentTargets = function() {
     var result = [];
     object.each(this.outgoingTransitions, function(index, transition) {
         if(object.isDefined(transition)) {
-            if(!transition.knobManager.hasInnerKnobs()) {
-                // Return the endNode orientation inclusive the end docking relative orientation for alignment
-                result.push(transition.dockingManager.endDocking.position());
-            } else {
-                var docking = transition.knobManager.getDockingByIndex(1);
-                result.push({x: docking.x(), y: docking.y()});
-            }
+            result.push(transition.getStartAlignment());
         }
     });
 
     object.each(this.incomingTransitions, function(index, transition) {
         if (object.isDefined(transition)) {
-            if(!transition.knobManager.hasInnerKnobs()) {
-                // Return the startNode orientation inclusive the start docking relative orientation for alignment
-                result.push(transition.dockingManager.startDocking.position());
-            } else {
-                var docking = transition.knobManager.getDockingByEndIndex(1);
-                result.push({x: docking.x(), y: docking.y()});
-            }
-
+            result.push(transition.getEndAlignment());
         }
     });
     return result;

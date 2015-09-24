@@ -212,16 +212,12 @@ TransitionKnobManager.prototype.getKnobPositions = function() {
     return result;
 };
 
-TransitionKnobManager.prototype.getDockingByEndIndex = function(indexDif) {
-    return this.knobs[(this.knobs.length - 1) - indexDif];
-};
-
 TransitionKnobManager.prototype.start = function() {
     return this.knobs[0].position();
 };
 
-TransitionKnobManager.prototype.getDockingByIndex = function(index) {
-    return this.knobs[index];
+TransitionKnobManager.prototype.getKnob = function(index) {
+    return object.valueByIndex(this.knobs, index);
 };
 
 TransitionKnobManager.prototype.calcEndDockingPosition = function() {

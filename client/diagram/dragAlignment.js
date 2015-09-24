@@ -2,7 +2,7 @@ var util = require('../util/util');
 var config = require('../core/config');
 
 var object = util.object;
-var DEF_TOLERANCE = 20;
+var DEF_TOLERANCE = 10;
 
 var Alignment = function(tolerance, dimension) {
     this.dimension = dimension;
