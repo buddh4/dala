@@ -17,7 +17,22 @@ var util = require('../util/util');
 var dom = util.dom;
 var math = util.math;
 
-var getDocking = function(node, orientationOut, orientationIn) {
+var checkOrientationBoundary = function(node, p) {
+    var dockingType = (node.config.docking && node.config.docking.type) ? node.config.docking.type : 'RECT';
+    switch(node.config.docking.type.toUpperCase()) {
+        case 'CENTER':
+            return false;
+        case 'CIRCLE':
+            return CIRCLE_BOUNDARY.call(node, p);
+        case 'ELLIPSE':
+            return ELLIPSE_BOUNDARY.call(node, p);
+        case 'SQUARE':
+        case 'RECT':
+            return RECT.call(node, p);
+    };
+};
+
+var calculateDockingPosition = function(node, orientationOut, orientationIn) {
     var dockingType = (node.config.docking && node.config.docking.type) ? node.config.docking.type : 'RECT';
     switch(node.config.docking.type.toUpperCase()) {
         case 'SIMPLE':
@@ -44,24 +59,34 @@ var FREE = function(position , orientationIn) {
 };
 
 var ELLIPSE = function(position , orientationIn) {
-    var firstChild = this.firstChild();
-    var rx = firstChild.totalRadiusX() || this.width() / 2;
-    var ry = firstChild.totalRadiusY() || this.height() / 2;
-
-    var ellipse = new math.Ellipse(orientationIn, rx, ry);
+    var rx = this.width() / 2;
+    var ry = this.height() / 2;
+    var ellipse = new math.Ellipse(this.getCenter(), rx, ry);
     var result = ellipse.calcLineIntercept(position, orientationIn);
 
     return (result.length > 0)?result[0]:orientationIn;
 
 };
 
+var ELLIPSE_BOUNDARY = function(position) {
+    var rx = this.width() / 2;
+    var ry = this.height() / 2;
+    return new math.Ellipse(this.getCenter(), rx, ry).overlays(position);
+};
+
 var CIRCLE = function(position, orientationIn) {
     //Note the stroke is not included in some browsers...
     var radius = this.width() / 2;
-    var circle = new math.Circle(orientationIn, radius);
+    var circle = new math.Circle(this.getCenter(), radius);
     var result = circle.calcLineIntercept(position, orientationIn);
 
     return (result.length > 0)?result[0]:orientationIn;
+};
+
+var CIRCLE_BOUNDARY = function(position) {
+    var center = this.getCenter();
+    var radius = this.width() / 2;
+    return new math.Circle(this.getCenter(), radius).overlays(position);
 };
 
 /**
@@ -184,5 +209,6 @@ module.exports = {
     CENTER : CENTER ,
     SIMPLE : SIMPLE ,
     DEFAULT : CENTER,
-    getDocking : getDocking
+    calculateDockingPosition : calculateDockingPosition,
+    checkOrientationBoundary : checkOrientationBoundary
 };

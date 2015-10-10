@@ -24,7 +24,7 @@ var initListener = function() {
     event.listen('transition_edit_undo', transitionEditListener);
     event.listen('node_removed', nodeRemovedListener);
     event.listen('selection_clear', clearInfo);
-    event.listen('transition_select', transitionSelectListener);
+    event.listen('transition_selected', transitionSelectListener);
 };
 
 var transitionEditListener = function(evt) {

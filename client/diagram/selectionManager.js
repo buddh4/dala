@@ -1,5 +1,6 @@
 var util = require('../util/Util');
 var event = require('../core/event');
+var PathData = require('../svg/PathData');
 
 var object = util.object;
 var dom = util.dom;
@@ -8,6 +9,7 @@ var SelectionManager = function(diagram) {
     this.diagram = diagram;
     this.event = diagram.event;
     this.selectedNodes = [];
+    this.selectedTransitions = [];
     this.copyNodes = [];
     this.selectedTransition;
     this.hoverElement;
@@ -19,17 +21,62 @@ var SelectionManager = function(diagram) {
     event.listen('key_del_press', this.deleteListener, this);
     event.listen('tab_activated', this.clear, this);
 
-    this.event.listen('transition_start', this.transitionStartListener, this);
-    this.event.listen('transition_select', this.selectTransitionListener, this);
-    this.event.listen('transition_removed', this.removedTransitionListener, this);
-
-    this.event.listen('node_added', this.selectNodeListener, this);
-    this.event.listen('node_removed', this.removedNodeListener, this);
-    this.event.listen('node_mousedown', this.selectNodeListener, this);
+    this.event.listen('transition_added', this.transitionAddedListener, this);
+    this.event.listen('node_added', this.nodeAddedListener, this);
+    this.event.listen('knob_added', this.knobAddedListener, this);
 
     //These are currently global events not diagram context events
     event.listen('element_hoverIn', this.hoverInElementListener, this);
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
+};
+
+SelectionManager.prototype.knobAddedListener = function(evt) {
+    var knob = evt.data;
+    var that = this;
+    this.addNodeEvents(knob.node);
+    if(knob.node.selectable) {
+        knob.node.on('select', function () {
+            if (that.dragSelection || evt.shiftKey && knob.transition) {
+                if (knob.transition.selected) {
+                    knob.transition.deselect();
+                }
+            } else {
+                if (!knob.transition.selected) {
+                    knob.transition.select();
+                }
+            }
+        });
+    }
+};
+
+SelectionManager.prototype.nodeAddedListener = function(evt) {
+    this.addNodeEvents(evt.data);
+};
+
+SelectionManager.prototype.addNodeEvents = function(node, shifted) {
+    if(node.selectable) {
+        var that = this;
+        node.on('select', function (evt, shifted) {
+            that.setNodeSelection(node, shifted);
+        }).on('deselect', function () {
+            that.removeSelectedNode(node);
+        }).on('remove', function () {
+            that.removeSelectedNode(node);
+        }).select();
+    }
+    return node;
+};
+
+SelectionManager.prototype.transitionAddedListener = function(evt) {
+    var that = this;
+    var transition = evt.data;
+    transition.on('select', function(evt, shifted) {
+        that.setTransitionSelection(transition);
+    }).on('deselect', function() {
+        that.removeSelectedTransition(transition);
+    }).on('remove', function() {
+        that.removeSelectedTransition(transition);
+    }).select(evt.shiftKey);
 };
 
 SelectionManager.prototype.copyListener = function(evt) {
@@ -119,27 +166,24 @@ SelectionManager.prototype.deleteSelectionNodes = function() {
     });
 };
 
-SelectionManager.prototype.selectNodeListener = function(evt) {
-    this.setSelection(evt.data, evt.shiftKey);
-};
-
-SelectionManager.prototype.transitionStartListener = function(evt) {
+SelectionManager.prototype.transitionCreatedListener = function(evt) {
     this.selectedTransition = evt.data;
-};
-
-SelectionManager.prototype.selectTransitionListener = function(evt) {
-    //We do not call this.clear because we would hide the edit fields trough the triggered event
-    this.clearNodes();
-    this.clearTransition();
-    this.selectedTransition = evt.data;
-    this.selectedTransition.select();
 };
 
 SelectionManager.prototype.isElementHover = function() {
     return object.isDefined(this.hoverElement);
 };
 
-SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
+SelectionManager.prototype.setTransitionSelection = function(transition) {
+    //We do not call this.clear because we would hide the edit fields trough the triggered event
+    this.clearNodes(function(node) {return !transition.ownsKnobNode(node)});
+    if(transition !== this.selectedTransition) {
+        this.clearTransition();
+        this.selectedTransition = transition;
+    }
+};
+
+SelectionManager.prototype.setNodeSelection = function(selectedNode, shifted) {
     //some templates or nodes are should not affect the selection (e.g. resize knobs)
     if(!selectedNode.selectable) {
         return;
@@ -147,28 +191,20 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
 
     if(!this.containsNode(selectedNode)) {
         var that = this;
-        // we could provide the whole selection instead of the single node
-        this.event.trigger('node_selected',selectedNode);
-        //Clear the current selection
-        if(!(object.isDefined(shifted) && shifted)) {
-            this.selectedNodes = object.grep(this.selectedNodes, function(currentSelection) {
-                if(currentSelection.id !== selectedNode.id) {
-                    that.deselectNode(currentSelection);
-                    return false;
-                }
-                return true;
-            });
+
+        //Clear the current selection if not shifted or dragSelection
+        if(!shifted && !this.dragSelection) {
+            this.clearNodes(function(node) {return selectedNode.id !== node.id});
         }
 
-        this.clearTransition(selectedNode);
-
-
-        //Add the resize addition to the node which is removed after deselection
         this.selectedTemplate = selectedNode.template;
-        selectedNode.select();
+        this.addSelectedNode(selectedNode);
+        this.clearTransition(selectedNode, object.isDefined(this.dragSelection));
 
-        var that = this;
+        //Trigger drag for all selected nodes if one selection is dragged
         //We use additon style instead of on event for a performance gain (on.dragMove is deactivated see draggable.js)
+        //We don't have to remove this addition after reselect because only selected nodes can be dragged anyways.
+        var that = this;
         selectedNode.additions['multiSelectionDrag'] = {
             dragMove : function(dx,dy, evt) {
                 if (!evt.triggerEvent) {
@@ -180,9 +216,72 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
                 }
             }
         }
-        this.selectedNodes.push(selectedNode);
-    } else if(object.isDefined(shifted) && shifted) {
+    } else if(shifted && !this.dragSelection) {
         this.removeSelectedNode(selectedNode);
+    }
+};
+
+SelectionManager.prototype.dragSelectionStart = function(evt, startPosition) {
+    var that = this;
+    // INIT drag selection
+    if (!this.isElementHover()) {
+        this.clear();
+        evt.preventDefault();
+        this.diagram.on('mousemove', function (evt) {
+            var stagePosition = that.diagram.getStagePosition(evt);
+            if (!that.dragSelection) {
+                that.dragSelection = that.diagram.svg.path({style: 'stroke:gray;stroke-width:1px;stroke-dasharray:5,5;fill:none;'});
+                that.dragSelection.data().start(startPosition)
+                    .line(startPosition)
+                    .line(stagePosition)
+                    .line(stagePosition)
+                    .complete();
+            } else {
+                //Move selection away from mouse pointer
+                var alignedMouseX = stagePosition.x - 1;
+                var alignedMouseY = stagePosition.y - 1;
+
+                //Update pathdata
+                that.dragSelection.data().clear().start(startPosition)
+                    .line({x: startPosition.x, y: alignedMouseY})
+                    .line({x: alignedMouseX, y: alignedMouseY})
+                    .line({x: alignedMouseX, y: startPosition.y})
+                    .complete();
+
+                //Check for hovered elements to select
+                object.each(that.diagram.nodeMgr.nodes, function (id, node) {
+                    that.dragSelect(node);
+                });
+
+                object.each(that.diagram.knobMgr.knobs, function(id, knob) {
+                    that.dragSelect(knob.node);
+                });
+            }
+
+            //Trigger attribute update
+            that.dragSelection.update();
+        });
+    };
+};
+
+SelectionManager.prototype.dragSelect = function(node) {
+    if(!node.selectable) {
+        return;
+    }
+    if(this.dragSelection.overlays(node.getCenter())) {
+        if(!node.selected) {
+            node.select();
+        }
+    } else if(node.selected) {
+        node.deselect();
+    }
+};
+
+SelectionManager.prototype.dragSelectionEnd = function() {
+    this.diagram.off('mousemove');
+    if(this.dragSelection) {
+        this.dragSelection.remove();
+        delete this.dragSelection;
     }
 };
 
@@ -197,17 +296,18 @@ SelectionManager.prototype.setSelection = function(selectedNode, shifted) {
  * @returns {undefined}
  */
 SelectionManager.prototype.addSelectedNode = function(selectedNode) {
-    if(!this.containsNode(selectedNode)) {
-        this.selectedNodes.push(selectedNode);
-        this.clearTransition();
-        selectedNode.select();
+    this.selectedNodes.push(selectedNode);
+};
+
+SelectionManager.prototype.removeSelectedTransition = function(transition) {
+    if(this.selectedTransition === transition) {
+        delete this.selectedTransition;
     }
 };
 
 SelectionManager.prototype.removeSelectedNode = function(node) {
     var index = this.selectedNodes.indexOf(node);
     if(index >= 0) {
-        this.deselectNode(node);
         this.selectedNodes.splice(index, 1);
     }
 };
@@ -222,23 +322,29 @@ SelectionManager.prototype.clear = function() {
     this.event.trigger('selection_clear');
 };
 
-SelectionManager.prototype.clearNodes = function() {
+SelectionManager.prototype.clearNodes = function(filter) {
     var that = this;
-    object.each(this.selectedNodes, function(index, node) {
-        that.deselectNode(node);
+    filter = filter || function() {return true;};
+    //We clone the array since the original array can be manipulated while deselection.
+    var selectedNodesArr = object.cloneArray(this.selectedNodes);
+    object.each(selectedNodesArr, function(index, node) {
+        if(node.selectable && filter(node)) {
+            node.deselect();
+        }
     });
-    this.selectedNodes = [];
 };
 
-SelectionManager.prototype.deselectNode = function(node) {
-    node.deselect();
-};
-
-SelectionManager.prototype.clearTransition = function(node) {
-    if(this.selectedTransition && !(node && node.knob && this.selectedTransition.ownsKnobNode(node))) {
-        this.selectedTransition.deselect();
-        delete this.selectedTransition;
+SelectionManager.prototype.clearTransition = function(node, force) {
+    if(!this.selectedTransition) {
+        return;
     }
+    if(force || !node  || !node.knob || !this.selectedTransitionOwnsKnobNode(node)) {
+        this.selectedTransition.deselect();
+    }
+};
+
+SelectionManager.prototype.selectedTransitionOwnsKnobNode = function(node) {
+    return this.selectedTransition && this.selectedTransition.ownsKnobNode(node);
 };
 
 SelectionManager.prototype.isMultiSelection = function() {

@@ -118,6 +118,10 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
             evt.preventDefault();
         }
 
+        if(!evt.triggerEvent) {
+            that.attr('pointer-events', 'none');
+        }
+
         var actualdx = (object.isDefined(evt.dx)) ? evt.dx : evt.clientX - that.dragCurrentX;
         var actualdy = (object.isDefined(evt.dy)) ? evt.dy : evt.clientY - that.dragCurrentY;
 
@@ -146,7 +150,7 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         var dy = (restrictionY && !evt.triggerEvent) ? restrictionY.apply(that, [evt, actualdx, actualdy]) : actualdy;
 
         //TODO: somehow the scale should be determined in a more elegant way perhaps store it in svg instance...
-        if(cfg.getScale) {
+        if(cfg.getScale && !evt.triggerEvent) {
             var scale = cfg.getScale();
             dx /= scale;
             dy /= scale;
@@ -191,6 +195,8 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
         if(cfg.dragEnd) {
             cfg.dragEnd.apply(that, [evt]);
         }
+
+        that.attr('pointer-events', 'all');
     };
 
     if(dragElement) {
@@ -226,7 +232,7 @@ SVGElement.prototype.draggable = function(cfg, dragElement) {
     };
 
     //For manual dragging a svg element the triggerEvent is used to identify this event was triggered manually
-    //See Selectionmanager setSelection dragMove handler
+    //See Selectionmanager setNodeSelection dragMove handler
     this.triggerDrag = function(dx, dy) {
         dragMove.apply(this,[{dx:dx, dy:dy, triggerEvent:true}]);
     };

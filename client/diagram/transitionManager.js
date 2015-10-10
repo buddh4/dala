@@ -1,9 +1,15 @@
+var util = require('../util/util');
 var object = require('../util/object');
 var xml = require('../util/xml');
 var event = require('../core/event');
 var Transition = require('./transition');
 
 var AbstractManager = require('./abstractManager');
+
+var EVT_TRANSITION_ADDED = "transition_added";
+var EVT_TRANSITION_SELECTED = 'transition_selected';
+var EVT_TRANSITION_DESELECTED = 'transition_deselected';
+var EVT_TRANSITION_REMOVED = 'transition_removed';
 
 var CMD_ADD = "transition_add";
 var CMD_DEL = "transition_delete";
@@ -33,8 +39,7 @@ var TransitionManager = function(diagram) {
     this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
 };
 
-TransitionManager.prototype = Object.create(AbstractManager.prototype);
-var _super = AbstractManager.prototype;
+util.inherits(TransitionManager, AbstractManager);
 
 TransitionManager.prototype.editTransitionListener = function(evt) {
     var transition = this.getTransition(evt.data.transition);
@@ -57,20 +62,6 @@ TransitionManager.prototype.undoEditCmd = function(transition, key, value) {
 
 TransitionManager.prototype.editTransitionAction = function(transition, type, value) {
     transition = this.getTransition(transition);
-};
-
-var updateMarker = function(markerId, markerValue) {
-    var markerSelector = '#'+markerId;
-
-    if(editTransition[markerId]() !== markerValue) {
-        if(markerValue) {
-            editTransition[markerId](markerValue);
-        } else {
-            editTransition[markerId]('');
-        }
-
-        updateButtonMarker(markerSelector,markerValue);
-    }
 };
 
 TransitionManager.prototype.transitionDockingDropListener = function(evt) {
@@ -151,6 +142,15 @@ TransitionManager.prototype.endDragTransition = function() {
 };
 
 TransitionManager.prototype.addTransition = function(transition) {
+    var that = this;
+    this.event.trigger(EVT_TRANSITION_ADDED, transition);
+    transition.on('select', function() {
+        that.event.trigger(EVT_TRANSITION_SELECTED, transition);
+    }).on('deselect', function() {
+        that.event.trigger(EVT_TRANSITION_DESELECTED, transition);
+    }).on('remove', function() {
+        that.event.trigger(EVT_TRANSITION_REMOVED, transition);
+    });
     this.addCmd(CMD_ADD, [this.getTransitionString(transition)], [transition.id]);
     return this.transitions[transition.id] = transition;
 };

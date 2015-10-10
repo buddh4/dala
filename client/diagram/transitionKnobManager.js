@@ -12,10 +12,30 @@ var object = util.object;
 
 var TransitionKnobManager = function(transition) {
     this.transition = transition;
+    this.dockingManager = transition.dockingManager;
     this.event = transition.event;
+    this.init();
 
     var that = this;
     this.transition.additions['knobManager'] = {
+        setEndNode : function(node) {
+            var knob = (that.isInitState()) ? that.addKnob(node.getCenter()) : that.getEndKnob();
+
+            if(node.knob) {
+                knob.hoverable(false);
+            } else {
+                knob.hoverable(true);
+            }
+        },
+        setStartNode : function(node) {
+            var knob = (that.isInitState()) ? that.addKnob(node.getCenter(), 0) : that.getStartKnob();
+
+            if(node.knob) {
+                knob.hoverable(false);
+            } else {
+                knob.hoverable(true);
+            }
+        },
         select : function() {
             that.inactiveStyle();
         },
@@ -27,16 +47,15 @@ var TransitionKnobManager = function(transition) {
         },
         hoverOut : function() {
             if(!that.transition.selected) {
-                that.knobManager.hide();
+                that.hide();
             }
         }
 
     };
 };
 
-TransitionKnobManager.prototype.init = function(start) {
+TransitionKnobManager.prototype.init = function(startNode, start) {
     this.knobs = [];
-    return this.addKnob(start, 0);
 };
 
 TransitionKnobManager.prototype.addKnob = function(position, index) {
@@ -59,38 +78,69 @@ TransitionKnobManager.prototype.addKnob = function(position, index) {
 };
 
 TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
-    var knob = new Knob(this.transition.diagram, position, {radius:5}, this.transition.group);
     var that = this;
+    var newBoundaryIndex = this.isInitState();
+    var knobConfig = {
+        radius:5,
+        selectable: !newBoundaryIndex,
+        fill:       newBoundaryIndex ? 'green' : 'silver'
+    };
+    var knob = new Knob(this.transition.diagram, position, knobConfig, this.transition.group);
+    knob.transition = this.transition;
     var initialDrag = true;
-    knob.draggable({
-        dragAlignment : new DragAlignment(that.transition.diagram,
-            function() { return [{source: [knob.position()], target: that.getJoiningOrientation(knob)}];}),
-        dragStart : function() {
-            that.transition.activeStyle();
-        },
-        dragMove : function() {
-            //We just update boundary knobs if they are not in within multiselection
-            if(!(that.transition.diagram.isMultiSelection() && that.isBoundaryIndex(knobIndex))) {
-                that.updateKnob(that.getIndexForKnob(knob), knob.position());
-                that.transition.update();
+
+    if(!newBoundaryIndex) {
+        knob.draggable({
+            dragAlignment : new DragAlignment(that.transition.diagram,
+                function() { return [{source: [knob.position()], target: that.getJoiningOrientation(knob)}];}),
+            dragMove : function() {
+                //We just update boundary knobs if they are not in within multiselection
+                if(!(that.transition.diagram.isMultiSelection() && that.isBoundaryIndex(knobIndex))) {
+                    that.updateKnob(that.getIndexForKnob(knob), knob.position());
+                    that.transition.update();
+                }
+            },
+            dragEnd : function() {
+                if(initialDrag) {
+                    that.event.trigger('transition_docking_created', {'transition':that.transition.id, 'dockingIndex':knobIndex});
+                    initialDrag = false;
+                } else {
+                    that.event.trigger('transition_docking_dropped', {'transition':that.transition.id, 'dockingIndex':knobIndex});
+                }
             }
-        },
-        dragEnd : function() {
-            if(!that.isBoundaryIndex(knobIndex) && initialDrag) {
-                that.event.trigger('transition_docking_created', {'transition':that.transition.id, 'dockingIndex':knobIndex});
-                initialDrag = false;
-            } else if(!that.isBoundaryIndex(knobIndex)) {
-                that.event.trigger('transition_docking_dropped', {'transition':that.transition.id, 'dockingIndex':knobIndex});
+        });
+    } else {
+        knob.draggable({
+            preventAlignment : true,
+            dragMove : function() {
+                //We just update boundary knobs if they are not in within multiselection
+                if(!that.transition.diagram.isMultiSelection()) {
+                    that.getPathManager().updatePart(that.getIndexForKnob(knob), knob.position());
+                    that.transition.redraw();
+                }
+            },
+            dragEnd : function() {
+                //TODO: currently the getNodeByPosition function does return the first node found not the one with the highest index...
+                var hoverNode = that.transition.diagram.getNodeByPosition(knob.position());
+                if(knobIndex > 0) {
+                    that.transition.setEndNode(hoverNode);
+                } else {
+                    that.transition.setStartNode(hoverNode);
+                }
             }
+        });
+    }
+
+    knob.on('deselect', function(evt) {
+        if(that.transition.selected) {
+            knob.inactiveStyle();
+        } else {
+            knob.hide();
         }
     });
 
     knob.on('remove', function() {
         that.transition.removeKnobListener(knob);
-    });
-
-    knob.on('deselect', function() {
-        that.transition.deselect();
     });
 
     //To prevent hiding the hoverknobs we adobt the transition hovering
@@ -108,6 +158,10 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
     return knob;
 };
 
+TransitionKnobManager.isInitState = function() {
+    return this.size() < 2;
+}
+
 TransitionKnobManager.prototype.updateStartKnob = function(position) {
     this.updateKnob(0, position);
 };
@@ -119,13 +173,15 @@ TransitionKnobManager.prototype.updateEndKnob = function(position) {
 TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
     knobIndex = object.getIndex(this.knobs, knobIndex);
 
-    // move the corresponding docking
+    // Note the following is only neccessary for boundary knobs but won't affect other knobs since the given position
+    // is the same as the current knob position after drag.
     this.knobs[knobIndex].moveTo(position.x, position.y);
+
     // update path
     this.getPathManager().updatePart(knobIndex, position);
 
 
-    // special handling for start and end dockings
+    // special handling for start and end knobs
     // Todo: implement this in transitionDockingManager add context dragMove listener
     if(knobIndex === 0) {
         this.event.trigger('transition_drag_startdocking', this.transition);
@@ -212,51 +268,24 @@ TransitionKnobManager.prototype.getKnobPositions = function() {
     return result;
 };
 
+TransitionKnobManager.prototype.getStartKnob = function() {
+    return this.getKnob(0);
+};
+
+TransitionKnobManager.prototype.getEndKnob = function() {
+    return this.getKnob(-1);
+};
+
 TransitionKnobManager.prototype.start = function() {
-    return this.knobs[0].position();
+    return this.getKnob(0).position();
+};
+
+TransitionKnobManager.prototype.end = function() {
+    return this.getKnob(-1).position();
 };
 
 TransitionKnobManager.prototype.getKnob = function(index) {
     return object.valueByIndex(this.knobs, index);
-};
-
-TransitionKnobManager.prototype.calcEndDockingPosition = function() {
-    // if we have inner dockings we use the last inner docking as
-    // outer orientation for the end docking else we use the startdocking
-    var outerOrientation = (this.pathData.length() > 2)
-        ? this.pathData.value(-2).to()
-        : this.startKnob.position();
-
-    var relativeInnerOrientation = (object.isDefined(this.endKnob))
-        ? this.endKnob.relativeOrientation()
-        : undefined;
-
-    return this.transition.endNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
-};
-
-TransitionKnobManager.prototype.calculateStartDockingPosition = function(mouse) {
-    var outerOrientation = mouse;
-    if(this.transition.line) {
-        switch(this.pathData.length()) {
-            case 2: // just the end node
-                if(this.endKnob) {
-                    outerOrientation = this.endKnob.position();
-                } else {
-                    //for init per drag we use mouse init per activation we use endNode
-                    outerOrientation = (this.endNode) ? this.endNode.getCenter() : mouse;
-                }
-                break;
-            default: // additonal dockings
-                outerOrientation = this.pathData.value(1).to();
-                break;
-        }
-    }
-
-    var relativeInnerOrientation = (object.isDefined(this.startKnob))
-        ? this.startKnob.relativeOrientation()
-        : undefined;
-
-    return this.transition.startNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
 };
 
 TransitionKnobManager.prototype.hide = function() {
@@ -277,13 +306,7 @@ TransitionKnobManager.prototype.inactiveStyle = function() {
 
 TransitionKnobManager.prototype.ownsKnobNode = function(node) {
     var result = false;
-    object.each(this.knobs, function(index, knob) {
-        if(knob.node.id === node.id) {
-            result = true;
-            return false;
-        }
-    });
-    return result;
+    return node.root.$().parent().attr('id') === this.transition.group.$().attr('id');
 };
 
 TransitionKnobManager.prototype.getPosition = function(index) {

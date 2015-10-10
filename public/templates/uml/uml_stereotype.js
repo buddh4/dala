@@ -6,7 +6,10 @@
         color_second : "#FFFFFF",
         color_hover : "#E0E0E0",
         color_select: "#898989",
-        dockingType : "SQUARE",
+        docking : {
+            type: 'square',
+            orientation: 'center'
+        },
         resize: [
             {bind:"#methods_back", value:"default", min:"parent"},
             {bind:"#attributes_back", value:"default parent", min:"parent"},

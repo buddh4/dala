@@ -1,12 +1,12 @@
 (function() {
     dala.require('templateManager').registerTemplate('simple_rect', {
         description : "Simple rectangle with text",
+        title : "RECTANGLE",
+        color_main : "#FFFFFF",
         docking : {
             type: 'rect',
             orientation: 'center'
         },
-        title : "RECTANGLE",
-        color_main : "#FFFFFF",
         resize : [
             {bind:"#body_back", value:"default", min:"parent"},
             {bind:"#title_t", position: "center"}

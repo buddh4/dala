@@ -32,7 +32,7 @@ DragContext.prototype.dragMove = function(evt, dx, dy) {
 };
 
 DragContext.prototype.dragEnd = function(evt) {
-    if(this.dxSum > 0 || this.dySum > 0) {
+    if(this.dxSum != 0 || this.dySum != 0) {
         this.to = this.node.position();
         if (this.cfg.dragEnd) {
             this.cfg.dragEnd(evt);

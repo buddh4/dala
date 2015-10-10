@@ -10,6 +10,17 @@ var AbstractManager = require('./abstractManager');
 var object = util.object;
 var dom = util.dom;
 
+var EVT_CREATE = 'node_create';
+var EVT_DELETE = 'node_delete';
+var EVT_COPY = 'node_copy';
+
+var EVT_DROPED = 'node_droped';
+var EVT_RESIZED = 'node_resized';
+var EVT_ADDED = 'node_added';
+var EVT_SELECTED = 'node_selected';
+var EVT_DESELECTED = 'node_deselected';
+var EVT_REMOVED = 'node_removed';
+
 var CMD_ADD = 'node_add';
 var CMD_DELETE = 'node_delete';
 var CMD_COPY = 'node_copy';
@@ -22,11 +33,13 @@ var NodeManager = function(diagram) {
     AbstractManager.call(this, diagram);
     this.nodes = {};
 
-    this.listen('node_create', this.createNodeListener);
-    this.listen('node_delete', this.deleteNodeListener);
-    this.listen('node_copy', this.copyNodeListener);
-    this.listen('node_droped', this.dropNodeListener);
-    this.listen('node_resized', this.resizeNodeListener);
+    this.selectionMgr = diagram.selectionMgr;
+
+    this.listen(EVT_CREATE, this.createNodeListener);
+    this.listen(EVT_DELETE, this.deleteNodeListener);
+    this.listen(EVT_COPY, this.copyNodeListener);
+    this.listen(EVT_DROPED, this.dropNodeListener);
+    this.listen(EVT_RESIZED, this.resizeNodeListener);
 
     this.command(CMD_ADD, this.createNodeCmd, this.deleteNodeCmd);
     this.command(CMD_DELETE, this.deleteNodeCmd, this.importNodeCmd);
@@ -36,8 +49,7 @@ var NodeManager = function(diagram) {
     this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
 };
 
-NodeManager.prototype = Object.create(AbstractManager.prototype);
-var _super = AbstractManager.prototype;
+util.inherits(NodeManager, AbstractManager);
 
 NodeManager.prototype.createNodeListener = function(evt) {
     try {
@@ -63,16 +75,24 @@ NodeManager.prototype.createNode = function(tmpl, config) {
 };
 
 NodeManager.prototype.createNodeCmd = function(tmpl, config) {
+    var that = this;
     var node = tmpl.createNode(config, this.diagram).init();
     if(!config.preventDrag) {
         node.draggable();
+        node.on('select', function() {
+            that.event.trigger(EVT_SELECTED, node);
+        }).on('deselect', function() {
+            that.event.trigger(EVT_DESELECTED, node);
+        }).on('remove', function() {
+            that.event.trigger(EVT_REMOVED, node);
+        });
     }
     this.addNode(node);
 };
 
 NodeManager.prototype.addNode = function(node) {
     this.nodes[node.id] = node;
-    this.event.trigger('node_added', node);
+    this.event.trigger(EVT_ADDED, node);
 };
 
 NodeManager.prototype.activateNode = function(elementId, tmpl) {

@@ -1,9 +1,12 @@
 (function() {
     dala.require('templateManager').registerTemplate('simple_ellipse', {
         description : "Simple ellipse with text",
-        dockingType : "ELLIPSE",
         color_main : "#FFFFFF",
         title : "ellipse",
+        docking : {
+            type: 'ellipse',
+            orientation: 'center'
+        },
         resize : [
             {bind:"#body_back", value:"default", min:"parent"},
             {bind:"#title_t", position: "center"}

@@ -17,7 +17,7 @@ Point.prototype.isWithinInterval = function(start, end, tolerance) {
 
 Point.prototype.isWithinXInterval = function(start, end, tolerance) {
     return _inInterval(this, start, end, tolerance, 'x');
-}
+};
 
 Point.prototype.isWithinYInterval = function(start, end, tolerance) {
     return _inInterval(this, start, end, tolerance, 'y');
@@ -240,6 +240,12 @@ Ellipse.prototype.calcLineIntercept = function(p1,p2) {
     return result;
 };
 
+Ellipse.prototype.overlays = function(p) {
+    var bx = Math.pow((p.x - this.c.x), 2) / Math.pow(this.rx, 2);
+    var by = Math.pow((p.y - this.c.y), 2) / Math.pow(this.ry, 2);
+    return bx + by <= 1
+};
+
 var Circle = function(cx, cy, r) {
     if(arguments.length === 2) {
         this.c = cx;
@@ -248,7 +254,12 @@ var Circle = function(cx, cy, r) {
         this.c = {x: cx, y : cy};
         this.r = r;
     }
+};
 
+Circle.prototype.overlays = function(p) {
+    var bx = Math.pow((p.x - this.c.x), 2);
+    var by = Math.pow((p.y - this.c.y), 2);
+    return bx + by < Math.pow(this.r, 2);
 };
 
 Circle.prototype.calcLineIntercept = function(p1, p2) {

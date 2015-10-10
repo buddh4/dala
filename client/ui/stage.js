@@ -1,8 +1,8 @@
-var event = require('../../core/event');
-var stringUtil = require('../../util/string');
-var objectUtil = require('../../util/object');
-var diagramManager = require('../diagramManager');
-var userManager = require('../../user/userManager');
+var event = require('../core/event');
+var stringUtil = require('../util/string');
+var objectUtil = require('../util/object');
+var diagramManager = require('../diagram/diagramManager');
+var userManager = require('../user/userManager');
 
 var CONTAINER_SELECTOR = '#diagramStage'
 var $CONTAINER_NODE = $(CONTAINER_SELECTOR);

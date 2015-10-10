@@ -7,22 +7,13 @@ EditPanel.prototype.init = function(pageX, pageY, onclose) {
     var that = this;
     this.close();
 
-    //Init Close Button
-    var $close = dom.create('input', {type:'button', value : 'x'})
-        .on('mouseup',function() {
-            if(object.isDefined(onclose)) {
-                onclose.apply();
-            }
-            //that.node.executeAddition('contentChanged');
-            that.close();
-        });
+    this.onclose = onclose;
 
     //Init Form
     this.$form = dom.create('form', {action : 'javascript:void(0);'})
         .on('submit', function() {
-            $close.trigger('mouseup');
-        })
-        .append($close);
+            that.close();
+        });
 
     //Init Container
     this.$editDiv = dom.create('div', {id:'editPanel'})
@@ -37,16 +28,24 @@ EditPanel.prototype.init = function(pageX, pageY, onclose) {
 };
 
 EditPanel.prototype.close = function() {
+    if(this.onclose) {
+        this.onclose.apply();
+    }
+
     if(this.$editDiv) {
         this.$editDiv.remove();
     }
 }
 
 EditPanel.prototype.createTextEdit = function(pageX ,pageY, getter, setter) {
+    var that = this;
     var $input = dom.create('input', {type:'text', value : getter()})
         .focus()
         .on('focus', function() {
             this.select();
+        })
+        .on('blur', function(evt) {
+            that.close();
         })
         .on('change', function(evt) {
             setter($input.val());
@@ -58,10 +57,14 @@ EditPanel.prototype.createTextEdit = function(pageX ,pageY, getter, setter) {
 };
 
 EditPanel.prototype.createTextAreaEdit = function(pageX ,pageY, getter, setter) {
+    var that = this;
     var $input = dom.create('textarea')
         .val(getter())
         .on('change', function() {
             setter($input.val());
+        })
+        .on('blur', function(evt) {
+            that.close();
         })
         .on('focus', function() {
             this.select();

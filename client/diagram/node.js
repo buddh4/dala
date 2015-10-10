@@ -5,7 +5,6 @@
 var util = require('../util/util');
 var dockingType = require('./docking');
 var SVG = require('../svg/svg');
-var event = require('../core/event');
 var nodeAdditions = require('./nodeAdditions');
 
 var object = util.object;
@@ -58,7 +57,7 @@ Node.prototype.getCorners = function() {
  */
 Node.prototype.activate = function(nodeID) {
 
-    if(object.isDefined(nodeID)) {
+    if(nodeID) {
         this.id = this.config.node_id = nodeID;
     }
 
@@ -94,7 +93,9 @@ Node.prototype.initEventFunctions = function() {
         if(!evt.ctrlKey && that.isVisible()) {
             evt.stopPropagation();
             that.exec('mousedown', [evt], true);
-            that.event.trigger('node_mousedown', that, evt);
+            if(!that.selected) {
+                that.select();
+            }
         }
     });
 };
@@ -139,7 +140,6 @@ Node.prototype.moveDown = function() {
 };
 
 Node.prototype.remove = function() {
-    this.event.trigger('node_removed', this);
     this.exec('remove');
     this.root.remove();
 };
@@ -162,10 +162,6 @@ Node.prototype.getInnerSVG = function(prefix) {
 
 Node.prototype.updateAdditions = function(type) {
     this.exec('update');
-};
-
-Node.prototype.getDockingPosition = function(position, orientationIn) {
-    return dockingType.getDocking(this, position, orientationIn);
 };
 
 Node.prototype.addOutgoingTransition = function(value) {
@@ -195,18 +191,16 @@ Node.prototype.instance = function() {
 };
 
 Node.prototype.selector = function(prefix) {
-    var stringSelector;
     if(object.isArray(prefix)) {
-        stringSelector = [];
+        var stringSelector = [];
         var that = this;
         object.each(prefix, function(index, val) {
             stringSelector.push(that.selector(val));
         });
-        stringSelector = stringSelector.join(', ');
+        return stringSelector.join(', ');
     } else {
-        stringSelector = prefix;
+        return this.getNodeSelector(prefix);
     }
-    return this.getNodeSelector(stringSelector);
 };
 
 Node.prototype.getNodeSelector = function(prefix) {
@@ -243,9 +237,19 @@ Node.prototype.executeAddition = function(func, args) {
     });
 };
 
-Node.prototype.select = function() {
+Node.prototype.select = function(shifted) {
     this.selected = true;
-    this.exec('select');
+    this.exec('select', [shifted]);
+};
+
+Node.prototype.deselect = function() {
+    this.selected = false;
+    this.exec('deselect');
+};
+
+Node.prototype.one = function(evt, handler) {
+    this.root.$().one(evt, handler);
+    return this;
 };
 
 Node.prototype.on = function(evt, handler) {
@@ -260,11 +264,6 @@ Node.prototype.trigger = function(evt, args) {
 
 Node.prototype.off = function(evt, handler) {
     this.root.$().off(evt, handler);
-};
-
-Node.prototype.deselect = function() {
-    this.selected = false;
-    this.exec('deselect');
 };
 
 Node.prototype.extractNodeId = function(rawId) {

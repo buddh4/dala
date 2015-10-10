@@ -19,8 +19,6 @@ var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var KnobManager = require('./knobManager');
 require('./knobTemplate');
-var Promise = require('bluebird');
-var Config = require('../core/config');
 var xml = require('../util/xml');
 
 var Helper = require('./helper');
@@ -61,8 +59,9 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
         this.$containerNode = $CONTAINER_NODE;
     }
 
+    var that = this;
     this.commandMgr = commandManager.sub(this.id, function(cmd) {
-        event.trigger('diagram_updated', cfg.id);
+        that.triggerUpdate();
     });
 
     // Handles the loading and creation of templates
@@ -91,8 +90,26 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.helper = new Helper(this);
 };
 
+Diagram.prototype.triggerUpdate = function() {
+    event.trigger('diagram_updated', this.id);
+};
+
 Diagram.prototype.getNodes = function(filter) {
     return this.nodeMgr.getNodes(filter);
+};
+
+Diagram.prototype.on = function(evt, handler) {
+    //perhaps also listen to diagram intern events not only dom events.
+    this.svg.root.on(evt, handler);
+};
+
+Diagram.prototype.one = function(evt, handler) {
+    //perhaps also listen to diagram intern events not only dom events.
+    this.svg.root.one(evt, handler);
+};
+
+Diagram.prototype.off = function(evt) {
+    this.svg.root.off(evt);
 };
 
 /*
@@ -103,15 +120,14 @@ Diagram.prototype.initEvents = function() {
     // Double clicks on the stage area will create new nodes of the selected
     // template type. Only if we do not dbclick another node in this case
     // we start a transition drag.
-    event.on(this.svg.getRootNode(), 'dblclick', function(evt) {
+    this.on('dblclick', function(evt) {
         if (!that.selectionMgr.isElementHover()) {
             that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
         }
     });
 
-    event.on(this.svg.getRootNode(), 'mousedown', function(evt) {
+    this.on('mousedown', function(evt) {
         var startPosition = that.getStagePosition(evt);
-        this.mouseDownPosition = startPosition;
 
         if(evt.ctrlKey) {
             //Move main part
@@ -134,66 +150,15 @@ Diagram.prototype.initEvents = function() {
                     return that.scale;
                 }
             });
-            event.triggerDom(that.mainPart.instance(), 'mousedown');
-            return;
+            that.mainPart.trigger('mousedown');;
+        } else {
+            that.selectionMgr.dragSelectionStart(evt, startPosition);
         }
 
-        // INIT drag selection
-        if (!that.selectionMgr.isElementHover()) {
-            that.selectionMgr.clear();
-            evt.preventDefault();
-            var moveSelection = function(evt) {
-                var stagePosition = that.getStagePosition(evt);
-                var path = new PathData().start(startPosition)
-                    .line(startPosition)
-                    .line(stagePosition)
-                    .line(stagePosition)
-                    .complete();
-                if(!that.dragSelection) {
-                    that.dragSelection = that.svg.path({
-                        d : path,
-                        style : 'stroke:gray;stroke-width:1px;stroke-dasharray:5,5;fill:none;'
-                    });
-                } else {
-                    //Move selection away from mouse pointer
-                    var alignedMouseX = stagePosition.x -1;
-                    var alignedMouseY = stagePosition.y -1;
-
-                    that.dragSelection.data().clear().start(startPosition)
-                        .line({x: startPosition.x,  y: alignedMouseY})
-                        .line({x: alignedMouseX,    y: alignedMouseY})
-                        .line({x: alignedMouseX,    y: startPosition.y})
-                        .complete();
-                    that.dragSelection.update();
-
-                    object.each(that.nodeMgr.nodes, function(id, node) {
-                        if(that.dragSelection.overlays(node.getCenter())) {
-                            that.selectionMgr.addSelectedNode(node);
-                        } else {
-                            that.selectionMgr.removeSelectedNode(node);
-                        }
-                    });
-
-
-                    object.each(that.knobMgr.dockings, function(id, docking) {
-                        if(that.dragSelection.overlays(docking.position())) {
-                            that.selectionMgr.addSelectedNode(docking.node);
-                        } else {
-                            that.selectionMgr.removeSelectedNode(docking.node);
-                        }
-                    });
-                }
-            };
-            event.on(that.svg.getRootNode(), 'mousemove', moveSelection);
-        }
     });
 
-    event.on(document, 'mouseup', function(evt) {
-        event.off(that.svg.getRootNode(), 'mousemove');
-        if(object.isDefined(that.dragSelection)) {
-            that.dragSelection.remove();
-            delete that.dragSelection;
-        }
+    this.on('mouseup', function() {
+        that.selectionMgr.dragSelectionEnd();
     });
 
     event.on(document, "dragstart", function(e) {
@@ -230,23 +195,8 @@ Diagram.prototype.initDefs = function() {
     });
 };
 
-Diagram.prototype.createKnob = function(p, group, cfg) {
-    var knobId = this.uniqueId();
-    var config = object.extend({node_id:'docking_'+knobId, x: p.x, y: p.y, type:'circle'}, cfg);
-    var tmpl;
-    switch(config.type) {
-        case 'circle':
-            tmpl = this.templateMgr.getTemplateSync('knob_circle');
-            break;
-        case 'rect':
-            tmpl = this.templateMgr.getTemplateSync('knob_rect');
-            break;
-    }
-    var node = tmpl.createNode(config, this).init();
-    if(group) {
-        this.svg.addToGroup(group, node.root);
-    }
-    return node;
+Diagram.prototype.createKnobNode = function(p, group, cfg) {
+    return this.knobMgr.createKnobNode(p, group, cfg);
 };
 
 Diagram.prototype.uniqueId = function() {
@@ -382,11 +332,11 @@ Diagram.prototype.getStagePosition = function(x, y) {
 
 /**
  * Checks if a given position is within the boundaries of a diagram node.
- *
+ * TODO: either return all overlay nodes or just the one with the biggest index...
  * @param {type} position
  * @returns {Boolean}
  */
-Diagram.prototype.overlaysNode = function(position) {
+Diagram.prototype.getNodeByPosition = function(position) {
     var result;
     object.each(this.nodeMgr.nodes, function() {
         if (this.overlays(position)) {

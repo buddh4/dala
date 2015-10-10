@@ -1,11 +1,14 @@
 (function() {
     dala.require('templateManager').registerTemplate('uml_component', {
         description : "UML component",
-        dockingType : "SQUARE",
         title : "component",
         head : "&lt;&lt;component&gt;&gt;",
         color_main : "#FFFFFF",
         color_second : "#000000",
+        docking : {
+            type: 'square',
+            orientation: 'center'
+        },
         resize : [
             {bind:"#body_back", value:"default", min:"parent"},
             {bind:"#head_t", position: "center static", alignto:"#body_back"},

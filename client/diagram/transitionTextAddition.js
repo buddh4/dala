@@ -1,6 +1,5 @@
 var util = require('../util/util');
 var object = util.object;
-var Helper = require('./helper');
 
 var NODE_DISTANCE = 11;
 var TRANSITION_DISTANCE = 10;
@@ -8,7 +7,6 @@ var DEF_TEXT_HEIGHT = 13;
 
 var TransitionTextAddition = function(transition) {
     this.textNodes = [];
-    this.helper = new Helper(transition.diagram);
     this.transition = transition;
     this.diagram = this.transition.diagram;
 };
@@ -99,17 +97,17 @@ TransitionTextAddition.prototype.getTextHeight = function(pos) {
 
 TransitionTextAddition.prototype.getAlignPosition = function(pos) {
     if(isStartPos(pos)) {
-        return this.transition.getStartKnob().position();
+        return this.transition.start();
     } else if(isEndPos(pos)) {
-        return this.transition.getEndKnob().position();
+        return this.transition.end();
     }
 };
 
 TransitionTextAddition.prototype.getLocation = function(pos) {
     if(isStartPos(pos)) {
-        return this.transition.getStartDockingLocation();
+        return this.transition.getStartLocation();
     } else if(isEndPos(pos)) {
-        return this.transition.getEndDockingLocation();
+        return this.transition.getEndLocation();
     }
 };
 

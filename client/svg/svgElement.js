@@ -380,9 +380,18 @@ SVGElement.prototype.dala = function(key, value) {
  * @returns {*}
  */
 SVGElement.prototype.getRelativeLocation = function(position) {
+    if(position.x === this.x()) {
+        return 'left';
+    } else if(position.y === this.y()) {
+        return 'top';
+    } else if(position.x === this.getRightX()) {
+        return 'right';
+    } else if(position.y === this.getBottomY()) {
+        return 'bottom';
+    }
+
     var center = this.getCenter();
     var g = util.math.Line.calcGradient(center, position);
-
     if(position.y < center.y) { //TOP
         if (position.x >= center.x) { //RIGHT
             if (g > -1) {
@@ -413,10 +422,18 @@ SVGElement.prototype.getRelativeLocation = function(position) {
 };
 
 SVGElement.prototype.getCenter = function() {
-    return {
-        x: this.x() + Math.floor(this.width() / 2),
-        y: this.y() + Math.floor(this.height() / 2)
-    };
+    //TODO: this does not work for ellipse/circle with cx/cy != radius
+    switch(this.getType()) {
+        case 'ellipse':
+        case 'circle':
+            return this.position();
+        default:
+            return {
+                x: this.x() + Math.floor(this.width() / 2),
+                y: this.y() + Math.floor(this.height() / 2)
+            };
+    }
+
 };
 
 /**
@@ -554,6 +571,11 @@ SVGElement.prototype.getTransformation = function() {
 
 SVGElement.prototype.on = function(evt, handler) {
     this.$().on(evt, handler);
+    return this;
+};
+
+SVGElement.prototype.one = function(evt, handler) {
+    this.$().one(evt, handler);
     return this;
 };
 

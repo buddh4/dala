@@ -49,11 +49,11 @@ var saveDiagram = function(evt) {
         });
     }
 
-}
+};
 
 var createDiagramId = function() {
-    return Date.now() + '_' +userManager.getUserId();
-}
+    return (userManager.isLoggedIn()) ? Date.now() + '_' +userManager.getUserId() : Date.now()+'';
+};
 
 var newDiagramListener = function(evt) {
     var diagramId = evt.data.diagramId;

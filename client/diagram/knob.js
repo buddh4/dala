@@ -33,7 +33,8 @@ Knob.prototype.relativeOrientation = function(position) {
 
 Knob.prototype.init = function(position, cfg) {
     this.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
-    this.node = this.diagram.createKnob(position, this.group, this.config);
+    this.node = this.diagram.createKnobNode(position, this.group, this.config);
+    this.config = this.node.config;
     this.root = this.node.root;
     this.node.knob = this;
 
@@ -42,15 +43,13 @@ Knob.prototype.init = function(position, cfg) {
             that.activeStyle();
         };
 
-    var deselect = cfg.select || function() {
-            if (!that.selected) {
-                that.inactiveStyle();
-            }
+    var deselect = cfg.deselect || function() {
+            that.inactiveStyle();
         }
 
 
-    this.on('select', deselect).on('deselect', select);
-    this.event.trigger('knob_created', this);
+    this.on('select', select).on('deselect', deselect);
+    this.event.trigger('knob_added', this);
 };
 
 Knob.prototype.x = function() {
@@ -81,10 +80,8 @@ Knob.prototype.initDrag = function(evt) {
 };
 
 Knob.prototype.hide = function() {
-    if(!this.node.selected) {
-        this.node.root.hide();
-        this.node.root.attr('r', 0);
-    }
+    this.node.root.hide();
+    this.node.root.attr('r', 0); //TODO: perhaps not wanted for all knob types.
 };
 
 Knob.prototype.show = function(opacity) {
@@ -131,8 +128,7 @@ Knob.prototype.inactiveStyle = function() {
 
 Knob.prototype.hoverable = function(handler) {
     var that = this;
-    handler = handler || {};
-    this.node.root.hoverable();
+    this.node.root.hoverable(handler);
     return this;
 };
 

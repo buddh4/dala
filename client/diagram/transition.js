@@ -9,7 +9,7 @@ var transitionAdditions = require('./transitionAdditions');
 
 var pathManagerFactory = require('./pathManagerFactory');
 
-var STYLE_TRANSITION_ACTIVE = "stroke:red;stroke-width:1;fill:none;";
+var STYLE_TRANSITION_ACTIVE = "stroke:blue;stroke-width:1;fill:none;";
 var STYLE_TRANSITION_INACTIVE = "stroke:black;stroke-width:1;fill:none;";
 var STYLE_AREA = "stroke:grey;stroke-opacity:0.0;stroke-width:11;fill:none;";
 
@@ -48,7 +48,7 @@ Transition.prototype.type = function(value) {
  */
 Transition.prototype.init = function(node, mouse) {
     //TODO: user UUID.new or something
-    this.id = Date.now();
+    this.id = this.diagram.uniqueId();
     //Initializes the transition group container
     this.initSVGGroup();
 
@@ -66,7 +66,7 @@ Transition.prototype.init = function(node, mouse) {
     var startDockingPosition = this.dockingManager.calculateStart(mouse);
 
     //Init knob for startPosition
-    var startKnob = this.knobManager.init(startDockingPosition);
+    this.exec('setStartNode', [node]);
 
     //Create SVG Elements in dom and transition events
     this.initTransitionSVG();
@@ -96,6 +96,23 @@ Transition.prototype.getEndAlignment = function() {
         result.target = [this.knobManager.getKnob(-2).position()];
     }
     return result;
+};
+
+Transition.prototype.start = function() {
+    return this.knobManager.start();
+};
+
+Transition.prototype.end = function() {
+    return this.knobManager.end();
+};
+
+
+Transition.prototype.getStartLocation = function() {
+    return this.dockingManager.startNode.getRelativeLocation(this.start());
+};
+
+Transition.prototype.getEndLocation = function() {
+    return this.dockingManager.endNode.getRelativeLocation(this.end());
 };
 
 Transition.prototype.dragStartOrientation = function(dx, dy) {
@@ -154,7 +171,10 @@ Transition.prototype.initEvents = function() {
     this.on('mousedown', function(evt) {
         evt.preventDefault();
         evt.stopPropagation();
-        that.event.trigger('transition_select', that);
+
+        if(!that.selected) {
+            that.select();
+        }
 
         var dragInitiated = false;
         var startPosition = that.diagram.getStagePosition(evt.pageX, evt.pageY);
@@ -162,15 +182,13 @@ Transition.prototype.initEvents = function() {
 
         if (knobIndex) {
             event.once(document, "mouseup", function(evt) {
-                that.preventDeselect = false;
-                event.off(that.diagram.svg.getRootNode(), "mousemove");
+                that.diagram.off('mousemove');
             });
-            event.on(that.diagram.svg.getRootNode(),"mousemove", function(event) {
+            that.diagram.on("mousemove", function(event) {
                 var movePosition = that.diagram.getStagePosition(event.pageX, event.pageY);
 
                 //We just start the drag event in case we move more thant 5px away
                 if(!dragInitiated && util.app.isMinDist(startPosition, movePosition, 5)) {
-                    that.preventDeselect = true;
                     var knob = that.knobManager.addKnob(startPosition, knobIndex);
                     knob.initDrag(event);
                     dragInitiated = true;
@@ -225,9 +243,8 @@ Transition.prototype.alignEndPositionForMouse = function(mouse) {
     };
 };
 
-Transition.prototype.setStartNode = function(node, feature) {
-    this.dockingManager.setStartNode(node,feature);
-
+Transition.prototype.setStartNode = function(node) {
+    this.exec('setStartNode', [node]);
     if(!this.isInitState()) {
         this.checkDomPosition();
     }
@@ -235,12 +252,7 @@ Transition.prototype.setStartNode = function(node, feature) {
 };
 
 Transition.prototype.setEndNode = function(node, mousePosition) {
-    this.dockingManager.setEndNode(node, mousePosition);
-
-    if(this.knobManager.isInitState()) {
-        this.knobManager.addKnob(this.dockingManager.calculateEnd(mousePosition));
-    }
-
+    this.exec('setEndNode', [node, mousePosition]);
     this.checkDomPosition();
     this.update();
 };
@@ -258,7 +270,6 @@ Transition.prototype.remove = function() {
     this.removed = true;
     this.group.remove();
     this.dockingManager.remove();
-    this.event.trigger('transition_removed', this);
 };
 
 /**
@@ -360,17 +371,17 @@ Transition.prototype.getMarkerValueString = function(markerId) {
 };
 
 Transition.prototype.select = function() {
-    this.exec('select');
-    this.activeStyle();
     this.selected = true;
+    this.activeStyle();
+    this.exec('select');
 };
 
 Transition.prototype.hover = function() {
-    this.trigger('hover');
+    this.exec('hover');
 };
 
 Transition.prototype.hoverOut = function() {
-    this.trigger('hoverOut');
+    this.exec('hoverOut');
 };
 
 Transition.prototype.activeStyle = function() {
@@ -378,31 +389,13 @@ Transition.prototype.activeStyle = function() {
 };
 
 Transition.prototype.deselect = function() {
-    if(!this.preventDeselect) {
-        this.exec('deselect');
-        this.inactiveStyle();
-        this.selected = false;
-    }
+    this.inactiveStyle();
+    this.selected = false;
+    this.exec('deselect');
 };
 
 Transition.prototype.inactiveStyle = function() {
     this.line.attr({style:STYLE_TRANSITION_INACTIVE});
-};
-
-Transition.prototype.getEndKnob = function() {
-    return this.dockingManager.endKnob;
-};
-
-Transition.prototype.getStartKnob = function() {
-    return this.dockingManager.startKnob;
-};
-
-Transition.prototype.getStartDockingLocation = function() {
-    return this.dockingManager.getStartDockingLocation();
-};
-
-Transition.prototype.getEndDockingLocation = function() {
-    return this.dockingManager.getEndDockingLocation();
 };
 
 Transition.prototype.on = function(evt, handler) {
@@ -411,7 +404,9 @@ Transition.prototype.on = function(evt, handler) {
 };
 
 Transition.prototype.trigger = function(evt) {
-    this.lineArea.trigger(evt);
+    if(this.lineArea) {
+        this.lineArea.trigger(evt);
+    }
     return this;
 };
 

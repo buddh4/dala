@@ -1,6 +1,6 @@
-var event = require('../../core/event');
-var templateManager = require('../templateManager');
-var object = require('../../util/object');
+var event = require('../core/event');
+var templateManager = require('../diagram/templateManager');
+var object = require('../util/object');
 
 var CONTAINER_SELECTOR = '#templateNav';
 var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
@@ -148,9 +148,6 @@ module.exports.init = function() {
     $CONTAINER_NODE.accordion({
         collapsible: true,
         active: false,
-        refresh : function() {
-            console.log('refresh');
-        }
     });
 
     initListener();

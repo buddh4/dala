@@ -3,7 +3,10 @@
         init_width : "150",
         init_title : "New Class",
         color_main : "#FFFFFF",
-        dockingType : "FREE",
+        docking : {
+            type: 'free',
+            orientation: 'center'
+        },
         resize: [
             {bind:"#head_back", value:"default static"},
             {bind:"#title_t", position: "center static"},

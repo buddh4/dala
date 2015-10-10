@@ -34,17 +34,16 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
     var that = this;
 
     var selector = this.editable.selector(editItem.trigger);
-    //$triggerNode.css('cursor', 'pointer');
+    $(selector).css('cursor', 'pointer');
 
     //TODO: evtl move this to text.editable();
-    /*
-    this.editable.root.$.on('click', selector,  function(evt) {
+    this.editable.root.$().on('click', selector,  function(evt) {
         if(that.isTriggerAllowed()) {
             switch(editItem.type) {
                 case 'textarea':
                     editPanel.createTextAreaEdit(evt.pageX, evt.pageY,
                         function() {
-                            return that.getValue(key);
+                            return that.getValue(key).trim();
                         },
                         function(value) {
                             that.setValue(key, value);
@@ -53,7 +52,7 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                     break;
                 case 'text':
                     editPanel.createTextEdit(evt.pageX, evt.pageY, function() {
-                            return that.getValue(key);
+                            return that.getValue(key).trim();
                         },
                         function(value) {
                             that.setValue(key, value);
@@ -62,7 +61,7 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                     break;
             }
         }
-    });*/
+    });
 };
 
 AbstractEditAddition.prototype.getValue = function(key) {
@@ -98,9 +97,7 @@ AbstractEditAddition.prototype.getEditItem = function(key) {
 };
 
 AbstractEditAddition.prototype.isTriggerAllowed = function() {
-    //Since the
-    var now = Date.now();
-    return !this.lastSelect || (now - this.lastSelect > 200);
+    return !this.lastSelect || (Date.now() - this.lastSelect > 200);
 };
 
 //TODO handle svg texts more elegant within a seperated module

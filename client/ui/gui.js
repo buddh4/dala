@@ -1,10 +1,10 @@
-require('./../diagram/ui/templateNav').init();
+require('./templateNav').init();
 require('./toolTip').init();
 require('./editNav').init();
 require('./infobox').init();
 require('./userNotificationBar').init();
 require('./fileMenu').init();
-require('./../diagram/ui/stage').init();
+require('./stage').init();
 require('./../project/ui/fileBrowser').init();
 require('./overviewBox').init();
 require('./../user/ui/userLogin').init();

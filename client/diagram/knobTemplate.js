@@ -9,7 +9,7 @@ var defaultConfig = {
     fill: "silver",
     'fill-active': 'green',
     'fill-opacity': '0.5',
-    radius: 3,
+    radius: 5,
     stroke: '#7C7C7C',
     'stroke-width': '1',
     'cssClass': 'knob',

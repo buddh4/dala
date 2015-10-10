@@ -358,7 +358,7 @@ PathData.prototype.getPathIndexForPosition = function(point) {
 
             if (candidate === undefined || candidate[1] > d) {
                 //The pathPartindex is the arrayindex + 1 since we use the end index of the path as identity
-                candidate[0] = [index + 1];
+                candidate[0] = index + 1;
                 candidate[1] = d;
             }
         }
