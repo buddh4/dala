@@ -9,6 +9,11 @@ var AbstractPathDataType = function(type, absolute) {
     this.absolute = absolute || true;
 };
 
+AbstractPathDataType.prototype.setAbsolute = function(absolute) {
+    this.absolute = absolute || true;
+    return this;
+};
+
 AbstractPathDataType.prototype.getType = function() {
     var type = this.value(0,0);
     return this.absolute ? type.toUpperCase() : type.toLowerCase();
@@ -116,7 +121,7 @@ util.inherits(CBezier, AbstractPathDataType);
 
 CBezier.prototype.control = function(x,y) {
     return this.control1(x,y);
-}
+};
 
 CBezier.prototype.control1 = function(x,y) {
     var p = math.getPoint(x,y);
@@ -171,20 +176,41 @@ util.inherits(Complete, AbstractPathDataType);
 
 Complete.prototype.toString = function() {
     return this.getType();
-}
+};
+
+var pathType = {
+    z : function() { return new Complete() },
+    m : function() { return new MoveTo(arguments[0]); },
+    l : function() { return new LineTo(arguments[0]); },
+    q : function() { return new QBezier(arguments[0], arguments[1]); },
+    c : function() { return new CBezier(arguments[0], arguments[1],  arguments[2]); }
+};
 
 var PathData = function(def) {
+    this.data = new Vector();
     if(object.isString(def)) {
-        this.dataArr = def.split(/(?=[MmLlHhVvCcSsQqTtAaZz]+)/);
-
-        var that = this;
-        object.each(this.dataArr, function(index, value) {
-            that.dataArr[index] = that.fromString(value.trim());
-            value.trim();
-        });
-    } else {
-        this.data = new Vector();
+        this.loadFromString(def);
     }
+};
+
+PathData.prototype.loadFromString = function(strVal) {
+    var that = this;
+    //'M100,100 Q200,200 300,300' --> ['M100,100 ', 'Q200,200 300,300']
+    var definitions = strVal.split(/(?=[MmLlHhVvCcSsQqTtAaZz]+)/);
+    //Each dType
+    $.each(definitions, function(index, value) {
+        var type = value.charAt(0);
+        //'Q200,200 300,300 -> ['200,200', '300,300']
+        var values = value.substring(1,value.length).trim().split(' ');
+        //['200,200', '300,300'] -> [{x:200, y:200}, {x:300, y:300}]
+        var points = [];
+        $.each(values, function(i, coord) {
+            var coordVals = coord.split(',');
+            points.push(math.getPoint(parseFloat(coordVals[0]), parseFloat(coordVals[1])));
+        });
+        that.data.add(pathType[type.toLowerCase()].apply(undefined, points).setAbsolute((type == type.toUpperCase())));
+    });
+    return this;
 };
 
 PathData.prototype.getCorners = function() {
@@ -210,8 +236,12 @@ PathData.prototype.getCorners = function() {
     ];
 };
 
-PathData.prototype.getX = function(value) {
+PathData.prototype.getX = function() {
     return this.getCorners()[0].x;
+};
+
+PathData.prototype.getY = function() {
+    return this.getCorners()[0].y;
 };
 
 PathData.prototype.polynoms = function() {
@@ -417,13 +447,6 @@ PathData.prototype.getRightX = function(value) {
 
 PathData.prototype.getBottomY = function(value) {
     return this.getCorners()[2].y;
-};
-
-// TODO: NEW IMPLEMENTATION
-PathData.prototype.fromString = function(value) {
-    var type = value.charAt(0);
-    var values = value.substring(1,value.length).split(',');
-    return {type : type, value:this.toPoint(values[0], values[1]), absolute : (type === type.toUpperCase())};
 };
 
 PathData.prototype.setData = function(value) {

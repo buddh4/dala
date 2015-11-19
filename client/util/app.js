@@ -52,6 +52,10 @@ var parseNumberString = function(value) {
     if(!object.isString(value)) {
         return value;
     }
+
+    //Cut units 1.2em -> 1.2
+    value = value.split(/(?=[a-z,A-Z]+)/)[0];
+
     if(!isNaN(value)) {
         if(value.indexOf('.') > -1) { //float
             value = parseFloat(value);

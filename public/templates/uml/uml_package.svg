@@ -3,11 +3,11 @@
     <desc>{description}</desc>
     <g id="{node_id}" class="element_root" transform="translate({x} {y})" xmlns:dala="http://www.dala.com">
         <g>
-            <rect width="30" height="20"  rx="2" style="fill:{color_main};stroke:black;stroke-width:1px;"/>
+            <rect width="30" height="20"  rx="2" style="fill:{color_main};stroke:black;stroke-width:1;"/>
             <rect id="body_back_{node_id}" width="100" height="60" transform="translate(0 10)" x="0" y="0"
                   style="fill:{color_main};stroke:black;stroke-width:1px;"/>
-            <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" x="35" y="25">
-                <tspan id="title_span_{node_id}" dy="13.0" x="2">{title}</tspan>
+            <text id="title_t_{node_id}" font-family="Helvetica" font-size="11" text-anchor="start" y="25" dominant-baseline="hanging">
+                <tspan id="title_span_{node_id}" dominant-baseline="inherit">{title}</tspan>
             </text>
         </g>
     </g>

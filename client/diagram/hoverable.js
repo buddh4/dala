@@ -1,8 +1,8 @@
 var object = require('../util/object');
-var SVGElement = require('../svg/svgElement');
+var SVGShape = require('../svg/genericShape');
 var event = require('../core/event');
 
-SVGElement.prototype.hoverable = function(handler) {
+SVGShape.prototype.hoverable = function(handler) {
     if(object.isBoolean(handler)) {
         this.hoverFlag = handler;
         return;

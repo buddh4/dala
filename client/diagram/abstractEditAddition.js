@@ -66,15 +66,22 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
 
 AbstractEditAddition.prototype.getValue = function(key) {
     var editItem = this.getEditItem(key);
-    if(this.editFunctions[editItem.type]) {
+    var editFunction = this.editFunctions[editItem.type];
+    if(editFunction && !object.isString(editFunction)) {
         return this.editFunctions[editItem.type].get.call(this, editItem, key);
+    } else if(editFunction && object.isString(editFunction)) {
+        return this.editable.getInnerSVG(editItem.bind)[editFunction]();
     }
 };
 
 AbstractEditAddition.prototype.setValue = function(key, value) {
     var editItem = this.getEditItem(key);
-    if(this.editFunctions[editItem.type]) {
+    var editFunction = this.editFunctions[editItem.type];
+    if(editFunction && !object.isString(editFunction)) {
         this.editFunctions[editItem.type].set.call(this, editItem, value);
+        this.onSetValue(editItem, value);
+    } else if(editFunction && object.isString(editFunction)) {
+        this.editable.getInnerSVG(editItem.bind)[editFunction](value);
         this.onSetValue(editItem, value);
     }
 };
@@ -100,22 +107,12 @@ AbstractEditAddition.prototype.isTriggerAllowed = function() {
     return !this.lastSelect || (Date.now() - this.lastSelect > 200);
 };
 
-//TODO handle svg texts more elegant within a seperated module
 AbstractEditAddition.prototype.setTextAreaContent = function($textAreaNode, txtAreaContent) {
-    $textAreaNode.empty();
-    //TODO: we do not consider the text size for dy !
-    var dy = 11;
-    $.each(txtAreaContent.split('\n'), function(index, value) {
-        if(object.isDefined(value) && value.trim().length > 0) {
-            dom.appendSVGElement($textAreaNode.get(0), {
-                name : 'tspan',
-                attributes : {
-                    dy : dy,
-                    x : 2
-                }
-            }, value);
-        }
-    });
+    this.editable.diagram.svg.get($textAreaNode).content(txtAreaContent);
+};
+
+AbstractEditAddition.prototype.getTextAreaContent = function($textAreaNode) {
+    return this.editable.diagram.svg.get($textAreaNode).content();
 };
 
 AbstractEditAddition.prototype.deselect = function() {

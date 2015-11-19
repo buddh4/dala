@@ -9,9 +9,6 @@ var Knob = require('./knob');
 var object = util.object;
 var dom = util.dom;
 
-// We create a small sub query cache for caching all queries without filling the global cache
-var cache = $.qCache().sub();
-
 // Used to identify the different knobs from north west clockwise
 var KNOB_NW = 0;
 var KNOB_N = 1;
@@ -46,8 +43,8 @@ var Resize = function(node, diagram) {
 Resize.prototype.activateKnobs = function() {
     var positions = this.calculateKnobPosition();
 
-    var translX = this.node.root.x() - DIF_REL;
-    var translY = this.node.root.y() - DIF_REL;
+    var translX = this.node.x() - DIF_REL;
+    var translY = this.node.y() - DIF_REL;
     this.group = this.diagram.svg.g({}).translate(translX, translY);
 
     //Initialize the different knobs with different drag restricitons
@@ -105,7 +102,8 @@ Resize.prototype.getResizeElements = function() {
     var result = [];
     var that = this;
     object.each(this.config, function(index, value) {
-        result[index] = SVG.get(cache.$(that.node.getNodeSelector(value.bind)));
+        var svgSelector = that.node.getNodeSelector(value.bind);
+        result[index] = $.qCache().svg(svgSelector);
     });
     return result;
 };
@@ -161,7 +159,6 @@ Resize.prototype.calculateKnobPosition = function() {
     var centerX = rightX / 2;
     var bottomY = SIZE + (DIF*2) + this.node.height();
     var centerY = bottomY / 2;
-
 
     var result = [];
     result[KNOB_NW] = {x:0, y:0};
@@ -242,7 +239,7 @@ Resize.prototype.setResize = function(svgElement, elementConfig, setting, d, dim
             svgElement[dimension](parentVal + setting.value);
             break;
         default:
-            var currentVal = svgElement[dimension]() ;
+            var currentVal = svgElement[dimension](false) ;
             var newValue = (currentVal + d);
             if(newValue > 0) {
                 svgElement[dimension]((currentVal + d));
@@ -260,7 +257,7 @@ Resize.prototype.alignValueLimit = function(svgElement, setting, dimension, type
     } else if(!isNaN(value)) {
         limit = parseInt(value);
     } else if(util.string.startsWith(value, '#')) {
-        limit = cache.$(this.node.getNodeSelector(value))[0].getBBox()[dimension];
+        limit = $.qCache(this.node.getNodeSelector(value))[0].getBBox()[dimension];
     } else {
         return;
     }
@@ -269,7 +266,7 @@ Resize.prototype.alignValueLimit = function(svgElement, setting, dimension, type
         limit += setting.value;
     }
 
-    var currentVal = svgElement[dimension]()
+    var currentVal = svgElement[dimension](false)
     if((type === 'min' && currentVal < limit) || (type === 'max' && currentVal > limit)) {
         svgElement[dimension](limit);
     }
@@ -278,8 +275,8 @@ Resize.prototype.alignValueLimit = function(svgElement, setting, dimension, type
 Resize.prototype.alignPosition = function(svgElement, elementConfig) {
     //var setting = elementConfig.
     //TODO: set alignElement id in config !
-    var x = this.getAlignedValue(svgElement,elementConfig.position[0], elementConfig.alignto, 'width' , 'x');
-    var y = this.getAlignedValue(svgElement,elementConfig.position[1], elementConfig.alignto, 'height', 'y');
+    var x = this.getAlignedPosition(svgElement,elementConfig.position[0], elementConfig.alignto, 'width' , 'x');
+    var y = this.getAlignedPosition(svgElement,elementConfig.position[1], elementConfig.alignto, 'height', 'y');
 
     if(object.isDefined(x)) {
         svgElement.moveX(x);
@@ -290,21 +287,22 @@ Resize.prototype.alignPosition = function(svgElement, elementConfig) {
     }
 };
 
-Resize.prototype.getAlignedValue = function(svgElement, settings, alignto, dimension, dimensionCoord) {
+Resize.prototype.getAlignedPosition = function(svgElement, settings, alignto, dimension, dimensionCoord) {
     switch(settings.type) {
         case 'none':
             break;
         case 'center':
             var alignSVG = this.getAlignElement(alignto, svgElement);
             if(object.isDefined(alignSVG)) {
-                var alignVal = alignSVG[dimension]();
-                return (alignVal - svgElement[dimension]()) / 2 + settings.value;
+                var alignVal = alignSVG.getCenter()[dimensionCoord];
+                return alignVal - (svgElement[dimension]() / 2) - settings.value;
+                //return (alignVal - svgElement[dimension]()) / 2 + settings.value;
             };
             break;
         case 'relative':
             var $prevNode = svgElement.$().prev();
             if($prevNode.length) {
-                var prevSVG = cache.svg($prevNode);
+                var prevSVG = $.qCache().svg($prevNode);
                 var prevVal = prevSVG[dimension]();
                 var prevCoord = prevSVG[dimensionCoord]();
                 return (prevCoord + prevVal) + settings.value;
@@ -330,17 +328,17 @@ Resize.prototype.getAlignElement = function(alignto, svgElement) {
     var elementToAlign;
     //The alignto setting can be the parent-, root- or an explicit element default is the previous sibling element
     if(!alignto || alignto === 'prev') {
-        elementToAlign = cache.svg(svgElement.$().prev());
+        elementToAlign = $.qCache().svg(svgElement.$().prev());
     }else if(!alignto || alignto === 'parent') {
-        elementToAlign = cache.svg(svgElement.$().parent());;
+        elementToAlign = $.qCache().svg(svgElement.$().parent());;
     } else if(alignto === 'root') {
         elementToAlign = this.node.root;
     } else {
-        elementToAlign = $.qCache(this.node.getNodeSelector(alignto)).svg();
+        elementToAlign = $.qCache.svg(this.node.getNodeSelector(alignto));
     }
 
     if(!elementToAlign) {
-        console.warn('Could not determine alignto element "'+alignto+'" for node '+node.id);
+        console.warn('Could not determine alignto element "'+alignto+'" for node '+this.node.id);
     }
 
     return elementToAlign;

@@ -21,7 +21,6 @@ $.fn.svg = function(selector) {
 
 $.svg = $.fn.svg;
 
-
 $.qCache = function(selector, preventCache) {
     if(selector) {
         return queryCache.$(selector, preventCache);
@@ -71,17 +70,19 @@ $.fn.growl = function(params) {
     }
 };
 
-$.widget( "custom.iconselectmenu", $.ui.selectmenu, {
-    _renderItem: function( ul, item ) {
-        var li = $( "<li>", { text: item.label } );
-        if ( item.disabled ) {
-            li.addClass( "ui-state-disabled" );
+if($.ui) {
+    $.widget( "custom.iconselectmenu", $.ui.selectmenu, {
+        _renderItem: function( ul, item ) {
+            var li = $( "<li>", { text: item.label } );
+            if ( item.disabled ) {
+                li.addClass( "ui-state-disabled" );
+            }
+            $( "<span>", {
+                style: item.element.attr( "data-style" ),
+                "class": "ui-icon " + item.element.attr( "data-class" )
+            })
+                .appendTo( li );
+            return li.appendTo( ul );
         }
-        $( "<span>", {
-            style: item.element.attr( "data-style" ),
-            "class": "ui-icon " + item.element.attr( "data-class" )
-        })
-            .appendTo( li );
-        return li.appendTo( ul );
-    }
-});
+    });
+}

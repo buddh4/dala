@@ -1,8 +1,8 @@
 (function() {
     dala.require('templateManager').registerTemplate('uml_class', {
         description : "Simple Class Template with textareas for methods and attributes",
-        init_width : "150",
-        init_title : "New Class",
+        width : "150",
+        title : "New Class",
         color_main : "#FFFFFF",
         color_second : "#FFFFFF",
         color_hover : "#E0E0E0",

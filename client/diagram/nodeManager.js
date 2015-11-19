@@ -7,6 +7,7 @@ var event = require('../core/event');
 var Node = require('./node');
 var AbstractManager = require('./abstractManager');
 
+var cache = require('../core/cache');
 var object = util.object;
 var dom = util.dom;
 
@@ -14,7 +15,6 @@ var EVT_CREATE = 'node_create';
 var EVT_DELETE = 'node_delete';
 var EVT_COPY = 'node_copy';
 
-var EVT_DROPED = 'node_droped';
 var EVT_RESIZED = 'node_resized';
 var EVT_ADDED = 'node_added';
 var EVT_SELECTED = 'node_selected';
@@ -34,11 +34,11 @@ var NodeManager = function(diagram) {
     this.nodes = {};
 
     this.selectionMgr = diagram.selectionMgr;
+    this.templateMgr = diagram.templateMgr;
 
     this.listen(EVT_CREATE, this.createNodeListener);
     this.listen(EVT_DELETE, this.deleteNodeListener);
     this.listen(EVT_COPY, this.copyNodeListener);
-    this.listen(EVT_DROPED, this.dropNodeListener);
     this.listen(EVT_RESIZED, this.resizeNodeListener);
 
     this.command(CMD_ADD, this.createNodeCmd, this.deleteNodeCmd);
@@ -56,7 +56,7 @@ NodeManager.prototype.createNodeListener = function(evt) {
         var stagePosition = this.diagram.getStagePosition(evt);
         this.createNode(evt.data, stagePosition);
     } catch(err) {
-        console.log(err);
+        console.error(err);
         event.trigger('error', 'Error occured while creating node !');
     }
 };
@@ -85,6 +85,11 @@ NodeManager.prototype.createNodeCmd = function(tmpl, config) {
             that.event.trigger(EVT_DESELECTED, node);
         }).on('remove', function() {
             that.event.trigger(EVT_REMOVED, node);
+        }).on('dragEnd', function() {
+            //We just add the command since we don't want to execute the drag twice
+            that.addCmd(CMD_DROP,
+                [node.id, node.dragContext.dxSum, node.dragContext.dySum],
+                [node.id, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
         });
     }
     this.addNode(node);
@@ -95,7 +100,19 @@ NodeManager.prototype.addNode = function(node) {
     this.event.trigger(EVT_ADDED, node);
 };
 
-NodeManager.prototype.activateNode = function(elementId, tmpl) {
+
+NodeManager.prototype.activateByDomNode = function(domNode) {
+    var attributes = dom.getAttributes(domNode);
+    var that = this;
+    return new Promise(function(resolve, reject) {
+        var tmpl = that.templateMgr.getTemplate(attributes['dala:tmpl'])
+            .then(function (tmpl) {
+                resolve(that.activate(attributes['id'], tmpl));
+            }, reject);
+    });
+};
+
+NodeManager.prototype.activate = function(elementId, tmpl) {
     var node = tmpl.createNode({}, this.diagram)
         .activate(elementId)
         .draggable();
@@ -124,6 +141,7 @@ NodeManager.prototype.deleteNodeCmd = function(node) {
     if(node) {
         node.remove();
         delete this.nodes[node.id];
+        cache.clearBySuffix(node.id);
     } else {
         console.warn('delete node was called for unknown node');
     }
@@ -140,7 +158,6 @@ NodeManager.prototype.importNodeCmd = function(nodeStr, cfg) {
     //Insert to dom and activate the new node
     var targetInstance = this.diagram.import(nodeStr);
     var node = this.diagram.activateNode(targetInstance);
-    this.addNode(node);
 
     //If set we move the new node to a given position
     if(cfg.mouse) {
@@ -173,20 +190,6 @@ NodeManager.prototype.copyNodeListener = function(evt) {
     }
 };
 
-NodeManager.prototype.dropNodeListener = function(evt) {
-    try {
-        var node = evt.data;
-        if(node) {
-            //We just add the command since we don't want to execute the drag twice
-            this.addCmd(CMD_DROP,
-                [node.id, node.dragContext.dxSum, node.dragContext.dySum],
-                [node.id, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
-        }
-    } catch(err) {
-        console.error(err);
-    }
-};
-
 NodeManager.prototype.moveNodeCmd = function(node, dxSum, dySum) {
     node = this.getNode(node);
     if(node) {
@@ -194,6 +197,10 @@ NodeManager.prototype.moveNodeCmd = function(node, dxSum, dySum) {
     }
 };
 
+/**
+ * TODO: listen through node event !
+ * @param evt
+ */
 NodeManager.prototype.resizeNodeListener = function(evt) {
     try {
         var node = evt.data;
@@ -247,8 +254,8 @@ NodeManager.prototype.getNodes = function(filter) {
 NodeManager.prototype.setEditValue = function(node, editKey, newValue) {
     node = this.getNode(node);
     if(node) {
-        var editConfigItem = this.getEditItem(node, editKey);
-        return this.exec(CMD_EDIT, [node.id, editKey, newValue], [node.id, editKey, editConfigItem.currentVal]);
+        var currentValue = node.additions.edit.getValue(editKey) || '';
+        return this.exec(CMD_EDIT, [node.id, editKey, newValue], [node.id, editKey, currentValue]);
     }
 };
 

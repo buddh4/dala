@@ -45,7 +45,7 @@ Knob.prototype.init = function(position, cfg) {
 
     var deselect = cfg.deselect || function() {
             that.inactiveStyle();
-        }
+        };
 
 
     this.on('select', select).on('deselect', deselect);
@@ -61,10 +61,7 @@ Knob.prototype.y = function() {
 };
 
 Knob.prototype.position = function() {
-    return {
-        x : this.x(),
-        y : this.y()
-    };
+    return this.node.getCenter();
 };
 
 Knob.prototype.draggable = function(handler) {

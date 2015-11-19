@@ -231,7 +231,7 @@ SelectionManager.prototype.dragSelectionStart = function(evt, startPosition) {
             var stagePosition = that.diagram.getStagePosition(evt);
             if (!that.dragSelection) {
                 that.dragSelection = that.diagram.svg.path({style: 'stroke:gray;stroke-width:1px;stroke-dasharray:5,5;fill:none;'});
-                that.dragSelection.data().start(startPosition)
+                that.dragSelection.d().start(startPosition)
                     .line(startPosition)
                     .line(stagePosition)
                     .line(stagePosition)
@@ -242,7 +242,7 @@ SelectionManager.prototype.dragSelectionStart = function(evt, startPosition) {
                 var alignedMouseY = stagePosition.y - 1;
 
                 //Update pathdata
-                that.dragSelection.data().clear().start(startPosition)
+                that.dragSelection.d().clear().start(startPosition)
                     .line({x: startPosition.x, y: alignedMouseY})
                     .line({x: alignedMouseX, y: alignedMouseY})
                     .line({x: alignedMouseX, y: startPosition.y})

@@ -1,4 +1,4 @@
-var SVGElement = require('./svgElement');
+var SVGShape = require('./genericShape');
 var util = require('../util/util');
 var event = require('../core/event');
 
@@ -104,7 +104,7 @@ ShiftDrag.prototype.getRestrictionY = function() {
     return this.cfg.restrictionY || this.restrictionY;
 };
 
-SVGElement.prototype.draggable = function(cfg, dragElement) {
+SVGShape.prototype.draggable = function(cfg, dragElement) {
     var cfg = cfg || {};
 
     if(!object.isDefined(dragElement)) {

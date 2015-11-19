@@ -16,19 +16,19 @@ TransitionDocking.prototype.initOrientation = function(startPosition) {
     var that = this;
     var orientationPosition = _getStartOrientationPosition(this.node, startPosition);
 
-    this.orientationKnob = new Knob(this.transition.diagram, orientationPosition, {'fill-active':'orange', fill:'orange', selectable:false}, this.transition.group);
+    this.orientationKnob = new Knob(this.transition.diagram, orientationPosition, {'cssClass':'orientationKnob', 'fill-active':'orange', fill:'orange', selectable:false}, this.transition.group);
     this.orientationKnob.draggable({
             restrictionX : function(evt, dx, dy) {
                 var dragCenter = that.orientationKnob.position();
                 dragCenter.x += dx;
-                return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dx : 0;
-                //return ((this.xBBox() > that.node.x() || dx > 0)&& (this.getRightX() < that.node.getRightX() || dx < 0))? dx : 0;
+                return that.node.overlays(dragCenter) ? dx : 0;
+                //return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dx : 0;
             },
             restrictionY : function(evt, dx, dy) {
                 var dragCenter = that.orientationKnob.position();
                 dragCenter.y += dy;
-                return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dy : 0;
-                //return ((this.yBBox() > that.node.y() || dy > 0) && (this.getBottomY() < that.node.getBottomY() || dy < 0))? dy : 0;
+                return that.node.overlays(dragCenter) ? dy : 0;
+                //return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dy : 0;
             },
             dragAlignment : function() {
                 //We align our knob center to the node center and also to our transition alignment point
@@ -98,7 +98,10 @@ TransitionDocking.prototype.remove = function() {
 var TransitionDockingManager = function(transition, startNode, mouse) {
     this.diagram = transition.diagram;
     this.transition = transition;
-    this.setStartNode(startNode, mouse);
+
+    if(startNode) {
+        this.setStartNode(startNode, mouse);
+    }
 
     var that = this;
     this.transition.additions['dockingManager'] = {
@@ -126,6 +129,12 @@ var TransitionDockingManager = function(transition, startNode, mouse) {
     };
 };
 
+TransitionDockingManager.prototype.activate = function() {
+    this.setStartNode(this.diagram.getNodeById(this.getStartNodeFeature()));
+    this.setEndNode(this.diagram.getNodeById(this.getEndNodeFeature()));
+    return this;
+};
+
 TransitionDockingManager.prototype.setStartNode = function(node, mousePosition) {
     if(this.startNode && this.startNode.id === node.id) {
         return;
@@ -141,6 +150,10 @@ TransitionDockingManager.prototype.setStartNode = function(node, mousePosition) 
     this.startNode.addOutgoingTransition(this.transition);
     this.startDocking = new TransitionDocking(this, node, mousePosition, 'start');
     this.setStartNodeFeature();
+};
+
+TransitionDockingManager.prototype.getStartNodeFeature = function() {
+    return this.transition.group.dala('start');
 };
 
 TransitionDockingManager.prototype.setStartNodeFeature = function() {
@@ -177,6 +190,11 @@ TransitionDockingManager.prototype.dragEndOrientation = function(dx,dy) {
 TransitionDockingManager.prototype.calculateEnd = function(outerOrientation) {
     return this.endDocking.calculateDockingPosition(outerOrientation);
 };
+
+TransitionDockingManager.prototype.getEndNodeFeature = function() {
+    return this.transition.group.dala('end');
+};
+
 
 TransitionDockingManager.prototype.setEndNodeFeature = function() {
     if(this.endNode) {

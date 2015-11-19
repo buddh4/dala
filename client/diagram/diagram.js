@@ -265,15 +265,7 @@ Diagram.prototype.activateNodes = function() {
 };
 
 Diagram.prototype.activateNode = function(domNode) {
-    var attributes = dom.getAttributes(domNode);
-    var tmplId = attributes['dala:tmpl'];
-    var rootId = attributes['id'];
-
-    var that = this;
-    var tmpl = this.templateMgr.getTemplate(tmplId)
-        .then(function(tmpl) {
-            that.nodeMgr.activateNode(rootId, tmpl);
-        });
+    this.nodeMgr.activateByDomNode(domNode);
 };
 
 //TODO: move to transitionmgr

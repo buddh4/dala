@@ -5,6 +5,15 @@ var AbstractPathManager = function(transition) {
     this.transition = transition;
 };
 
+AbstractPathManager.prototype.activate = function() {
+    this.path =  this.transition.getLine().d();
+    return this;
+};
+
+AbstractPathManager.prototype.fromString = function(pathDataStr) {
+    this.path = new PathData().loadFromString(pathDataStr);
+};
+
 AbstractPathManager.prototype.dragLine = function(position) {
     // Init path if no path was created yet
     if(!this.path) {

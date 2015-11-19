@@ -54,42 +54,54 @@ var TransitionKnobManager = function(transition) {
     };
 };
 
-TransitionKnobManager.prototype.init = function(startNode, start) {
+TransitionKnobManager.prototype.init = function() {
     this.knobs = [];
 };
 
-TransitionKnobManager.prototype.addKnob = function(position, index) {
+TransitionKnobManager.prototype.activate = function() {
+    var polynoms = this.transition.getLine().d().polynoms();
+    for(var i = 0; i < polynoms.length; i++) {
+        var to = polynoms[i];
+        this.addKnob(to, i, true, (i === 0 || i === polynoms.length - 1));
+    }
+    return this;
+};
+
+TransitionKnobManager.prototype.addKnob = function(position, index, activate, isBoundaryKnob) {
     var index = index || this.size();
-    var knob = this.initKnob(index, position);
+    var isBoundaryKnob = (!activate)? this.isInitState() : isBoundaryKnob;
+    var knob = this.initKnob(index, position, isBoundaryKnob);
     this.knobs.splice(index, 0, knob);
 
     if(index === 0) {
         this.startKnob = knob;
-        this.getPathManager().addPathPart(index, position);
-    } else if(arguments.length === 1) {
-        //we don't need to add an additionalpathpart for the endknob
+    } else if(arguments.length === 1 || isBoundaryKnob) {
         this.endKnob = knob;
-    } else {
+    }
+
+    if(!activate && arguments.length !== 1) {
+        //We do not need ato add an additional pathpart for the endnode;
         this.getPathManager().addPathPart(index, position);
     }
 
-    this.transition.redraw();
+    if(!activate) {
+        this.transition.redraw();
+    }
     return knob;
 };
 
-TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
+TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBoundaryKnob) {
     var that = this;
-    var newBoundaryIndex = this.isInitState();
     var knobConfig = {
         radius:5,
-        selectable: !newBoundaryIndex,
-        fill:       newBoundaryIndex ? 'green' : 'silver'
+        selectable: !isBoundaryKnob,
+        fill:       isBoundaryKnob ? 'green' : 'silver'
     };
     var knob = new Knob(this.transition.diagram, position, knobConfig, this.transition.group);
     knob.transition = this.transition;
     var initialDrag = true;
 
-    if(!newBoundaryIndex) {
+    if(!isBoundaryKnob) {
         knob.draggable({
             dragAlignment : new DragAlignment(that.transition.diagram,
                 function() { return [{source: [knob.position()], target: that.getJoiningOrientation(knob)}];}),
@@ -140,7 +152,7 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position) {
     });
 
     knob.on('remove', function() {
-        that.transition.removeKnobListener(knob);
+        that.removeKnob(knob);
     });
 
     //To prevent hiding the hoverknobs we adobt the transition hovering
@@ -190,7 +202,7 @@ TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
     }
 };
 
-TransitionKnobManager.prototype.removeKnobListener = function(knob) {
+TransitionKnobManager.prototype.removeKnob = function(knob) {
     if(!this.transition.removed) {
         var index = this.getIndexForKnob(knob);
         this.knobs.splice(index, 1);
@@ -242,15 +254,15 @@ TransitionKnobManager.prototype.getJoiningOrientation = function(knob) {
     if(index <= 1) { //start or second docking
         result.push(this.transition.dockingManager.startDocking.position());
     } else if(index !== 0){
-        var orientation = this.knobs[index - 1];
-        result.push({x : orientation.x(), y : orientation.y()});
+        var orientation = this.knobs[index - 1].position();
+        result.push({x : orientation.x, y : orientation.y});
     }
 
     if(index >= this.knobs.length -2) { //end or one before end docking
         result.push(this.transition.dockingManager.endDocking.position());
     } else {
-        var orientation = this.knobs[index + 1];
-        result.push({x : orientation.x(), y : orientation.y()});
+        var orientation = this.knobs[index + 1].position();
+        result.push({x : orientation.x, y : orientation.y});
     }
 
     return result;

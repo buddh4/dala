@@ -17,6 +17,7 @@ var dom = util.dom;
 var Node = function(tmpl, config, diagram) {
     this.config = config || {};
     this.diagram = diagram;
+    this.isNode = true;
     this.event = diagram.event;
     this.id = config.node_id;
     this.template = tmpl;
@@ -126,7 +127,7 @@ Node.prototype.moveUp = function() {
     //last node (back) in the svg view.
 
     //TODO: as command event !
-    dom.moveDown(this.root.instance());
+    this.root.up();
     this.exec('moveUp');
 };
 
@@ -135,7 +136,7 @@ Node.prototype.moveDown = function() {
     //last node (back) in the svg view.
 
     //TODO: as command event !
-    dom.moveUp(this.root.instance());
+    this.root.down();
     this.exec('moveDown');
 };
 

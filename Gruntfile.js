@@ -37,11 +37,12 @@ module.exports = function(grunt) {
                     debug: true,
                     transform: ['debowerify']
                 },
-                src: ['client/clientapp.js'],
-                dest: 'public/js/client.js'
+                files: {
+                    './public/js/client.js' : './client/clientapp.js',
+                    './public/js/svg.js' : './client/svg_standalone.js'
+                }
             }
         }
-
     });
 
     //Imagemin ?

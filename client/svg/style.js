@@ -27,7 +27,7 @@ Style.prototype.set = function(key, value) {
             var regExp = new RegExp(key+REGEXP_PROPERTY_SUFFIX, 'gi');
             this.value = this.value.replace(regExp, this.createValueString(key,value));
         } else {
-            this.value += (string.endsWith(this.value,';')) ? this.createValueString(key,value) : ';' + this.createValueString(key,value);
+            this.value += (!string.endsWith(this.value,';') && this.value.length > 0) ? ';' + this.createValueString(key,value) : this.createValueString(key,value);
         }
     } else if(object.isString(key)) {
         this.value = key;

@@ -3,7 +3,6 @@ var object = require('../util/object');
 
 var elementCache = {};
 
-
 var create = function(element, attributes, text) {
     var $element = $(document.createElement(element));
 
@@ -107,7 +106,7 @@ var addSVGElement = function(container, element, prepend, text, insertAfter) {
     var instance;
 
     if(!element.instance || !object.isDefined(element.instance())) {
-        instance = document.createElementNS("http://www.w3.org/2000/svg", element.name);
+        instance = document.createElementNS("http://www.w3.org/2000/svg", element.tagName);
         $.each(element.attributes, function(key, value) {
             instance.setAttribute(key, value.toString());
         });
@@ -149,7 +148,7 @@ var importSVG = function(container, svgXML, prepend) {
     if(svgXML.jquery) {
         $svgXML = svgXML;
     } else if(object.isString(svgXML)) {
-        $svgXML = $(parseXML(svgXML.trim()))
+        $svgXML = $(parseXML(svgXML.trim()));
         $svgXML = $($svgXML.get(0).documentElement);
     } else {
         $svgXML = $(svgXML);
@@ -165,7 +164,7 @@ var importSVG = function(container, svgXML, prepend) {
 
     //We create a dummy element object
     var element = {
-        name : name,
+        tagName : name,
         attributes : attributes,
         instance : function(inst) {
             if(object.isDefined(inst)) {

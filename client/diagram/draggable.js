@@ -23,6 +23,10 @@ DragContext.prototype.dragStart = function(evt) {
     }
 };
 
+DragContext.prototype.wasMoved = function(evt) {
+    return this.dxSum > 0 || this.dySum > 0;
+};
+
 DragContext.prototype.dragMove = function(evt, dx, dy) {
     this.dxSum += dx;
     this.dySum += dy;
@@ -49,8 +53,6 @@ DragContext.prototype.clone = function() {
     }
 };
 
-//TODO: dragBeforeMove delegation
-
 Node.prototype.draggable = function(cfg) {
     cfg = cfg || {};
     var that = this;
@@ -71,8 +73,10 @@ Node.prototype.draggable = function(cfg) {
 
         },
         dragEnd : function(evt) {
-            that.dragContext.dragEnd(evt);
-            that.exec('dragEnd', [evt]);
+            if(that.dragContext.wasMoved()) {
+                that.dragContext.dragEnd(evt);
+                that.exec('dragEnd', [evt]);
+            }
         },
         getScale: function() {
             return that.diagram.scale;

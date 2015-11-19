@@ -17,12 +17,17 @@ var object = util.object;
 var dom = util.dom;
 
 var Transition = function(node, startPosition) {
-    if(node) {
+    if(node.isNode) {
         this.diagram = node.diagram;
-        this.event = node.event;
+        this.event = this.diagram.event;
         this.svg = this.diagram.svg;
+        this.init(node, startPosition);
+    } else { //node = diagram, startPosition = domGroup of transition
+        this.diagram = node;
+        this.event = this.diagram.event;
+        this.svg = this.diagram.svg;
+        this.activate(startPosition);
     }
-    this.init(node, startPosition);
 };
 
 Transition.prototype.getPath = function() {
@@ -39,6 +44,42 @@ Transition.prototype.type = function(value) {
     } else {
         return this.pathManager.type;
     }
+};
+
+Transition.prototype.activate = function(domGroup) {
+    this.root = this.group = $.svg(domGroup);
+    this.id = this.group.attr('id');
+
+    transitionAdditions.init(this);
+
+    //Remove all existing knobs (except orientation knobs)
+    this.group.$().children('.knob').remove();
+
+    //Get line and linearea from dom
+    this.line = this.getLine();
+    this.lineArea = this.getLineArea();
+    this.lineArea.d(this.line.d());
+
+    //Init Manager
+    this.dockingManager = new TransitionDockingManager(this).activate();
+    this.pathManager = pathManagerFactory.get(this, this.group.dala('transitionType')).activate();
+    this.knobManager = new TransitionKnobManager(this).activate();
+    this.initEvents();
+    return this;
+};
+
+Transition.prototype.getLine = function() {
+    if(!this.line && this.group) {
+        this.line = this.getInnerSVG('line');
+    }
+    return this.line;
+};
+
+Transition.prototype.getLineArea = function() {
+    if(!this.lineArea && this.group) {
+        this.lineArea = this.getInnerSVG('lineArea');
+    }
+    return this.lineArea;
 };
 
 /**
@@ -58,6 +99,7 @@ Transition.prototype.init = function(node, mouse) {
     this.dockingManager = new TransitionDockingManager(this, node, mouse);
     //Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.
     this.pathManager = pathManagerFactory.get(this);
+    this.group.dala('transitionType', this.pathManager.type);
 
     //Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions
     this.knobManager = new TransitionKnobManager(this);
@@ -75,7 +117,7 @@ Transition.prototype.init = function(node, mouse) {
 };
 
 Transition.prototype.initSVGGroup = function() {
-    this.root = this.group = this.svg.g({prepend:true, "class":'transition', id : this.id});
+    this.root = this.group = this.svg.g({"class":'transition', 'xmlns:dala':"http://www.dala.com", id : this.id});
 };
 
 Transition.prototype.getStartAlignment = function() {
@@ -132,7 +174,7 @@ Transition.prototype.strokeWidth = function(value) {
 };
 
 Transition.prototype.getInnerSVG = function(prefix) {
-    return $.qCache().svg(this.getNodeSelector(prefix));
+    return $.qCache().svg(this.getTransitionSelector(prefix));
 };
 
 Transition.prototype.initTransitionSVG = function() {

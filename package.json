@@ -4,8 +4,6 @@
   "private": true,
   "scripts": {
     "start": "node ./bin/www",
-    "watch": "watchify client/*.js -o public/app.js -v",
-    "build": "browserify -t debowerify --debug client/clientapp.js -o public/js/client.js",
     "doc": "node_modules/colony/bin/colony client/clientapp.js --outdir doc/colony"
   },
   "dependencies": {
@@ -32,6 +30,7 @@
     "debowerify": "^1.2.1",
     "grunt": "^0.4.5",
     "grunt-browserify": "^3.8.0",
+    "grunt-browserifying": "^1.0.8",
     "grunt-contrib-uglify": "^0.9.1",
     "grunt-contrib-watch": "^0.6.1",
     "nodemon": "^1.3.7",

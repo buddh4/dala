@@ -10,30 +10,10 @@ var EditNodeAddition = function(node) {
 util.inherits(EditNodeAddition, AbstractEditAddition);
 
 var editFunctions = {
-    stroke : {
-        get : function(editItem) {
-            return this.node.getInnerSVG(editItem.bind).stroke();
-        },
-        set : function(editItem, value) {
-            this.node.getInnerSVG(editItem.bind).stroke(value);
-        }
-    },
-    'stroke-width' : {
-        get : function(editItem) {
-            return this.node.getInnerSVG(editItem.bind).strokeWidth();
-        },
-        set : function(editItem, value) {
-            this.node.getInnerSVG(editItem.bind).strokeWidth(value);
-        }
-    },
-    'stroke-dash' : {
-        get : function(editItem) {
-            return this.node.getInnerSVG(editItem.bind).strokeDashType();
-        },
-        set : function(editItem, value) {
-            this.node.getInnerSVG(editItem.bind).strokeDashType(value);
-        }
-    },
+    stroke : 'stroke',
+    'stroke-width' : 'strokeWidth',
+    'stroke-dash' : 'strokeDashType',
+    color : 'fill',
     text : {
         get : function(editItem) {
             return $(this.node.getNodeSelector(editItem.bind)).text();
@@ -45,7 +25,7 @@ var editFunctions = {
     },
     textarea : {
         get : function(editItem) {
-            return $(this.node.getNodeSelector(editItem.bind)).text();
+            return this.getTextAreaContent(this.node.getNodeSelector(editItem.bind));
         },
         set : function(editItem, value) {
             var $editSVGNode = $(this.node.getNodeSelector(editItem.bind));
@@ -64,14 +44,6 @@ var editFunctions = {
         set : function(editItem, value) {
             this.node.getInnerSVG(editItem.bind).style('font-size', value+'px');
             this.node.exec('contentChanged');
-        }
-    },
-    color : {
-        get : function(editItem) {
-            return this.node.getInnerSVG(editItem.bind).fill();
-        },
-        set : function(editItem, value) {
-            this.node.getInnerSVG(editItem.bind).fill(value);
         }
     }
 };

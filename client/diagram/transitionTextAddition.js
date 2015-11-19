@@ -38,11 +38,10 @@ TransitionTextAddition.prototype.getText = function(pos) {
 TransitionTextAddition.prototype.setText = function(pos, text) {
     if(!this.textNodes[pos]) {
         var id = 'text'+pos+'_'+this.transition.id;
-        var textNode = this.textNodes[pos] = this.diagram.svg.text(text, {id : id});
+        var textNode = this.textNodes[pos] = this.diagram.svg.text(text, {id : id}).hanging(false);
         this.diagram.svg.addToGroup(this.transition.group, textNode);
-        //this.transition.additions.edit.addEditTextTrigger('text'+pos);
     } else {
-        this.textNodes[pos].$().text(text);
+        this.textNodes[pos].content(text);
     }
     this.updateTextPosition(pos);
 };

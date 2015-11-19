@@ -28,7 +28,7 @@ var checkOrientationBoundary = function(node, p) {
             return ELLIPSE_BOUNDARY.call(node, p);
         case 'SQUARE':
         case 'RECT':
-            return RECT.call(node, p);
+            return RECT_BOUNDARY.call(node, p);
     };
 };
 
@@ -155,6 +155,10 @@ var RECT = function(position, orientation) {
         result.y = this.y();
         return result;
     }
+};
+
+var RECT_BOUNDARY = function(p) {
+    return this.overl
 };
 
 /**

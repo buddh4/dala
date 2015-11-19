@@ -1,9 +1,24 @@
 var object = require('../util/object');
 var dom = require('../dom/dom');
+var string = require('../util/string');
 
 var Cache = function() {
     this.queryCache = {};
     this.svgCache = {};
+};
+
+Cache.prototype.clearBySuffix = function(suffix) {
+    for(key in this.queryCache) {
+        if(this.queryCache.hasOwnProperty(key) && string.endsWith(key, suffix)) {
+            delete this.queryCache[key];
+        };
+    }
+
+    for(key in this.svgCache) {
+        if(this.svgCache.hasOwnProperty(key) && string.endsWith(key, suffix)) {
+            delete this.svgCache[key];
+        };
+    }
 };
 
 Cache.prototype.$ = function(obj, preventCache) {
@@ -11,7 +26,11 @@ Cache.prototype.$ = function(obj, preventCache) {
         return;
     }
 
-    var settings = this.getCacheSettings(obj);
+    if(this.queryCache[obj]) {
+        return this.queryCache[obj];
+    }
+
+    var settings = this.getCacheSettings(obj, this.queryCache);
     return this.cacheCheck(settings.key, settings.$node, this.queryCache, preventCache);
 };
 
@@ -20,11 +39,15 @@ Cache.prototype.svg = function(obj, preventCache) {
         return;
     }
 
-    var settings = this.getCacheSettings(obj);
+    if(this.svgCache[obj]) {
+        return this.svgCache[obj];
+    }
+
+    var settings = this.getCacheSettings(obj, this.svgCache);
     return this.cacheCheck(settings.key, $.svg(settings.$node), this.svgCache, preventCache);
 };
 
-Cache.prototype.getCacheSettings = function(obj) {
+Cache.prototype.getCacheSettings = function(obj, cache) {
     var settings = {};
 
     if(object.isString(obj)){

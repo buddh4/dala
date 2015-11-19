@@ -111,16 +111,16 @@ TransitionManager.prototype.importTransitionAction = function(transitionStr, tra
     this.activateTransition(transitionElement);
 };
 
-TransitionManager.prototype.activateTransition = function(value) {
-    if(object.isArray(value)) {
+TransitionManager.prototype.activateTransition = function(toActivate) {
+    if(object.isArray(toActivate)) {
         var result = [];
         var that = this;
-        object.each(value, function() {
-            result.push(that.activateTransition($(this)));
+        object.each(toActivate, function() {
+            result.push(that.activateTransition($(this).get(0)));
         });
         return result;
-    } else  {
-        return this.addTransition(new Transition(value, this.diagram));
+    } else  { //toActivate is domElement
+        return this.addTransition(new Transition(this.diagram, toActivate));
     }
 };
 

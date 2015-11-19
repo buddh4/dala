@@ -6,8 +6,9 @@
  * The 'root' part will be created by default. When creating a new svg part you can set it as default part, so all actions
  * like insertions will be executed on the default part if there is no other part as argument.
  */
-var SVGElement = require('./svgElement');
-var SVGText = require('./svgText');
+var SVGGenericShape = require('./genericShape');
+require('./draggable');
+var shapes = require('./elements');
 var util = require('../util/Util');
 
 var dom = util.dom;
@@ -34,6 +35,10 @@ var instances = {};
  * @constructor
  */
 var SVG = function(containerId, cfg) {
+    if(!(this instanceof SVG)) {
+        return SVG.get(containerId);
+    }
+
     cfg = cfg || {};
 
     //Get id from selector if its an selector
@@ -48,12 +53,7 @@ var SVG = function(containerId, cfg) {
     this.svgId = this.containerId+'_svg';
 
     // Create SVG root element with given settings.
-    this.root = new SVGElement('svg', undefined, {
-        xmlns : NAMESPACE_SVG,
-        'xmlns:xlink' : NAMESPACE_XLINK,
-        version : '1.1',
-        id : this.svgId
-    });
+    this.root = new shapes.Svg(this, {id : this.svgId});
 
     cfg.height = cfg.height || '100%';
     cfg.width = cfg.width  || '100%';
@@ -76,7 +76,7 @@ var SVG = function(containerId, cfg) {
  * @returns {*} svg root domNode
  */
 SVG.prototype.getRootNode = function() {
-    return this.root.instance();
+    return (this.root) ? this.root.instance() : undefined;
 };
 
 /**
@@ -199,7 +199,7 @@ SVG.prototype.import = function(svgStr, part, prepend) {
  */
 SVG.prototype.rect = function(cfg, part) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return this.add(new SVGElement('rect', this.root, cfg), part);
+    return this.add(new shapes.Rect(this, cfg), part);
 };
 
 /**
@@ -210,7 +210,12 @@ SVG.prototype.rect = function(cfg, part) {
  */
 SVG.prototype.text = function(text, cfg, part) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return this.add(new SVGText(text, this.root, cfg), part, false);
+    return this.add(new shapes.Text(this, cfg), part, false).content(text);
+};
+
+SVG.prototype.tspan = function(text, cfg, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new shapes.TSpan(this, cfg), part, false).content(text);
 };
 
 /**
@@ -221,7 +226,18 @@ SVG.prototype.text = function(text, cfg, part) {
  */
 SVG.prototype.circle = function(cfg, part) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return this.add(new SVGElement('circle', this.root, cfg), part);
+    return this.add(new shapes.Circle(this, cfg), part);
+};
+
+/**
+ * Adds and returns a newly created svg Circle with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */
+SVG.prototype.ellipse = function(cfg, part) {
+    part = this.svgParts[part] || this.getDefaultPart();
+    return this.add(new shapes.Ellipse(this, cfg), part);
 };
 
 /**
@@ -237,7 +253,7 @@ SVG.prototype.g = function(cfg) {
 
     delete cfg.part;
 
-    var group = this.add(new SVGElement('g', this.root, cfg), parentPart);
+    var group = this.add(new shapes.Group(this, cfg), parentPart);
 
     if(arguments.length > 1) {
         for(var i = 1;i < arguments.length; i++) {
@@ -245,7 +261,6 @@ SVG.prototype.g = function(cfg) {
             dom.appendSVGElement(group.instance(), arguments[i]);
         }
     }
-
     return group;
 };
 
@@ -275,7 +290,7 @@ SVG.prototype.addToGroup = function(group, element) {
  */
 SVG.prototype.path = function(cfg, part) {
     var part = this.svgParts[part] || this.getDefaultPart();
-    return this.add(new SVGElement('path', this.root, cfg), part);
+    return this.add(new shapes.Path(this, cfg), part);
 };
 
 SVG.prototype.empty = function() {
@@ -305,14 +320,24 @@ SVG.get = function(idSelector) {
         return;
     }
 
-    var $svgRootNode = $node.closest('svg');
-    if($svgRootNode) {
-        var id = $svgRootNode.attr('id');
-        var svgInstance = instances[id];
-        return new SVGElement($node.get(0), svgInstance.getRoot());
+    var $svgRootNode = $($node.get(0).ownerSVGElement);
+
+    if($svgRootNode.length) {
+        var svgInstance = instances[$svgRootNode.attr('id')];
+        return SVG._svgInstance($node, svgInstance);
     } else {
-        console.warn('call SVG.get on node with no svg parent');
+        console.warn('Call SVG.get on node with no svg root');
     }
+};
+
+SVG._svgInstance = function($node, svg) {
+    var SVGShape = SVG.getShapeByName($node.get(0).nodeName);
+    return (SVGShape) ? new SVGShape(svg).instance($node.get(0)) : new SVGGenericShape($node.get(0), svg);
+};
+
+SVG.getShapeByName = function(type) {
+    var result = shapes[type.toLowerCase()];
+    return result;
 };
 
 SVG.prototype.get = SVG.get;

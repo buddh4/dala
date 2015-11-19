@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<input type="button" id="rect" value="rect" />
+<input type="button" id="circle" value="circle" />
+<input type="button" id="ellipse" value="ellipse" />
+<input id="cmd" type="text" style="width:100%" />
+<div id="stage" style="width:100%;height:1000px;border:1px solid black;"></div>
+<script src="../js/svg.js"></script>
+<script>
+    var SVG = dala.SVG;
+    var stage = new SVG('#stage');
+    var counter = 0;
+    $('#rect').on('click', function() {
+        stage.rect({id:'rect'+counter++}).fill('red').stroke('blue').height(100).width(100).strokeWidth(1).move(50,50).draggable();
+    });
+    $('#circle').on('click', function() {
+        stage.circle({id:'circle'+counter++}).fill('red').stroke('blue').r(50).strokeWidth(1).move(50,50).draggable();
+    });
+    $('#ellipse').on('click', function() {
+        stage.ellipse({id:'ellipse'+counter++}).fill('red').stroke('blue').rx(100).ry(50).strokeWidth(1).move(100,50).draggable();
+    });
+    $('#cmd').on('change', function() {
+        var cmd = $(this).val();
+        try {
+            console.log('Execute: '+cmd);
+            eval(cmd);
+        } catch(e) {
+            console.error(e);
+        }
+
+    });
+</script>
+</body>
+</html>

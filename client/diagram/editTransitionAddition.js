@@ -43,7 +43,7 @@ var editFunctions = {
     },
     textarea : {
         get : function(editItem) {
-            return $(this.transition.getTransitionSelector(editItem.bind)).text();
+            return this.getTextAreaContent(this.transition.getTransitionSelector(editItem.bind));
         },
         set : function(editItem, value) {
             var $editSVGNode = $(this.transition.getTransitionSelector(editItem.bind));
@@ -67,6 +67,7 @@ var editFunctions = {
         },
         set : function(editItem, value) {
             this.transition.type(value);
+            this.transition.group.dala('transitionType', value);
         }
     },
     'startMarker' : {
