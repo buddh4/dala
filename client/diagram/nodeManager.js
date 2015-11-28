@@ -41,12 +41,12 @@ var NodeManager = function(diagram) {
     this.listen(EVT_COPY, this.copyNodeListener);
     this.listen(EVT_RESIZED, this.resizeNodeListener);
 
-    this.command(CMD_ADD, this.createNodeCmd, this.deleteNodeCmd);
-    this.command(CMD_DELETE, this.deleteNodeCmd, this.importNodeCmd);
-    this.command(CMD_COPY, this.importNodeCmd, this.deleteNodeCmd);
-    this.command(CMD_DROP, this.moveNodeCmd, this.moveNodeCmd);
-    this.command(CMD_RESIZE, this.resizeCmd, this.resizeCmd);
-    this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
+    this.command(CMD_ADD, this.createNode, this.deleteNode);
+    this.command(CMD_DELETE, this.deleteNode, this.importNode);
+    this.command(CMD_COPY, this.importNode, this.deleteNode);
+    this.command(CMD_DROP, this.moveNode, this.moveNode);
+    this.command(CMD_RESIZE, this.resizeNode, this.resizeNode);
+    this.command(CMD_EDIT, this.editNode, this.undoEdit);
 };
 
 util.inherits(NodeManager, AbstractManager);
@@ -54,14 +54,14 @@ util.inherits(NodeManager, AbstractManager);
 NodeManager.prototype.createNodeListener = function(evt) {
     try {
         var stagePosition = this.diagram.getStagePosition(evt);
-        this.createNode(evt.data, stagePosition);
+        this.createNodeCommand(evt.data, stagePosition);
     } catch(err) {
         console.error(err);
         event.trigger('error', 'Error occured while creating node !');
     }
 };
 
-NodeManager.prototype.createNode = function(tmpl, config) {
+NodeManager.prototype.createNodeCommand = function(tmpl, config) {
     config = config || {};
 
     if(!tmpl) {
@@ -74,7 +74,7 @@ NodeManager.prototype.createNode = function(tmpl, config) {
     return this.exec(CMD_ADD, [tmpl, config], [config.node_id]);
 };
 
-NodeManager.prototype.createNodeCmd = function(tmpl, config) {
+NodeManager.prototype.createNode = function(tmpl, config) {
     var that = this;
     var node = tmpl.createNode(config, this.diagram).init();
     if(!config.preventDrag) {
@@ -85,6 +85,8 @@ NodeManager.prototype.createNodeCmd = function(tmpl, config) {
             that.event.trigger(EVT_DESELECTED, node);
         }).on('remove', function() {
             that.event.trigger(EVT_REMOVED, node);
+        }).on('edit', function(evt, key, value, oldValue) {
+            that.addCmd(CMD_EDIT, [node.id, key, value], [node.id, key, oldValue]);
         }).on('dragEnd', function() {
             //We just add the command since we don't want to execute the drag twice
             that.addCmd(CMD_DROP,
@@ -93,6 +95,7 @@ NodeManager.prototype.createNodeCmd = function(tmpl, config) {
         });
     }
     this.addNode(node);
+    return node;
 };
 
 NodeManager.prototype.addNode = function(node) {
@@ -136,7 +139,7 @@ NodeManager.prototype.deleteNodeListener = function(evt) {
     }
 };
 
-NodeManager.prototype.deleteNodeCmd = function(node) {
+NodeManager.prototype.deleteNode = function(node) {
     node = this.getNode(node);
     if(node) {
         node.remove();
@@ -147,7 +150,7 @@ NodeManager.prototype.deleteNodeCmd = function(node) {
     }
 };
 
-NodeManager.prototype.importNodeCmd = function(nodeStr, cfg) {
+NodeManager.prototype.importNode = function(nodeStr, cfg) {
     cfg = cfg || {};
 
     //If set we replace the old node id with a new one e.g. when we copy a node
@@ -190,7 +193,7 @@ NodeManager.prototype.copyNodeListener = function(evt) {
     }
 };
 
-NodeManager.prototype.moveNodeCmd = function(node, dxSum, dySum) {
+NodeManager.prototype.moveNode = function(node, dxSum, dySum) {
     node = this.getNode(node);
     if(node) {
         node.triggerDrag(dxSum, dySum);
@@ -215,12 +218,12 @@ NodeManager.prototype.resizeNodeListener = function(evt) {
     }
 };
 
-NodeManager.prototype.resizeCmd = function(node, dx, dy, knob) {
+NodeManager.prototype.resizeNode = function(node, dx, dy, knob) {
     node = this.getNode(node);
     if(node) {
         node.additions.resize.get().resize(dx,dy,knob);
     } else {
-        console.warn('resizeCmd was for unknown node :'+node.toString());
+        console.warn('resizeNode was for unknown node :'+node.toString());
     }
 };
 
@@ -251,29 +254,14 @@ NodeManager.prototype.getNodes = function(filter) {
     }
 };
 
-NodeManager.prototype.setEditValue = function(node, editKey, newValue) {
-    node = this.getNode(node);
-    if(node) {
-        var currentValue = node.additions.edit.getValue(editKey) || '';
-        return this.exec(CMD_EDIT, [node.id, editKey, newValue], [node.id, editKey, currentValue]);
-    }
-};
-
-NodeManager.prototype.getEditItem = function(node, editKey) {
-    node = this.getNode(node);
-    return node.additions.edit.getEditItem(editKey);
-};
-
-NodeManager.prototype.editCmd = function(node, editKey, newValue) {
+NodeManager.prototype.editNode = function(node, editKey, newValue) {
     node = this.getNode(node);
     node.additions.edit.setValue(editKey, newValue);
-    event.trigger('node_edit', node);
 };
 
-NodeManager.prototype.undoEditCmd = function(node, editKey, newValue) {
+NodeManager.prototype.undoEdit = function(node, editKey, newValue) {
     node = this.getNode(node);
     node.additions.edit.setValue(editKey, newValue);
-    event.trigger('node_edit_undo', node);
 };
 
 NodeManager.prototype.clear = function() {

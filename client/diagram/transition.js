@@ -113,6 +113,7 @@ Transition.prototype.init = function(node, mouse) {
     //Create SVG Elements in dom and transition events
     this.initTransitionSVG();
     this.initEvents();
+    this.update(mouse);
     return this;
 };
 
@@ -174,7 +175,7 @@ Transition.prototype.strokeWidth = function(value) {
 };
 
 Transition.prototype.getInnerSVG = function(prefix) {
-    return $.qCache().svg(this.getTransitionSelector(prefix));
+    return $.svg(this.getTransitionSelector(prefix));
 };
 
 Transition.prototype.initTransitionSVG = function() {

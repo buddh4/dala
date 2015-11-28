@@ -22,4 +22,9 @@ SVGTSpan.prototype.content = function(value) {
     }
 };
 
+SVGTSpan.prototype.getBBox = function() {
+    //some browser (e.g. firefox) does not implement the getBBox for tspan elements.
+    return this.getBoundingClientRect();
+};
+
 module.exports = SVGTSpan;

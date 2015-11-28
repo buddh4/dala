@@ -108,7 +108,7 @@ var appendInput = function($fieldSet, editConfigItem, label, key, attributes, ov
     $input.val(currentVal);
     $input.on('change', function() {
         //We set the value trough the diagram/nodeMgr since we need to fire command events
-        editNode.diagram.setEditValue(editNode, key, $(this).val());
+        editNode.additions.edit.setValue(key, $(this).val());
     });
 
     if(output) {

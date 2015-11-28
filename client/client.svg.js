@@ -1,4 +1,3 @@
-$ = jQuery = require('jquery');
 require('./ui/jqueryPlugins');
 require('./svg/draggable');
 
@@ -6,6 +5,7 @@ if(!window.dala) {
     dala = {};
 }
 
-if(!window.dala.svg) {
-    dala.SVG = require('./svg/svg');
+if(!window.dala.SVG) {
+    window.dala.SVG = require('./svg/svg');
 }
+

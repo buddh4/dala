@@ -16,12 +16,10 @@ new ClientSettingDialog();
 var RegisterDialog = require('./../user/ui/registerDialog');
 new RegisterDialog();
 
-var XmlViewDialog = require('./xmlViewDialog');
+var XmlViewDialog = require('./xmlView');
 new XmlViewDialog();
 
 var event = require('../core/event');
-
-
 
 
 // Main Content Tabs

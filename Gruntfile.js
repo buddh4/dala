@@ -38,8 +38,11 @@ module.exports = function(grunt) {
                     transform: ['debowerify']
                 },
                 files: {
-                    './public/js/client.js' : './client/clientapp.js',
-                    './public/js/svg.js' : './client/svg_standalone.js'
+                    './public/js/client.js' : './client/client.all.js',
+                    './public/js/svg.js' : './client/client.svg.js',
+                    './public/js/dala.diagram.js' : './client/client.diagram.js',
+                    './public/js/test.js' : './client/test.svg.js',
+                    './public/js/test_diagram.js' : './client/test.diagram.js'
                 }
             }
         }

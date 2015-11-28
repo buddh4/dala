@@ -12,7 +12,7 @@ Manager.prototype.command = function(cmdId, doAction, undoAction) {
 };
 
 Manager.prototype.exec = function(cmdId, doArgs, undoArgs) {
-    this.diagram.executeCommand(cmdId, doArgs, undoArgs);
+    return this.diagram.executeCommand(cmdId, doArgs, undoArgs);
 };
 
 Manager.prototype.addCmd = function(cmdId, doArgs, undoArgs) {

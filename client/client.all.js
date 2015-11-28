@@ -24,7 +24,7 @@ var globalModules =  {
 
 dala.require = function(id) {
     return globalModules[id];
-}
+};
 
 // Init core modules
 var config = require('./core/config');

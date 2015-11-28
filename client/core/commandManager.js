@@ -10,13 +10,6 @@ var sub = function(subId, updateHandler) {
     return instances[subId] = new CommandManager(subId, updateHandler);
 };
 
-var exec = function(subId, cmdId, doArgs, undoArgs, preventRedo) {
-    var instance = instances[subId];
-    if(instance) {
-        instance.exec(cmdId, doArgs, undoArgs, preventRedo);
-    }
-};
-
 var CommandManager = function(subId, updateHandler) {
     this.subId = subId;
     this.commands = {};
@@ -42,7 +35,7 @@ CommandManager.prototype.exec = function(cmdId, doArgs, undoArgs) {
     var cmdInstance = this.add(cmdId, doArgs, undoArgs);
     if(cmdInstance) {
         console.log('Execute command '+cmdInstance.id);
-        cmdInstance.exec();
+        return cmdInstance.exec();
     }
 };
 

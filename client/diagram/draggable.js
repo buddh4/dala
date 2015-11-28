@@ -11,6 +11,8 @@ var lastDrag;
 var DragContext = function(node, cfg) {
     this.cfg = cfg || {};
     this.node = node;
+    this.dxSum = 0;
+    this.dySum = 0;
 };
 
 DragContext.prototype.dragStart = function(evt) {
@@ -132,7 +134,9 @@ Node.prototype.getNodeAlignmentTargets = function() {
 };
 
 Node.prototype.getDragElement = function() {
-    return dom.findIncludeSelf(this.getRootSVG().instance(), this.getNodeSelector('.dragRoute_'));
+    //TODO: we have to use the [class~=bla] selector since ie, edge (who else) throwing errors for .class selectors in jquery
+    //this may change in following jqery versions.
+    return dom.findIncludeSelf(this.getRootSVG().instance(), '[class~='+this.getNodeSelector('dragRoute_')+']');
 };
 
 module.exports = {

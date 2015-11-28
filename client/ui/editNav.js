@@ -20,7 +20,7 @@ var init = function() {
 
 var initListener = function() {
     event.listen('node_selected', nodeSelectListener);
-    event.listen('node_edit_undo', noteEditListener);
+    event.listen('node_edit', noteEditListener);
     event.listen('transition_edit_undo', transitionEditListener);
     event.listen('node_removed', nodeRemovedListener);
     event.listen('selection_clear', clearInfo);

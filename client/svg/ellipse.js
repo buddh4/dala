@@ -62,7 +62,7 @@ SVGEllipse.prototype.cx = function(value) {
     if(!value) {
         return this.translatedX(this.attrNumber('cx'));
     } else {
-        this.attr('cx', value)
+        this.attr('cx', value);
         return this;
     }
 };
@@ -78,7 +78,7 @@ SVGEllipse.prototype.cy = function(value) {
 
 SVGEllipse.prototype.rx = function(value) {
     if((!object.isDefined(value) || object.isBoolean(value) && value)) {
-        return this.attrNumber('rx') + this.strokeWidth();
+        return this.attrNumber('rx') + this.strokeWidth() / 2;
     } else if(object.isBoolean(value)) {
         return this.attrNumber('rx');
     } else {
@@ -89,7 +89,7 @@ SVGEllipse.prototype.rx = function(value) {
 
 SVGEllipse.prototype.ry = function(value) {
     if((!object.isDefined(value) || object.isBoolean(value) && value)) {
-        return this.attrNumber('ry') + this.strokeWidth();
+        return this.attrNumber('ry') + this.strokeWidth() / 2;
     } else if(object.isBoolean(value)) {
         return this.attrNumber('ry');
     } else {

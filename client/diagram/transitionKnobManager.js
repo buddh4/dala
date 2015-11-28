@@ -191,15 +191,6 @@ TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
 
     // update path
     this.getPathManager().updatePart(knobIndex, position);
-
-
-    // special handling for start and end knobs
-    // Todo: implement this in transitionDockingManager add context dragMove listener
-    if(knobIndex === 0) {
-        this.event.trigger('transition_drag_startdocking', this.transition);
-    } else if(knobIndex === this.lastIndex()) {
-        this.event.trigger('transition_drag_enddocking', this.transition);
-    }
 };
 
 TransitionKnobManager.prototype.removeKnob = function(knob) {

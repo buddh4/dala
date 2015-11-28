@@ -40,7 +40,8 @@
   "browser": {
     "bootstrap": "./node_modules/bootstrap/dist/js/bootstrap.js",
     "jqurey-ui": "./bower_components/jquery-ui/jquery-ui.js",
-    "jstree": "./bower_components/jstree/dist/jstree.js"
+    "jstree": "./bower_components/jstree/dist/jstree.js",
+    "mochaa":"./node_modules/mocha/lib/mocha.js"
   },
   "browserify": {
     "transform": [

@@ -92,7 +92,7 @@ SVGText.prototype.content = function(text) {
     this.$().empty();
     $.each(text.split('\n'), function(index, value) {
         if(object.isDefined(value) && value.trim().length > 0) {
-            var tSpan = that.svg.tspan(value, {id:'tspan'+index}).x(that.spanPadding);
+            var tSpan = that.svg.tspan(value).x(that.spanPadding);
             that.append(tSpan);
             if(index > 0) {
                 tSpan.dy(height);
@@ -155,7 +155,7 @@ SVGText.prototype.anchor = function(value) {
 };
 
 SVGText.prototype.tSpan = function(index) {
-    return this.svg.get(this.$().children('tSpan').get(index));
+    return this.svg.get(this.$().children('tspan').get(index));
 }
 
 SVGText.prototype.hanging = function(hanging) {
@@ -163,7 +163,7 @@ SVGText.prototype.hanging = function(hanging) {
     var value = hanging ? 'hanging' : 'baseline';
     this.attr('dominant-baseline', value);
     var firstSpan = this.tSpan(0);
-    var dy = (hanging) ? 0 : firstSpan.height() + firstSpan.getBBox().y;
+    var dy = (hanging) ? 0 : firstSpan.height() + this.getBBox().y;
     firstSpan.dy(dy);
     return this;
 };

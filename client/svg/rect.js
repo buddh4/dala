@@ -23,7 +23,8 @@ SVGRect.prototype.height = function(value) {
     if((object.isBoolean(value) && !value)) {
         return this.attrNumber('height');
     } else if(!object.isDefined(value) || (object.isBoolean(value) && value)) {
-        return this.attrNumber('height') + this.strokeWidth() * 2;
+        //TODO: note that the stroke is rendered on the center of the node border
+        return this.attrNumber('height') + this.strokeWidth();
     } else {
         this.attr({height:value});
         return this;
@@ -34,7 +35,7 @@ SVGRect.prototype.width = function(value) {
     if((object.isBoolean(value) && !value)) {
         return this.attrNumber('width');
     } else if(!object.isDefined(value) || (object.isBoolean(value) && value)) {
-        return this.attrNumber('width') + this.strokeWidth() * 2;
+        return this.attrNumber('width') + this.strokeWidth();
     } else {
         this.attr({width:value});
         return this;

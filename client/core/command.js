@@ -6,7 +6,7 @@ var CommandAction = function(client, action) {
 };
 
 CommandAction.prototype.exec = function(args) {
-    this.action.apply(this.client, args);
+    return this.action.apply(this.client, args);
 };
 
 var Command = function(client, doAction, undoAction) {
@@ -65,7 +65,7 @@ Command.prototype.action = function(type, client, action, args) {
         this[type + 'Args'] = arguments[1] || this[type + 'Args'];
         var action = this[type + 'Action'];
         if(action) {
-            action.exec(this[type + 'Args']);
+            return action.exec(this[type + 'Args']);
         }
     }
 

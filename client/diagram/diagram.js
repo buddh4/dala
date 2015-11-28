@@ -17,9 +17,13 @@ var commandManager = require('../core/commandManager');
 var SelectionManager = require('./selectionManager');
 var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
+var DiagramAPI = require('./api');
+
 var KnobManager = require('./knobManager');
 require('./knobTemplate');
 var xml = require('../util/xml');
+
+var Promise = require('bluebird');
 
 var Helper = require('./helper');
 
@@ -54,9 +58,9 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.event = event.sub(this.id);
 
     if(cfg.container) {
-        this.$containerNode = $(cfg.container);
+        this.$container = $(cfg.container);
     } else {
-        this.$containerNode = $CONTAINER_NODE;
+        this.$container = $CONTAINER_NODE;
     }
 
     var that = this;
@@ -76,26 +80,49 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.knobMgr = new KnobManager(this);
 
     // Build the SVG stage within the container
-    this.svg = new SVG(this.$containerNode.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
+    this.svg = new SVG(this.$container.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
 
     // Init stage related and key events
     this.initEvents();
 
     this.scale = 1;
 
-    //TODO: load defs/marker on demand
-    this.initDefs();
+    var that = this;
+    this.initDefs()
+        .then(function() {
+            that.mainPart = that.svg.createPart('main', true);
+            that.helper = new Helper(this);
+            that.trigger('initialized');
+        }, function(err) {
+            console.error('Could not load defs initialisation failed!');
+        });
+};
 
-    this.mainPart = this.svg.createPart('main', true);
-    this.helper = new Helper(this);
+Diagram.prototype = {
+    get api () {
+        if(!this._api) {
+            this._api = new DiagramAPI(this);
+        }
+        return this._api;
+    }
+};
+
+Diagram.prototype.getRootSVG = function() {
+    return this.svg.root;
 };
 
 Diagram.prototype.triggerUpdate = function() {
-    event.trigger('diagram_updated', this.id);
+    this.trigger('diagram_updated', this.id);
 };
 
 Diagram.prototype.getNodes = function(filter) {
     return this.nodeMgr.getNodes(filter);
+};
+
+Diagram.prototype.trigger = function(evt, args) {
+    //perhaps also listen to diagram intern events not only dom events.
+    this.svg.root.trigger(evt, args);
+    this.event.trigger(event, args);
 };
 
 Diagram.prototype.on = function(evt, handler) {
@@ -183,15 +210,18 @@ Diagram.prototype.part = function(id) {
 
 Diagram.prototype.initDefs = function() {
     var that = this;
-    this.templateMgr.getTemplate('defs_marker')
-    .then(function(tmpl) {
-        if(tmpl) {
-            tmpl.createNode({diagramId:that.id}, that).init('root', true);
-        } else {
-            console.error('Could initialize defs template result undefined');
-        }
-    }, function(err) {
-        console.error('Could not initialize defs template :'+err);
+    return new Promise(function(resolve, reject) {
+        that.templateMgr.getTemplate('defs_marker')
+            .then(function (tmpl) {
+                if (tmpl) {
+                    tmpl.createNode({diagramId: that.id}, that).init('root', true);
+                    resolve();
+                } else {
+                    reject('Could initialize defs template result undefined');
+                }
+            }, function (err) {
+                reject(err);
+            });
     });
 };
 
@@ -220,14 +250,6 @@ Diagram.prototype.isMultiSelection = function() {
     return this.selectionMgr.isMultiSelection();
 };
 
-Diagram.prototype.getEditItem = function(node, editKey) {
-    return this.nodeMgr.getEditItem(node, editKey);
-};
-
-Diagram.prototype.setEditValue = function(node, editKey, newValue) {
-    return this.nodeMgr.setEditValue(node, editKey, newValue);
-};
-
 Diagram.prototype.isPoint = function(value) {
     return object.isDefined(value.x);
 };
@@ -242,8 +264,8 @@ Diagram.prototype.loadDiagram = function(svgString) {
     //TODO: rather handle this per event
     this.selectionMgr.clear();
     this.nodeMgr.clear();
-    this.$containerNode.empty();
-    this.svg.setRoot(dom.importSVG(this.svg.$containerNode, svgString));
+    this.$container.empty();
+    this.svg.setRoot(dom.importSVG(this.svg.$container, svgString));
     this.activateNodes();
     this.activateTransitions();
     this.initEvents();
@@ -312,7 +334,7 @@ Diagram.prototype.getStagePosition = function(x, y) {
         x = x.x;
     }
 
-    var stagePosition = this.$containerNode.offset();
+    var stagePosition = this.$container.offset();
     var viewPointAlignment = this.mainPart.position();
 
     //TODO: viewbox alignement ?
@@ -357,7 +379,7 @@ Diagram.prototype.registerCommand = function(cmdId, cmd) {
 };
 
 Diagram.prototype.executeCommand = function(cmdId, doArgs, undoArgs) {
-    this.commandMgr.exec(cmdId, doArgs, undoArgs);
+    return this.commandMgr.exec(cmdId, doArgs, undoArgs);
 };
 
 Diagram.prototype.addCommand = function(cmdId, doArgs, undoArgs) {

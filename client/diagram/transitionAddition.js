@@ -58,25 +58,40 @@ TransitionAddition.prototype.moveUp = function() {
 /**
  * Node dbclick triggers the creation of a transition.
  */
-TransitionAddition.prototype.dbclick = function() {
-    //Start Transition Init Drag Event
-    if(!this.transitionMgr.isDragTransition()) {
-        var that = this;
-        event.on(this.diagram.svg.getRootNode(), "mousemove", function(event) {
-            that.transitionDrag(event);
-        });
-    }
+TransitionAddition.prototype.dbclick = function(evt) {
+    this.startNewTransition(undefined, this.diagram.getStagePosition(evt));
 };
 
-TransitionAddition.prototype.transitionDrag = function(evt) {
-    var mouse = this.diagram.getStagePosition(evt);
-
-    //Initialize a new transition or update the current dragTransition
-    if(!this.transitionMgr.isDragTransition()) {
-        this.transitionMgr.startDragTransition(new Transition(this.node, mouse));
-    } else {
-        this.transitionMgr.getDragTransition().update(mouse);
+/**
+ * This function starts a new transition either by providing a endNode or by using the transitiondrag
+ * @param endNode
+ */
+TransitionAddition.prototype.startNewTransition = function(endNode, mouse) {
+    if(this.transitionMgr.isDragTransition()) {
+        return this.diagram.transitionMgr.getDragTransition();
     }
+
+    var transition = this.transitionMgr.startDragTransition(this.node, mouse);
+
+    if(!endNode) {
+        //If no endNode was provided we start the mouse listener for the transitiondrag
+        var that = this;
+        event.on(this.diagram.svg.getRootNode(), "mousemove", function(event) {
+            that.transitionDrag(event, true);
+        });
+    } else {
+        //If an endNode was provided we imitate the transitiondrag and set the endNode
+        this.transitionDrag(endNode.getCenter());
+        endNode.additions.transition.endTransitionDrag();
+    }
+
+    return transition;
+};
+
+TransitionAddition.prototype.transitionDrag = function(mouse, isEvt) {
+    mouse = (isEvt)? this.diagram.getStagePosition(mouse) : mouse;
+    //Update the current dragTransition
+    this.transitionMgr.getDragTransition().update(mouse);
 };
 
 /**
@@ -85,11 +100,16 @@ TransitionAddition.prototype.transitionDrag = function(evt) {
 TransitionAddition.prototype.mousedown = function(evt) {
     // Stop transition drag event and set end node
     if(this.transitionMgr.isDragTransition()) {
-        var transition = this.transitionMgr.getDragTransition();
-        transition.setEndNode(this.node, this.diagram.getStagePosition(evt));
-        this.transitionMgr.endDragTransition();
-        event.off(this.diagram.svg.getRootNode(), 'mousemove');
+        this.endTransitionDrag(evt);
     }
+};
+
+TransitionAddition.prototype.endTransitionDrag = function(mouseEvt) {
+    mouseEvt = mouseEvt || this.node.getCenter();
+    var transition = this.transitionMgr.getDragTransition();
+    transition.setEndNode(this.node, this.diagram.getStagePosition(mouseEvt));
+    this.transitionMgr.endDragTransition();
+    event.off(this.diagram.svg.getRootNode(), 'mousemove');
 };
 
 TransitionAddition.prototype.addOutgoingTransition = function(transition) {

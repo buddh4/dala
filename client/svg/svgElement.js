@@ -44,7 +44,7 @@ SVGElement.prototype.append = function(element) {
     var result;
     if(arguments.length > 1) {
         result = [];
-        var that = this;height
+        var that = this;
         object.each(arguments, function(index, val) {
             result.push(that.append(val));
         })
@@ -117,9 +117,18 @@ SVGElement.prototype.getBBox = function() {
     return this.instance().getBBox();
 };
 
+SVGElement.prototype.getBoundingClientRect = function() {
+    return this.instance().getBoundingClientRect();
+}
+
 /**
  * SVG Eventhandling
  */
+
+SVGElement.prototype.trigger = function(evt, args) {
+    this.$().trigger(evt, args);
+    return this;
+};
 
 SVGElement.prototype.on = function(evt, handler) {
     this.$().on(evt, handler);

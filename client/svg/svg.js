@@ -43,9 +43,9 @@ var SVG = function(containerId, cfg) {
 
     //Get id from selector if its an selector
     this.containerId = dom.getRawId(containerId);
-    this.$containerNode = $.qCache('#'+this.containerId).get(0);
+    this.$container = $.qCache('#'+this.containerId).get(0);
 
-    if(!this.$containerNode) {
+    if(!this.$container) {
         console.error('Attempt to initiate svg stage for invalid containerId: '+this.containerId);
         return;
     }
@@ -62,7 +62,7 @@ var SVG = function(containerId, cfg) {
     this.root.attr(cfg);
 
     // Append the svg root element to the containernode
-    dom.appendSVGElement(this.$containerNode, this.root);
+    dom.appendSVGElement(this.$container, this.root);
 
     // The root part is the svg element itself
     this.svgParts = {'root':this.root};

@@ -30,6 +30,10 @@ var SelectionManager = function(diagram) {
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
 };
 
+SelectionManager.prototype.getSelectedNodes = function() {
+    return this.selectedNodes.slice();
+};
+
 SelectionManager.prototype.knobAddedListener = function(evt) {
     var knob = evt.data;
     var that = this;

@@ -1,0 +1,20 @@
+{
+  "name": "dala_browserify",
+  "version": "0.0.0",
+  "homepage": "https://github.com/buddha87/dala_browserify",
+  "authors": [
+    "buddha87 <mail@jharrer.de>"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery":"2.1.4",
+    "jquery-ui": "1.11.4",
+    "jstree": "~3.1.1"
+  }
+}

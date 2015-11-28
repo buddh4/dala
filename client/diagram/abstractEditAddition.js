@@ -47,7 +47,6 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                         },
                         function(value) {
                             that.setValue(key, value);
-                            that.editable.exec('contentChanged');
                         });
                     break;
                 case 'text':
@@ -56,7 +55,6 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
                         },
                         function(value) {
                             that.setValue(key, value);
-                            that.editable.exec('contentChanged');
                         });
                     break;
             }
@@ -76,6 +74,7 @@ AbstractEditAddition.prototype.getValue = function(key) {
 
 AbstractEditAddition.prototype.setValue = function(key, value) {
     var editItem = this.getEditItem(key);
+    var oldValue = this.getValue(key);
     var editFunction = this.editFunctions[editItem.type];
     if(editFunction && !object.isString(editFunction)) {
         this.editFunctions[editItem.type].set.call(this, editItem, value);
@@ -83,6 +82,10 @@ AbstractEditAddition.prototype.setValue = function(key, value) {
     } else if(editFunction && object.isString(editFunction)) {
         this.editable.getInnerSVG(editItem.bind)[editFunction](value);
         this.onSetValue(editItem, value);
+    }
+
+    if(this.editable.exec) {
+        this.editable.exec('edit', [key, value, oldValue]);
     }
 };
 

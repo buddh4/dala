@@ -92,8 +92,12 @@ SVGShape.prototype.strokeOpacity = function(opacity) {
     return this.style('stroke-opacity', opacity);
 };
 
-SVGShape.prototype.stroke = function(color) {
+SVGShape.prototype.stroke = function(color, width) {
+    if(width) {
+        this.strokeWidth(width);
+    }
     return this.style('stroke', color);
+
 };
 
 SVGShape.prototype.strokeDasharray = function(type) {
@@ -207,7 +211,7 @@ SVGShape.prototype.y = function() {
     return this.translatedY(0);
 };
 
-SVGElement.prototype.position = function() {
+SVGShape.prototype.position = function() {
     var that = this;
     return {
         x : that.x(),
@@ -280,19 +284,19 @@ SVGShape.prototype.moveY = function(y) {
 /**
  * Note: the implementation of getBBox differs between browsers some add the sroke-width and some do not add stroke-width
  */
-SVGElement.prototype.height = function() {
+SVGShape.prototype.height = function() {
     return this.getBBox().height;
 };
 
-SVGElement.prototype.width = function() {
+SVGShape.prototype.width = function() {
     return this.getBBox().width;
 };
 
-SVGElement.prototype.getBottomY = function() {
+SVGShape.prototype.getBottomY = function() {
     return this.y() + this.height();
 };
 
-SVGElement.prototype.getRightX = function() {
+SVGShape.prototype.getRightX = function() {
     return this.x() + this.width();
 };
 

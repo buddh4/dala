@@ -24,19 +24,17 @@ var TransitionManager = function(diagram) {
     this.transitions = {};
     this.diagram = diagram;
     event.listen('transition_delete', this.deleteTransitionListener, this);
-    event.listen('transition_drag_startdocking', this.startDockingDragListener, this);
-    event.listen('transition_drag_enddocking', this.endDockingDragListener, this);
     event.listen('transition_docking_created', this.transitionDockingCreatedListener, this);
     event.listen('transition_docking_dropped', this.transitionDockingDropListener, this);
 
     event.listen('transition_edit', this.editTransitionListener, this);
 
-    this.command(CMD_ADD, this.importTransitionAction, this.deleteTransitionAction);
-    this.command(CMD_DEL, this.deleteTransitionAction, this.importTransitionAction);
-    this.command(CMD_DOC_CREATED, this.importTransitionAction, this.deleteKnobAction);
-    this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
-    this.command(CMD_DOC_DROPPED, this.dropDockingAction, this.dropDockingAction);
-    this.command(CMD_EDIT, this.editCmd, this.undoEditCmd);
+    this.command(CMD_ADD, this.importTransition, this.deleteTransition);
+    this.command(CMD_DEL, this.deleteTransition, this.importTransition);
+    this.command(CMD_DOC_CREATED, this.importTransition, this.deleteKnob);
+    this.command(CMD_DOC_DROPPED, this.dropDocking, this.dropDocking);
+    this.command(CMD_DOC_DROPPED, this.dropDocking, this.dropDocking);
+    this.command(CMD_EDIT, this.editTransition, this.undoEdit);
 };
 
 util.inherits(TransitionManager, AbstractManager);
@@ -48,20 +46,16 @@ TransitionManager.prototype.editTransitionListener = function(evt) {
     this.exec(CMD_EDIT, [transition.id, key, evt.data.value], [transition.id, key, oldValue]);
 };
 
-TransitionManager.prototype.editCmd = function(transition, key, value) {
+TransitionManager.prototype.editTransition = function(transition, key, value) {
     transition = this.getTransition(transition);
     transition.additions.edit.setValue(key, value);
     event.trigger('transition_edited', transition);
 };
 
-TransitionManager.prototype.undoEditCmd = function(transition, key, value) {
+TransitionManager.prototype.undoEdit = function(transition, key, value) {
     transition = this.getTransition(transition);
     transition.additions.edit.setValue(key, value);
     event.trigger('transition_edit_undo', transition);
-};
-
-TransitionManager.prototype.editTransitionAction = function(transition, type, value) {
-    transition = this.getTransition(transition);
 };
 
 TransitionManager.prototype.transitionDockingDropListener = function(evt) {
@@ -76,7 +70,7 @@ TransitionManager.prototype.transitionDockingDropListener = function(evt) {
     }
 };
 
-TransitionManager.prototype.dropDockingAction = function(transition, dockingIndex, dxSum, dySum) {
+TransitionManager.prototype.dropDocking = function(transition, dockingIndex, dxSum, dySum) {
     transition = this.getTransition(transition);
     if(transition) {
         var docking = transition.knobManager.getKnob(dockingIndex);
@@ -92,18 +86,18 @@ TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
     }
 };
 
-TransitionManager.prototype.deleteKnobAction = function(transition, dockingIndex) {
+TransitionManager.prototype.deleteKnob = function(transition, dockingIndex) {
     transition = this.getTransition(transition);
     if(transition) {
         transition.knobManager.getKnob(dockingIndex).remove();
     }
 };
 
-TransitionManager.prototype.importTransitionAction = function(transitionStr, transition) {
+TransitionManager.prototype.importTransition = function(transitionStr, transition) {
     if(transition) {
         transition = this.getTransition(transition)
         if(transition) {
-            this.deleteTransitionAction(transition.id);
+            this.deleteTransition(transition.id);
         }
     }
 
@@ -128,8 +122,9 @@ TransitionManager.prototype.isDragTransition = function(transition) {
     return object.isDefined(this.dragTransition);
 };
 
-TransitionManager.prototype.startDragTransition = function(transition) {
-    this.dragTransition = transition;
+TransitionManager.prototype.startDragTransition = function(node, mouse) {
+    mouse = mouse || node.getCenter();
+    return this.dragTransition = new Transition(node, mouse);
 };
 
 TransitionManager.prototype.getDragTransition = function() {
@@ -167,7 +162,7 @@ TransitionManager.prototype.deleteTransitionListener = function(evt) {
     }
 };
 
-TransitionManager.prototype.deleteTransitionAction = function(id) {
+TransitionManager.prototype.deleteTransition = function(id) {
     var transition = this.getTransition(id);
     if(transition) {
         delete this.transitions[id];
@@ -186,39 +181,6 @@ TransitionManager.prototype.getTransition = function(id) {
     } else {
         console.warn('getTransition call with no result for :'+id);
     }
-};
-
-TransitionManager.prototype.startDockingDragListener = function(evt) {
-    if(!this.dragTransition) {
-       // this.edgeDockingDragListener(evt, 'Start');
-    }
-};
-
-TransitionManager.prototype.endDockingDragListener = function(evt) {
-    if(!this.dragTransition) {
-        //this.edgeDockingDragListener(evt, 'End');
-    }
-};
-
-TransitionManager.prototype.edgeDockingDragListener = function(evt, dockingType) {
-    var that = this;
-    var transition = evt.data;
-    //We wait for the drag end event (mouseup)
-    event.once(this.diagram.svg.getRootNode(), "mouseup", function(mouseUpEvent) {
-        var mouse = that.diagram.getStagePosition(mouseUpEvent);
-        var hoverNode = that.diagram.overlaysNode(mouse);
-        if(hoverNode !== transition['get'+dockingType+'Node']()) {
-            //We are hovering another note so we swap the start or end node
-            transition['set'+dockingType+'Node'](hoverNode);
-        } else if(hoverNode === transition['get'+dockingType+'Node']()){
-            //We are hovering the curretn start/end node so we just set a relative docking position
-            transition['setRelative'+dockingType+'Knob'](mouse.x, mouse.y);
-            transition.update();
-        } else {
-            //We are hovering empty space so we just update the
-            transition.update();
-        }
-    });
 };
 
 module.exports = TransitionManager;
