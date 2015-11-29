@@ -1,0 +1,88 @@
+<h1>dialog.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Dialog = <span class="keyword">function</span>(cfg) {
+    <span class="keyword">this</span>.cfg = cfg;
+    <span class="keyword">this</span>.buttons = cfg.buttons || {};
+    <span class="keyword">this</span>.dialogId = cfg.dialogId;
+    <span class="keyword">this</span>.resetOnClose = cfg.resetOnClose || <span class="literal">false</span>;
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    <span class="keyword">if</span>(cfg.cancelButton) {
+        <span class="keyword">this</span>.buttons[<span class="string">'Cancel'</span>] = <span class="keyword">function</span>() {
+            that.cancel();
+        }
+    }
+
+    <span class="keyword">if</span>(cfg.closeButton) {
+        <span class="keyword">this</span>.buttons[<span class="string">'Close'</span>] = <span class="keyword">function</span>() {
+            that.close();
+        }
+    }
+
+    <span class="keyword">if</span>(cfg.resetButton) {
+        <span class="keyword">this</span>.buttons[<span class="string">'Reset'</span>] = <span class="keyword">function</span>() {
+            that.reset();
+        }
+    }
+
+    <span class="keyword">if</span>(cfg.submit) {
+        <span class="keyword">var</span> label = cfg.submitLabel || <span class="string">'Submit'</span>;
+        <span class="keyword">this</span>.buttons[label] = <span class="keyword">function</span>() {
+            <span class="keyword">if</span>(cfg.submit()) {
+                that.close();
+            }
+        }
+    }
+
+    <span class="keyword">this</span>.dialog = $( cfg.dialogId ).dialog({
+        autoOpen: <span class="literal">false</span>,
+        height: cfg.height || <span class="string">'auto'</span>,
+        width: cfg.width || <span class="string">'300'</span>,
+        modal: <span class="literal">true</span>,
+        open: cfg.open,
+        buttons: that.buttons,
+        close: <span class="keyword">function</span>() {
+            <span class="keyword">if</span>(cfg.close) {
+                cfg.close();
+            }
+            $(cfg.triggerId).blur();
+        }
+    });
+
+    <span class="keyword">this</span>.dialog.find( <span class="string">"form"</span> ).on( <span class="string">"submit"</span>, <span class="keyword">function</span>(evt) {
+        evt.preventDefault();
+    });
+
+    <span class="keyword">if</span>(cfg.triggerId) {
+        $(cfg.triggerId).on( <span class="string">"click"</span>, <span class="keyword">function</span>() {
+            that.dialog.dialog( <span class="string">"open"</span> );
+        });
+    };
+};
+
+Dialog.prototype.shake = <span class="keyword">function</span>() {
+  $(<span class="keyword">this</span>.dialogId).parent().effect(<span class="string">'shake'</span>);
+};
+
+Dialog.prototype.open = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.dialog.dialog( <span class="string">"open"</span> );
+}
+
+Dialog.prototype.cancel = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.close();
+    <span class="keyword">this</span>.reset();
+}
+
+Dialog.prototype.close = <span class="keyword">function</span>() {
+    $(<span class="keyword">this</span>.cfg.triggerId).blur();
+    <span class="keyword">this</span>.dialog.dialog(<span class="string">'close'</span>);
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.resetOnClose) {
+        <span class="keyword">this</span>.reset();
+    }
+};
+
+Dialog.prototype.reset = <span class="keyword">function</span>() {
+    $(<span class="keyword">this</span>.dialogId).closest(<span class="string">'form'</span>).find(<span class="string">"input[type=text], textarea"</span>).val(<span class="string">""</span>);
+};
+
+module.exports = Dialog;</code></pre>

@@ -1,0 +1,68 @@
+<h1>infobox.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> CONTAINER_SELECTOR = <span class="string">'#infoBox'</span>;
+<span class="keyword">var</span> $CONTAINER_NODE = $(CONTAINER_SELECTOR);
+
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'node_selected'</span>, viewNodeInfo);
+    <span class="comment">//TODO: transition_select listener</span>
+    event.listen(<span class="string">'selection_clear'</span>, clearInfo);
+    event.listen(<span class="string">'transition_select'</span>, clearInfo);
+}
+
+<span class="comment">/**
+ * Displays the node information
+ */</span>
+<span class="keyword">var</span> viewNodeInfo = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.data) {
+        <span class="keyword">var</span> node = evt.data;
+        <span class="keyword">var</span> corners = node.getCorners();
+        <span class="keyword">var</span> center = node.getCenter();
+        <span class="comment">//TODO: show outgoing / incomming trnasition or nodes</span>
+        viewObject({
+            id : node.id,
+            tmpl : node.template.id,
+            x : node.x(),
+            y : node.y(),
+            right_x : node.getRightX(),
+            bottom_y : node.getBottomY(),
+            width : node.width(),
+            height: node.height(),
+            cX : center.x,
+            cY : center.y,
+            p1 : pToStr(corners[<span class="number">0</span>]),
+            p2 : pToStr(corners[<span class="number">1</span>]),
+            p3 : pToStr(corners[<span class="number">2</span>]),
+            p4 : pToStr(corners[<span class="number">3</span>])
+        });
+    }
+};
+
+<span class="keyword">var</span> clearInfo = <span class="keyword">function</span>() {
+    $CONTAINER_NODE.html(<span class="string">''</span>);
+    $CONTAINER_NODE.hide();
+};
+
+<span class="keyword">var</span> pToStr = <span class="keyword">function</span>(p) {
+    <span class="keyword">return</span> <span class="string">'('</span>+p.x+<span class="string">'/'</span>+p.y+<span class="string">')'</span>;
+};
+
+<span class="keyword">var</span> viewObject = <span class="keyword">function</span>(obj) {
+    <span class="keyword">var</span> result = <span class="string">'&lt;ul>'</span>;
+    <span class="keyword">for</span>(attr <span class="keyword">in</span> obj) {
+        <span class="keyword">if</span>(obj.hasOwnProperty(attr)) {
+            result += <span class="string">'&lt;li>'</span>+attr+<span class="string">': '</span>+obj[attr]+<span class="string">'&lt;/li>'</span>;
+        }
+    }
+    result += <span class="string">'&lt;/ul>'</span>;
+    $CONTAINER_NODE.html(result);
+    $CONTAINER_NODE.show();
+};
+
+module.exports.init = <span class="keyword">function</span>() {
+    clearInfo();
+    initListener();
+}
+</code></pre>

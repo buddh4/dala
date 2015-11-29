@@ -1,0 +1,146 @@
+<h1>editTransitionMenu.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Command = require(<span class="string">'../core/command'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> string = require(<span class="string">'../util/string'</span>);
+<span class="keyword">var</span> toolTip = require(<span class="string">'./toolTip'</span>);
+
+<span class="keyword">var</span> ID_PANEL = <span class="string">'editTransitionPanel'</span>;
+<span class="keyword">var</span> ID_SECTION = <span class="string">'editTransitionSection'</span>;
+
+<span class="keyword">var</span> section, panel, editTransition, initState;
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    section = toolTip.getSection(ID_SECTION);
+    panel = toolTip.getPanel(ID_PANEL);
+    initMarkerDropDown(<span class="string">'endMarker'</span>);
+    initMarkerDropDown(<span class="string">'startMarker'</span>);
+    initTypeDropDown();
+    initTransitionTextInput();
+    clear();
+};
+
+<span class="keyword">var</span> clear = <span class="keyword">function</span>() {
+    <span class="keyword">delete</span> editTransition;
+    panel.hide();
+    $(<span class="string">'.ttextPositionInput'</span>).empty();
+};
+
+<span class="keyword">var</span> show = <span class="keyword">function</span>() {
+    panel.show();
+};
+
+<span class="keyword">var</span> update = <span class="keyword">function</span>() {
+    panel.update();
+};
+
+<span class="comment">/**
+ * Initializes a transition marker dropdown menu (start or end marker).
+ * @param markerId defines the dropdown id (not selector) to determine to which marker this dropdown is assigned.
+ */</span>
+<span class="keyword">var</span> initMarkerDropDown = <span class="keyword">function</span>(markerId) {
+    <span class="keyword">var</span> selector = <span class="string">'#'</span>+markerId;
+    <span class="comment">// Init the custom jquery-ui.iconselectmenu (see ./uiAdditions.js)</span>
+    $( selector ).iconselectmenu({
+        appendTo: <span class="string">'#editTransition'</span>,
+        change : <span class="keyword">function</span>(evt, ui) {
+            <span class="keyword">if</span>(editTransition &amp;&amp; !initState) {
+                triggerEdit(markerId, ui.item.value);
+            }
+        }
+    }).iconselectmenu( <span class="string">"menuWidget"</span> ).addClass( <span class="string">"ui-menu-icons customicons"</span> );
+    $( selector ).iconselectmenu(<span class="string">'widget'</span>).prepend($(<span class="string">'&lt;span>'</span>, {class:<span class="string">'ui-icon marker-none'</span>}));
+};
+
+<span class="keyword">var</span> initTypeDropDown = <span class="keyword">function</span>() {
+    <span class="comment">// Init the custom jquery-ui.iconselectmenu (see ./uiAdditions.js)</span>
+    $( <span class="string">'#transitionType'</span> ).iconselectmenu({
+        appendTo: <span class="string">'#editTransition'</span>,
+        change : <span class="keyword">function</span>(evt, ui) {
+            <span class="keyword">if</span>(editTransition &amp;&amp; !initState) {
+                triggerEdit(<span class="string">'type'</span>, ui.item.value);
+            }
+        }
+    }).iconselectmenu( <span class="string">"menuWidget"</span> ).addClass( <span class="string">"ui-menu-icons customicons"</span> );
+    $( <span class="string">'#transitionType'</span> ).iconselectmenu(<span class="string">'widget'</span>).prepend($(<span class="string">'&lt;span>'</span>, {class:<span class="string">'ui-icon marker-none'</span>}));
+};
+
+<span class="comment">/**
+ * Initializes the text edit input events.
+ */</span>
+<span class="keyword">var</span> initTransitionTextInput = <span class="keyword">function</span>() {
+    $(<span class="string">'.ttextPositionInput'</span>).on(<span class="string">'change'</span>, <span class="keyword">function</span>() {
+        <span class="keyword">if</span>(editTransition &amp;&amp; !initState) {
+            <span class="keyword">var</span> textIndex = parseInt($(<span class="keyword">this</span>).data(<span class="string">'index'</span>));
+            <span class="keyword">var</span> text = $(<span class="keyword">this</span>).val();
+            triggerEdit(<span class="string">'text'</span> + textIndex, text);
+            editTransition.additions.text.setText(textIndex, text);
+        }
+    });
+};
+
+<span class="keyword">var</span> triggerEdit = <span class="keyword">function</span>(key , value) {
+    event.trigger(<span class="string">'transition_edit'</span>, {transition : editTransition, key : key, value : value});
+};
+
+<span class="comment">/**
+ * Fills the static transitoin form
+ */</span>
+<span class="keyword">var</span> fillForm = <span class="keyword">function</span>(transition) {
+    initState = <span class="literal">true</span>;
+    editTransition = transition;
+    <span class="comment">//Fill Marker values</span>
+    updateButtonMarker(<span class="string">'#endMarker'</span>, transition.endMarker());
+    updateButtonMarker(<span class="string">'#startMarker'</span>, transition.startMarker());
+
+    $(<span class="string">'#transitionType'</span>).val(transition.type()).iconselectmenu(<span class="string">'refresh'</span>);
+
+
+    <span class="comment">//Fill text values</span>
+    <span class="keyword">var</span> textAddition = transition.additions.text;
+    $(<span class="string">'#edit_ST'</span>).val(textAddition.getText(<span class="number">0</span>));
+    $(<span class="string">'#edit_SB'</span>).val(textAddition.getText(<span class="number">1</span>));
+    $(<span class="string">'#edit_MT'</span>).val(textAddition.getText(<span class="number">2</span>));
+    $(<span class="string">'#edit_MB'</span>).val(textAddition.getText(<span class="number">3</span>));
+    $(<span class="string">'#edit_ET'</span>).val(textAddition.getText(<span class="number">4</span>));
+    $(<span class="string">'#edit_EB'</span>).val(textAddition.getText(<span class="number">5</span>));
+
+
+    <span class="comment">//Focus first input</span>
+    $(<span class="string">'#startMarker-button'</span>).focus();
+    initState = <span class="literal">false</span>;
+}
+
+<span class="keyword">var</span> updateButtonMarker = <span class="keyword">function</span>(markerSelector, markerValue) {
+    markerValue = (object.isDefined(markerValue)) ? markerValue : <span class="string">'none'</span>;
+    $(markerSelector).val(markerValue).iconselectmenu(<span class="string">'refresh'</span>);
+    <span class="keyword">var</span> icon = $(markerSelector).iconselectmenu(<span class="string">'widget'</span>).children(<span class="string">'.ui-icon'</span>).get(<span class="number">0</span>);
+
+    <span class="comment">//reset current marker class of the button and update the icon</span>
+    $(icon).attr(<span class="string">'class'</span>, <span class="string">'ui-icon'</span>);
+
+    <span class="comment">//for start marker we cut the suffix</span>
+    <span class="keyword">if</span>(string.endsWith(markerValue, <span class="string">'_s'</span>)) {
+        markerValue = markerValue.substring(<span class="number">0</span>,markerValue.length - <span class="number">2</span>);
+    }
+
+    $(icon).addClass(<span class="string">'marker-'</span>+markerValue);
+};
+
+<span class="keyword">var</span> focus = <span class="keyword">function</span>() {
+    $(<span class="string">'#startMarker-button'</span>).focus();
+};
+
+<span class="keyword">var</span> getEditTransition = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> editTransition;
+}
+
+module.exports = {
+    init : init,
+    getEditTransition : getEditTransition,
+    clear : clear,
+    focus : focus,
+    update : update,
+    fillForm : fillForm,
+    show : show
+}</code></pre>

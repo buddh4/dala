@@ -1,0 +1,132 @@
+<h1>fileBrowser.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../../core/event'</span>);
+<span class="keyword">var</span> Dialog = require(<span class="string">'./../../ui/dialog'</span>);
+<span class="keyword">var</span> FileTree = require(<span class="string">'./fileTree'</span>);
+
+<span class="keyword">var</span> $CONTAINER_NODE = $(<span class="string">'#fileBrowser'</span>);
+<span class="keyword">var</span> CONTAINER_ID = <span class="string">'#fileBrowser'</span>;
+
+<span class="keyword">var</span> fileTree = <span class="keyword">new</span> FileTree(<span class="string">'#fileSystem'</span>);
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'user_loggedin'</span>, userLoginListener);
+    event.listen(<span class="string">'diagram_initialized'</span>, diagramInitializedListener);
+    event.listen(<span class="string">'diagram_updated'</span>, diagramUpdatedListener);
+    event.listen(<span class="string">'project_created'</span>, projectCreatedListener);
+    event.listen(<span class="string">'dialog_new_project'</span>, newProjectDialogListener);
+    event.listen(<span class="string">'dialog_new_diagram'</span>, newDiagramDialogListener);
+};
+
+<span class="keyword">var</span> projectCreatedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.data) {
+        fileTree.builder.addProject(evt.data).refresh();
+    }
+};
+
+<span class="keyword">var</span> diagramUpdatedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> diagramId = evt.data;
+    fileTree.triggerFileChange(<span class="string">'diagram'</span>, diagramId);
+};
+
+<span class="keyword">var</span> diagramInitializedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> projectId = evt.data.projectId || <span class="string">'default'</span>;
+
+    fileTree.builder.addDiagram(projectId, {
+        id :  evt.data.diagramId,
+        label : evt.data.label
+    }).refresh();
+
+    fileTree.openNode(<span class="string">'project'</span>, projectId).refresh();
+}
+
+<span class="keyword">var</span> userLoginListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> projectData = evt.data.projects;
+    <span class="keyword">if</span>(!projectData) {
+        <span class="comment">//Todo: Load from server</span>
+    } <span class="keyword">else</span> {
+        fileTree.build().projects(projectData).refresh();
+    }
+};
+
+<span class="keyword">var</span> newProjectDialogListener = <span class="keyword">function</span>(evt) {
+    newProjectDialog.open();
+}
+
+<span class="keyword">var</span> newProjectDialog = <span class="keyword">new</span> Dialog({
+    dialogId : <span class="string">"#new-project-dialog"</span>,
+    resetOnClose : <span class="literal">true</span>,
+    closeButton : <span class="literal">true</span>,
+    submitLabel : <span class="string">'Create'</span>,
+    submit: <span class="keyword">function</span>() {
+        createNewProject();
+        <span class="keyword">return</span> <span class="literal">true</span>;
+    }
+});
+
+<span class="keyword">var</span> createNewProject = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> settings = {
+        title : $(<span class="string">'#new-project-title'</span>).val(),
+        description : $(<span class="string">'#new-project-description'</span>).val()
+    }
+    event.trigger(<span class="string">'project_create'</span>, settings);
+};
+
+<span class="keyword">var</span> newDiagramDialogListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> projectId = evt.data;
+    newDiagramDialog.setProject(projectId);
+    newDiagramDialog.open();
+}
+
+<span class="keyword">var</span> newDiagramDialog = <span class="keyword">new</span> Dialog({
+    dialogId : <span class="string">"#new-diagram-dialog"</span>,
+    resetOnClose : <span class="literal">true</span>,
+    closeButton : <span class="literal">true</span>,
+    submitLabel : <span class="string">'Create'</span>,
+    submit: <span class="keyword">function</span>() {
+        triggerCreateNewDiagram();
+        <span class="keyword">return</span> <span class="literal">true</span>;
+    }
+});
+
+newDiagramDialog.setProject = <span class="keyword">function</span>(projectId) {
+    $(<span class="string">'#new-diagram-project'</span>).val(projectId);
+};
+
+<span class="keyword">var</span> triggerCreateNewDiagram = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> settings = {
+        title : $(<span class="string">'#new-diagram-title'</span>).val(),
+        projectId : $(<span class="string">'#new-diagram-project'</span>).val()
+    }
+    event.trigger(<span class="string">'tab_new'</span>, settings);
+};
+
+
+module.exports.init = <span class="keyword">function</span>() {
+    $CONTAINER_NODE.accordion({collapsible: <span class="literal">true</span>});
+
+    <span class="comment">// Just a dummy default project this will be overwritten after login</span>
+    <span class="keyword">var</span> defaultProject = {
+        _id         : <span class="string">'default'</span>,
+        title       : <span class="string">'default'</span>,
+        description : <span class="string">'Default project for unsigned user'</span>
+    }
+
+    fileTree.build().addProject(defaultProject, <span class="literal">true</span>).refresh();
+
+    fileTree.$treeNode.on(<span class="string">'redraw.jstree after_open.jstree after_close.jstree'</span>, <span class="keyword">function</span>(e) {
+        $CONTAINER_NODE.accordion( <span class="string">"refresh"</span> );
+    });
+
+    fileTree.$treeNode.on(<span class="string">'changed.jstree'</span>, <span class="keyword">function</span>(evt,data) {
+        <span class="comment">//Single selection</span>
+        <span class="keyword">var</span> id = data.selected[<span class="number">0</span>];
+
+    });
+
+    fileTree.$treeNode.on(<span class="string">'ready.jstree'</span>, <span class="keyword">function</span>(e) {
+        fileTree.$treeNode.jstree(<span class="literal">true</span>).refresh();
+    });
+
+    initListener();
+};
+</code></pre>

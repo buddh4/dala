@@ -1,0 +1,16 @@
+<h1>string.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'./object'</span>);
+
+exports.endsWith = <span class="keyword">function</span>(val, suffix) {
+    <span class="keyword">if</span>(!object.isDefined(val) || !object.isDefined(suffix)) {
+        <span class="keyword">return</span> <span class="literal">false</span>;
+    }
+    <span class="keyword">return</span> val.indexOf(suffix, val.length - suffix.length) !== -<span class="number">1</span>;
+};
+
+exports.startsWith = <span class="keyword">function</span>(val, prefix) {
+    <span class="keyword">if</span>(!object.isDefined(val) || !object.isDefined(prefix)) {
+        <span class="keyword">return</span> <span class="literal">false</span>;
+    }
+    <span class="keyword">return</span> val.indexOf(prefix) === <span class="number">0</span>;
+};</code></pre>

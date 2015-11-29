@@ -1,0 +1,252 @@
+<h1>selectionManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/Util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="keyword">var</span> SelectionManager = <span class="keyword">function</span>(diagram) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.event = diagram.event;
+    <span class="keyword">this</span>.selectedNodes = [];
+    <span class="keyword">this</span>.copyNodes = [];
+    <span class="keyword">this</span>.selectedTransition;
+    <span class="keyword">this</span>.hoverElement;
+
+    event.listen(<span class="string">'key_up_press'</span>, <span class="keyword">this</span>.upListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'key_down_press'</span>, <span class="keyword">this</span>.downListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'key_copy_press'</span>, <span class="keyword">this</span>.copyListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'key_paste_press'</span>, <span class="keyword">this</span>.pasteListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'key_del_press'</span>, <span class="keyword">this</span>.deleteListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'tab_activated'</span>, <span class="keyword">this</span>.clear, <span class="keyword">this</span>);
+
+    <span class="keyword">this</span>.event.listen(<span class="string">'transition_start'</span>, <span class="keyword">this</span>.transitionStartListener, <span class="keyword">this</span>);
+    <span class="keyword">this</span>.event.listen(<span class="string">'transition_select'</span>, <span class="keyword">this</span>.selectTransitionListener, <span class="keyword">this</span>);
+    <span class="keyword">this</span>.event.listen(<span class="string">'transition_removed'</span>, <span class="keyword">this</span>.removedTransitionListener, <span class="keyword">this</span>);
+
+    <span class="keyword">this</span>.event.listen(<span class="string">'node_added'</span>, <span class="keyword">this</span>.selectNodeListener, <span class="keyword">this</span>);
+    <span class="keyword">this</span>.event.listen(<span class="string">'node_removed'</span>, <span class="keyword">this</span>.removedNodeListener, <span class="keyword">this</span>);
+    <span class="keyword">this</span>.event.listen(<span class="string">'node_mousedown'</span>, <span class="keyword">this</span>.selectNodeListener, <span class="keyword">this</span>);
+
+    <span class="comment">//These are currently global events not diagram context events</span>
+    event.listen(<span class="string">'element_hoverIn'</span>, <span class="keyword">this</span>.hoverInElementListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'element_hoverOut'</span>, <span class="keyword">this</span>.hoverOutElementListener, <span class="keyword">this</span>);
+};
+
+SelectionManager.prototype.copyListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.copyNodes = object.cloneArray(<span class="keyword">this</span>.selectedNodes);
+
+};
+
+SelectionManager.prototype.pasteListener = <span class="keyword">function</span>(evt) {
+    evt.preventDefault();
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(<span class="keyword">this</span>.copyNodes, <span class="keyword">function</span>(index, node) {
+        that.event.trigger(<span class="string">'node_copy'</span>, node, evt);
+    });
+};
+
+SelectionManager.prototype.upListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.ctrlKey) {
+        evt.preventDefault();
+        object.each(<span class="keyword">this</span>.selectedNodes, <span class="keyword">function</span>(index, node) {
+            <span class="keyword">if</span>(object.isDefined(node)) {
+                node.moveUp();
+            }
+        });
+    }
+};
+
+SelectionManager.prototype.downListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.ctrlKey) {
+        evt.preventDefault();
+        object.each(<span class="keyword">this</span>.selectedNodes, <span class="keyword">function</span>(index, node) {
+            <span class="keyword">if</span>(object.isDefined(node)) {
+                node.moveDown();
+            }
+        });
+    }
+};
+
+SelectionManager.prototype.hoverInElementListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.hoverElement = evt.data;
+};
+
+SelectionManager.prototype.hoverOutElementListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">delete</span> <span class="keyword">this</span>.hoverElement;
+};
+
+SelectionManager.prototype.removedTransitionListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(object.isDefined(evt.data)) {
+        <span class="keyword">if</span>(evt.data === <span class="keyword">this</span>.selectedTransition) {
+            <span class="keyword">delete</span> <span class="keyword">this</span>.selectedTransition;
+        }
+    }
+};
+
+SelectionManager.prototype.removedNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(object.isDefined(evt.data)) {
+        <span class="comment">//Remove the node from the selection</span>
+        object.removeFromArray(<span class="keyword">this</span>.selectedNodes, evt.data);
+
+        <span class="comment">//Check if we have to remove the hoverElement too</span>
+        <span class="keyword">if</span>(evt.data.root === <span class="keyword">this</span>.hoverElement) {
+            <span class="keyword">this</span>.hoverOutElementListener();
+        }
+    }
+};
+
+SelectionManager.prototype.deleteListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.deleteSelectionNodes();
+
+    <span class="comment">//Remove selected transition</span>
+    <span class="keyword">if</span>(object.isDefined(<span class="keyword">this</span>.selectedTransition)) {
+        <span class="keyword">this</span>.event.trigger(<span class="string">'transition_delete'</span>, <span class="keyword">this</span>.selectedTransition);
+    };
+
+    <span class="keyword">this</span>.clear();
+};
+
+SelectionManager.prototype.deleteSelectionNodes = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> arrClone = <span class="keyword">this</span>.selectedNodes.slice(<span class="number">0</span>);
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(arrClone, <span class="keyword">function</span>(index, node) {
+        <span class="keyword">if</span>(object.isDefined(node)) {
+            that.event.trigger(<span class="string">'node_delete'</span>, node);
+        } <span class="keyword">else</span> {
+            <span class="comment">//If there is a undefined value we remove it from the selection</span>
+            that.selectedNodes.splice(<span class="number">0</span>, <span class="number">1</span>);
+        }
+    });
+};
+
+SelectionManager.prototype.selectNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.setSelection(evt.data, evt.shiftKey);
+};
+
+SelectionManager.prototype.transitionStartListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.selectedTransition = evt.data;
+};
+
+SelectionManager.prototype.selectTransitionListener = <span class="keyword">function</span>(evt) {
+    <span class="comment">//We do not call this.clear because we would hide the edit fields trough the triggered event</span>
+    <span class="keyword">this</span>.clearNodes();
+    <span class="keyword">this</span>.clearTransition();
+    <span class="keyword">this</span>.selectedTransition = evt.data;
+    <span class="keyword">this</span>.selectedTransition.select();
+};
+
+SelectionManager.prototype.isElementHover = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> object.isDefined(<span class="keyword">this</span>.hoverElement);
+};
+
+SelectionManager.prototype.setSelection = <span class="keyword">function</span>(selectedNode, shifted) {
+    <span class="comment">//some templates or nodes are should not affect the selection (e.g. resize knobs)</span>
+    <span class="keyword">if</span>(!selectedNode.selectable) {
+        <span class="keyword">return</span>;
+    };
+
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.containsNode(selectedNode)) {
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        <span class="comment">// we could provide the whole selection instead of the single node</span>
+        <span class="keyword">this</span>.event.trigger(<span class="string">'node_selected'</span>,selectedNode);
+        <span class="comment">//Clear the current selection</span>
+        <span class="keyword">if</span>(!(object.isDefined(shifted) &amp;&amp; shifted)) {
+            <span class="keyword">this</span>.selectedNodes = object.grep(<span class="keyword">this</span>.selectedNodes, <span class="keyword">function</span>(currentSelection) {
+                <span class="keyword">if</span>(currentSelection.id !== selectedNode.id) {
+                    that.deselectNode(currentSelection);
+                    <span class="keyword">return</span> <span class="literal">false</span>;
+                }
+                <span class="keyword">return</span> <span class="literal">true</span>;
+            });
+        }
+
+        <span class="keyword">this</span>.clearTransition(selectedNode);
+
+
+        <span class="comment">//Add the resize addition to the node which is removed after deselection</span>
+        <span class="keyword">this</span>.selectedTemplate = selectedNode.template;
+        selectedNode.select();
+
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        <span class="comment">//We use additon style instead of on event for a performance gain (on.dragMove is deactivated see draggable.js)</span>
+        selectedNode.additions[<span class="string">'multiSelectionDrag'</span>] = {
+            dragMove : <span class="keyword">function</span>(dx,dy, evt) {
+                <span class="keyword">if</span> (!evt.triggerEvent) {
+                    object.each(that.selectedNodes, <span class="function"><span class="keyword">function</span> <span class="params">(index, node)</span> {</span>
+                        <span class="keyword">if</span> (selectedNode.id !== node.id) {
+                            node.triggerDrag(dx, dy);
+                        }
+                    });
+                }
+            }
+        }
+        <span class="keyword">this</span>.selectedNodes.push(selectedNode);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isDefined(shifted) &amp;&amp; shifted) {
+        <span class="keyword">this</span>.removeSelectedNode(selectedNode);
+    }
+};
+
+<span class="comment">/**
+ * This method just adds new nodes to the selection if it have not been
+ * added yet without any additional restrictions.
+ *
+ * All selected transitions are deselected since the mixed selection
+ * is not implemented yet.
+ *
+ * @param {type} selectedNode
+ * @returns {undefined}
+ */</span>
+SelectionManager.prototype.addSelectedNode = <span class="keyword">function</span>(selectedNode) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.containsNode(selectedNode)) {
+        <span class="keyword">this</span>.selectedNodes.push(selectedNode);
+        <span class="keyword">this</span>.clearTransition();
+        selectedNode.select();
+    }
+};
+
+SelectionManager.prototype.removeSelectedNode = <span class="keyword">function</span>(node) {
+    <span class="keyword">var</span> index = <span class="keyword">this</span>.selectedNodes.indexOf(node);
+    <span class="keyword">if</span>(index >= <span class="number">0</span>) {
+        <span class="keyword">this</span>.deselectNode(node);
+        <span class="keyword">this</span>.selectedNodes.splice(index, <span class="number">1</span>);
+    }
+};
+
+SelectionManager.prototype.containsNode = <span class="keyword">function</span>(node) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.selectedNodes.indexOf(node) > -<span class="number">1</span>;
+};
+
+SelectionManager.prototype.clear = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.clearNodes();
+    <span class="keyword">this</span>.clearTransition();
+    <span class="keyword">this</span>.event.trigger(<span class="string">'selection_clear'</span>);
+};
+
+SelectionManager.prototype.clearNodes = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(<span class="keyword">this</span>.selectedNodes, <span class="keyword">function</span>(index, node) {
+        that.deselectNode(node);
+    });
+    <span class="keyword">this</span>.selectedNodes = [];
+};
+
+SelectionManager.prototype.deselectNode = <span class="keyword">function</span>(node) {
+    node.deselect();
+};
+
+SelectionManager.prototype.clearTransition = <span class="keyword">function</span>(node) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.selectedTransition &amp;&amp; !(node &amp;&amp; node.knob &amp;&amp; <span class="keyword">this</span>.selectedTransition.ownsKnobNode(node))) {
+        <span class="keyword">this</span>.selectedTransition.deselect();
+        <span class="keyword">delete</span> <span class="keyword">this</span>.selectedTransition;
+    }
+};
+
+SelectionManager.prototype.isMultiSelection = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> count = <span class="number">0</span>;
+    count += <span class="keyword">this</span>.selectedNodes.length;
+    <span class="keyword">return</span> count > <span class="number">1</span>;
+};
+
+module.exports = SelectionManager;
+</code></pre>

@@ -31,7 +31,18 @@ $.qCache = function(selector, preventCache) {
 
 $.qUncache = function(selector) {
     return queryCache.remove(selector);
-}
+};
+
+/**
+ * The problem with ui-selectmenu is that it causes a second keydown trigger event when focused.
+ * So global keydown events are triggered twiche like do/undo if focused. The following event
+ * prevents the propagation if the control key is pressed.
+ */
+$(document, '.ui-selectmenu-button').on('keydown', function(evt) {
+    if(evt.ctrlKey) {
+        evt.stopPropagation();
+    }
+});
 
 $.fn.growl = function(params) {
     var $root = this;

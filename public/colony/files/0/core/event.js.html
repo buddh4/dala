@@ -1,0 +1,115 @@
+<h1>event.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> events = {};
+
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> config = require(<span class="string">'../core/config'</span>);
+<span class="keyword">var</span> SubEvent = require(<span class="string">'./subEvent'</span>);
+
+<span class="keyword">var</span> Promise = require(<span class="string">'bluebird'</span>);
+
+<span class="keyword">var</span> hasHandler = <span class="keyword">function</span>(type) {
+    <span class="keyword">return</span> events[type];
+};
+
+mouse = {};
+
+$(document).on( <span class="string">'mousemove'</span>, <span class="keyword">function</span>(e) {
+    mouse = e;
+});
+
+
+module.exports = {
+    mouse : <span class="keyword">function</span>() {
+        <span class="keyword">return</span> mouse;
+    },
+    listen:  <span class="keyword">function</span>(type, handler, module) {
+        <span class="keyword">if</span>(!object.isFunction(handler)) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="keyword">var</span> eventConfig = {
+            handler : handler,
+            module : module
+        };
+
+        <span class="keyword">if</span>(!events[type]) {
+            events[type] = [eventConfig];
+        } <span class="keyword">else</span> {
+            events[type].push(eventConfig);
+        }
+    },
+
+    unlisten: <span class="keyword">function</span>(type, func) {
+        <span class="keyword">if</span>(events[type]) {
+            <span class="keyword">var</span> index = events[type].indexOf(func);
+            <span class="keyword">if</span>(index > -<span class="number">1</span>) {
+                events[type].splice(index, <span class="number">1</span>);
+            }
+        }
+    },
+
+    sub: <span class="keyword">function</span>(context) {
+        <span class="keyword">return</span> <span class="keyword">new</span> SubEvent(context, <span class="keyword">this</span>);
+    },
+
+    command: <span class="keyword">function</span>(command, execute) {
+        <span class="keyword">if</span>(execute) {
+            <span class="keyword">this</span>.trigger(<span class="string">'command_execute'</span>, command);
+        } <span class="keyword">else</span> {
+            <span class="keyword">this</span>.trigger(<span class="string">'command_add'</span>, command);
+        }
+    },
+
+    trigger: <span class="keyword">function</span>(type, data, rootEvt) {
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+            <span class="keyword">var</span> event = rootEvt || {};
+
+            event.data = data;
+            event.type = type;
+
+            <span class="keyword">if</span>(hasHandler(event.type)) {
+                <span class="keyword">var</span> handlerArr = events[event.type];
+                object.each(handlerArr, <span class="keyword">function</span>(index, eventConfig) {
+                    <span class="keyword">var</span> handler = eventConfig.handler;
+                    <span class="keyword">var</span> module;
+                    <span class="keyword">try</span> {
+                        module = eventConfig.module;
+                        <span class="keyword">if</span>(eventConfig.module) {
+                            handler.call(eventConfig.module, event);
+                        } <span class="keyword">else</span> {
+                            handler(event);
+                        }
+                    } <span class="keyword">catch</span>(err) {
+                        <span class="keyword">var</span> modText = (module &amp;&amp; module.constructor &amp;&amp; module.constructor.name)?module.constructor.name:<span class="string">'unknown'</span>;
+                        <span class="keyword">if</span>(modText === <span class="string">'unknown'</span> &amp;&amp; config.debug()) {
+                            console.error(<span class="string">'Event handler error - module: '</span>+modText+<span class="string">' event: '</span>+event.type, handler, err);
+                        } <span class="keyword">else</span> {
+                            console.error(<span class="string">'Event handler error - module: '</span>+modText+<span class="string">' event: '</span>+event.type, err);
+                        }
+                        that.trigger(<span class="string">'error'</span>, <span class="string">'An error occured while executing the last action !'</span>);
+                    }
+                });
+            }
+
+            <span class="comment">//We just resolve in all cases since the caller of trigger should remain independent of handler modules</span>
+            resolve();
+        });
+    },
+
+    on: <span class="keyword">function</span>(node, event, selector, data, handler) {
+        $(node).on(event,selector,data, handler);
+    },
+
+    off: <span class="keyword">function</span>(node, event, selector, handler) {
+        $(node).off(event, selector, handler);
+    },
+
+    once: <span class="keyword">function</span>(node, event, selector, data, handler) {
+        $(node).one(event,selector,data, handler);
+    },
+
+    triggerDom: <span class="keyword">function</span>(node, event) {
+       $(node).trigger(event);
+    }
+};</code></pre>

@@ -1,0 +1,167 @@
+<h1>transitionTextAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> Helper = require(<span class="string">'./helper'</span>);
+
+<span class="keyword">var</span> NODE_DISTANCE = <span class="number">11</span>;
+<span class="keyword">var</span> TRANSITION_DISTANCE = <span class="number">10</span>;
+<span class="keyword">var</span> DEF_TEXT_HEIGHT = <span class="number">13</span>;
+
+<span class="keyword">var</span> TransitionTextAddition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.textNodes = [];
+    <span class="keyword">this</span>.helper = <span class="keyword">new</span> Helper(transition.diagram);
+    <span class="keyword">this</span>.transition = transition;
+    <span class="keyword">this</span>.diagram = <span class="keyword">this</span>.transition.diagram;
+};
+
+<span class="comment">/**
+ * The update addition function rerenders all containing textnodes by means
+ * of the current transition settings. This function is delegated by
+ * the transition as addition call.
+ */</span>
+TransitionTextAddition.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(<span class="keyword">this</span>.textNodes, <span class="keyword">function</span>(index, textSVG) {
+        <span class="keyword">if</span>(textSVG) {
+            that.updateTextPosition(index);
+        }
+    });
+};
+
+TransitionTextAddition.prototype.getText = <span class="keyword">function</span>(pos) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.textNodes[pos]) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.textNodes[pos].$().text();
+    }
+};
+
+<span class="comment">/**
+ * Sets the text for a given position. If the given text position is not
+ * occupied yet we create a new textnode.
+ */</span>
+TransitionTextAddition.prototype.setText = <span class="keyword">function</span>(pos, text) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.textNodes[pos]) {
+        <span class="keyword">var</span> id = <span class="string">'text'</span>+pos+<span class="string">'_'</span>+<span class="keyword">this</span>.transition.id;
+        <span class="keyword">var</span> textNode = <span class="keyword">this</span>.textNodes[pos] = <span class="keyword">this</span>.diagram.svg.text(text, {id : id});
+        <span class="keyword">this</span>.diagram.svg.addToGroup(<span class="keyword">this</span>.transition.group, textNode);
+        <span class="comment">//this.transition.additions.edit.addEditTextTrigger('text'+pos);</span>
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.textNodes[pos].$().text(text);
+    }
+    <span class="keyword">this</span>.updateTextPosition(pos);
+};
+
+<span class="comment">/**
+ * Updates the textnode position and anchor for the given position by means of the current
+ * transition settings.
+ */</span>
+TransitionTextAddition.prototype.updateTextPosition = <span class="keyword">function</span>(pos) {
+    <span class="keyword">var</span> position = <span class="keyword">this</span>.getTextPosition(pos);
+
+    <span class="comment">//For some points the position cannot be determined mainly on the node corner</span>
+    <span class="keyword">if</span>(position) {
+        <span class="keyword">this</span>.textNodes[pos].moveTo(position);
+        <span class="keyword">this</span>.setAnchor(pos);
+    }
+};
+
+TransitionTextAddition.prototype.getTextPosition = <span class="keyword">function</span>(pos) {
+    <span class="keyword">var</span> textPosition;
+
+    <span class="keyword">var</span> textHeight = <span class="keyword">this</span>.getTextHeight(pos);
+
+    <span class="keyword">if</span>(isStartPos(pos) || isEndPos(pos)) {
+        <span class="comment">//Move along the transition in the right direction the index -1 searches the last transitionPart</span>
+        <span class="keyword">var</span> index = isEndPos(pos) ? -<span class="number">1</span> : <span class="number">1</span>;
+        <span class="keyword">var</span> distance = isEndPos(pos) ? NODE_DISTANCE * -<span class="number">1</span> : NODE_DISTANCE;
+        textPosition = <span class="keyword">this</span>.transition.getPath().moveAlong(index, distance);
+
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.getLocation(pos)) {
+            <span class="keyword">case</span> <span class="string">'left'</span>:
+            <span class="keyword">case</span> <span class="string">'right'</span>:
+                textPosition.y += (isTop(pos)) ? -TRANSITION_DISTANCE : TRANSITION_DISTANCE + (textHeight);
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'top'</span>:
+            <span class="keyword">case</span> <span class="string">'bottom'</span>:
+                textPosition.x += (isTop(pos)) ? TRANSITION_DISTANCE : -TRANSITION_DISTANCE;
+                <span class="keyword">break</span>;
+        }
+    } <span class="keyword">else</span> {
+        <span class="comment">//Mid Position</span>
+        textPosition = <span class="keyword">this</span>.transition.getPath().getCenter();
+        textPosition.y += isTop(pos) ? TRANSITION_DISTANCE * -<span class="number">1</span> : TRANSITION_DISTANCE + textHeight;
+    }
+
+    <span class="keyword">return</span> textPosition;
+};
+
+TransitionTextAddition.prototype.getTextHeight = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> (<span class="keyword">this</span>.textNodes[pos]) ? <span class="keyword">this</span>.textNodes[pos].height() : DEF_TEXT_HEIGHT;
+};
+
+TransitionTextAddition.prototype.getAlignPosition = <span class="keyword">function</span>(pos) {
+    <span class="keyword">if</span>(isStartPos(pos)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transition.start();
+    } <span class="keyword">else</span> <span class="keyword">if</span>(isEndPos(pos)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transition.end();
+    }
+};
+
+TransitionTextAddition.prototype.getLocation = <span class="keyword">function</span>(pos) {
+    <span class="keyword">if</span>(isStartPos(pos)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transition.getStartLocation();
+    } <span class="keyword">else</span> <span class="keyword">if</span>(isEndPos(pos)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transition.getEndLocation();
+    }
+};
+
+<span class="comment">/**
+ * This function determines the text-anchor by means of the current
+ * node location to assure the text is not overlapping other texts or the
+ * node itself.
+ */</span>
+TransitionTextAddition.prototype.setAnchor = <span class="keyword">function</span>(pos) {
+    <span class="keyword">var</span> textSVG = <span class="keyword">this</span>.textNodes[pos];
+    <span class="keyword">if</span>(!isMidPos(pos)) {
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.getLocation(pos)) {
+            <span class="keyword">case</span> <span class="string">'left'</span>:
+                textSVG.end();
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'right'</span>:
+                textSVG.start();
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'top'</span>:
+            <span class="keyword">case</span> <span class="string">'bottom'</span>:
+                <span class="keyword">if</span>(isBottom(pos)) {
+                    textSVG.end();
+                } <span class="keyword">else</span> {
+                    textSVG.start();
+                }
+                <span class="keyword">break</span>;
+        }
+    } <span class="keyword">else</span> {
+        textSVG.middle();
+    }
+};
+
+<span class="keyword">var</span> isBottom = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> !isTop(pos);
+};
+
+<span class="keyword">var</span> isTop = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> pos % <span class="number">2</span> === <span class="number">0</span>;
+};
+
+<span class="keyword">var</span> isStartPos = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> pos &lt; <span class="number">2</span>;
+};
+
+<span class="keyword">var</span> isMidPos = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> !isStartPos(pos) &amp;&amp; !isEndPos(pos);
+};
+
+<span class="keyword">var</span> isEndPos = <span class="keyword">function</span>(pos) {
+    <span class="keyword">return</span> pos > <span class="number">3</span>;
+};
+
+module.exports = TransitionTextAddition;
+</code></pre>

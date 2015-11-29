@@ -1,0 +1,251 @@
+<h1>templateManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> Template = require(<span class="string">'./template'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> client = require(<span class="string">'../core/client'</span>);
+
+<span class="keyword">var</span> Promise = require(<span class="string">'bluebird'</span>);
+
+<span class="keyword">var</span> PATH_PANELS = <span class="string">'/template/panel'</span>;
+<span class="keyword">var</span> PATH_TEMPLATES = <span class="string">'/templates'</span>;
+
+<span class="keyword">var</span> EVENT_PANEL_LOADED = <span class="string">'template_panel_loaded'</span>;
+
+<span class="keyword">var</span> panels = {};
+<span class="keyword">var</span> templates = {};
+<span class="keyword">var</span> selectedTemplate;
+
+<span class="comment">/**
+ * Initializes listeners and loads the initial template panels set in dala_env.initial_templates array.
+ */</span>
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'node_selected'</span>, nodeSelectionListener);
+    event.listen(<span class="string">'template_select'</span>, templateSelectListener);
+
+    <span class="keyword">if</span>(dala_env.initial_templates &amp;&amp; dala_env.initial_templates.panels) {
+        $.each(dala_env.initial_templates.panels, <span class="keyword">function</span>(index, panelId) {
+            _loadPanel(panelId);
+        });
+    }
+};
+
+<span class="keyword">var</span> nodeSelectionListener = <span class="keyword">function</span>(evt) {
+    _setSelectedTemplate(evt.data.template);
+};
+
+<span class="keyword">var</span> templateSelectListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.data) {
+        _setSelectedTemplate(evt.data);
+    }
+};
+
+<span class="keyword">var</span> _setSelectedTemplate = <span class="keyword">function</span>(tmplId) {
+    <span class="keyword">if</span>(!object.isDefined(tmplId)) {
+        <span class="keyword">return</span>;
+    };
+
+    <span class="keyword">var</span> instance;
+
+    <span class="keyword">if</span>(!object.isString(tmplId)) {
+        <span class="keyword">if</span>(!tmplId.config.preventSelection) {
+            selectedTemplate = tmplId;
+        }
+    } <span class="keyword">else</span> {
+        getTemplate(tmplId)
+            .then(<span class="keyword">function</span>(template) {
+                <span class="keyword">if</span>(template &amp;&amp; !template.config.preventSelection) {
+                    selectedTemplate = template;
+                } <span class="keyword">else</span> {
+                    console.warn(<span class="string">'Coult not determine template: '</span>+tmplId);
+                }
+            }, <span class="keyword">function</span>(err) {
+                console.warn(<span class="string">'Error while determining template: '</span>+tmplId+<span class="string">' - '</span>+err);
+            });
+    }
+};
+
+<span class="comment">/**
+ * Returns a templateinstance, the template will be loaded and initialized if not loaded yet.
+ *
+ * @param tmplId
+ * @param tmplRootEl
+ * @returns {bluebird|exports|module.exports}
+ */</span>
+<span class="keyword">var</span> getTemplate = <span class="keyword">function</span>(tmplId) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+        <span class="keyword">var</span> panelId = tmplId.substring(<span class="number">0</span>, tmplId.indexOf(<span class="string">'_'</span>));
+        <span class="keyword">if</span>(templates[tmplId]) { <span class="comment">//Template is loaded</span>
+            <span class="keyword">var</span> tmpl = templates[tmplId];
+            <span class="keyword">if</span>(!tmpl.isInitialized()) { <span class="comment">//Template is not initialized yet so load svg</span>
+                _loadRemoteTemplateSVGasXML(tmplId, panelId).
+                    then(<span class="keyword">function</span>() {
+                        resolve(tmpl);
+                    }, <span class="keyword">function</span>(err) {
+                        reject(err);
+                    });
+            }
+            resolve(templates[tmplId]);
+        } <span class="keyword">else</span> { <span class="comment">//Template not loaded yet</span>
+            <span class="keyword">var</span> panelId = tmplId.substring(<span class="number">0</span>, tmplId.indexOf(<span class="string">'_'</span>));
+            <span class="keyword">if</span>(panelId) { <span class="comment">//Load and initialize template</span>
+                <span class="comment">//TODO: here we have to consider other loading mechanism as dom loading / browser cache first</span>
+                _loadRemoteTemplate(panelId, tmplId, <span class="literal">true</span>)
+                    .then(<span class="keyword">function</span>() {
+                        resolve(templates[tmplId]);
+                    }, <span class="keyword">function</span>(err) {
+                        reject(err);
+                    });
+            } <span class="keyword">else</span> {
+                resolve(_createTemplate(tmplId));
+            }
+        }
+    });
+};
+
+<span class="comment">/**
+ * This simply returns a template if its already loaded. This should only be used for templates which are registered
+ * on startup and already loaded.
+ *
+ * @param tmplId
+ * @returns {*}
+ */</span>
+<span class="keyword">var</span> getTemplateSync = <span class="keyword">function</span>(tmplId) {
+    <span class="keyword">return</span> templates[tmplId];
+};
+
+<span class="comment">/**
+ * Loads a panel definition from the server. When loaded the panel will register itself to the templateManager.
+ * The function returns a Promise.
+ *
+ * @param panelId
+ * @returns {bluebird|exports|module.exports}
+ * @private
+ */</span>
+<span class="keyword">var</span> _loadPanel = <span class="keyword">function</span>(panelId) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+        client.getScript(PATH_TEMPLATES+<span class="string">'/'</span>+panelId+<span class="string">'/'</span>+panelId+<span class="string">'.js'</span>, {
+            success : <span class="keyword">function</span>() {
+                resolve();
+            },
+            error : <span class="keyword">function</span>() {
+                reject();
+            },
+            errorMessage : {
+                <span class="number">404</span>: <span class="string">'Could not load panel '</span>+panelId+<span class="string">' file was not found on the server !'</span>,
+                <span class="string">'default'</span>: <span class="string">'Could not load panel '</span>+panelId+<span class="string">' something went wrong !'</span>
+            }
+        });
+    });
+};
+
+<span class="comment">/**
+ * Loads a remote tamplate from the server. When loaded the template will register itself to the templateManager
+ * This function returns a Promise without result.
+ *
+ * @param panelId
+ * @param tmplId
+ * @returns {bluebird|exports|module.exports}
+ * @private
+ */</span>
+<span class="keyword">var</span> _loadRemoteTemplate = <span class="keyword">function</span>(panelId, tmplId, fetchSVG) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+        client.getScript(PATH_TEMPLATES+<span class="string">'/'</span>+panelId+<span class="string">'/'</span>+tmplId+<span class="string">'.js'</span>, {
+            success : <span class="keyword">function</span>(response) {
+                <span class="keyword">if</span>(fetchSVG) {
+                     _loadRemoteTemplateSVGasXML(tmplId, panelId).then(resolve,reject);
+                } <span class="keyword">else</span> {
+                    resolve();
+                }
+            },
+            error: <span class="keyword">function</span>(errorMsg) {
+                reject(errorMsg);
+            },
+            errorMessage : {
+                <span class="number">404</span>: <span class="string">'Could not load template "'</span>+tmplId+<span class="string">'" file was not found on the server !'</span>,
+                <span class="string">'default'</span>: <span class="string">'Could not load template "'</span>+tmplId+<span class="string">'" something went wrong !'</span>
+            }
+        });
+    });
+};
+
+<span class="comment">/**
+ * Registers a template by creating a new Template instance out of the given arguments.
+ * @param templateId
+ * @param panelId
+ * @param config
+ */</span>
+<span class="keyword">var</span> registerTemplate = <span class="keyword">function</span>(templateId, config) {
+    _addTemplate(<span class="keyword">new</span> Template(templateId, config));
+};
+
+<span class="comment">/**
+ * Loads the template svg as xml document for the given tmplId.
+ * @param tmplId
+ * @param panelId
+ * @returns {bluebird|exports|module.exports}
+ * @private
+ */</span>
+<span class="keyword">var</span> _loadRemoteTemplateSVGasXML = <span class="keyword">function</span>(tmplId, panelId) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+        client.xml(<span class="string">'/templates/'</span>+panelId+<span class="string">'/'</span>+tmplId+<span class="string">'.svg'</span>, {
+            success : <span class="keyword">function</span>(response) {
+                _initTemplate(tmplId, response.data);
+                resolve(response.data);
+            },
+            error : <span class="keyword">function</span>(err) {
+                reject(err);
+            },
+            errorMessage :  {
+                <span class="number">404</span>: <span class="string">'Could not load template "'</span>+tmplId+<span class="string">'" file was not found on the server !'</span>,
+                <span class="string">'default'</span>: <span class="string">'Could not load template "'</span>+tmplId+<span class="string">'" something went wrong !'</span>
+            }
+        });
+    });
+
+};
+
+<span class="keyword">var</span> _initTemplate = <span class="keyword">function</span>(tmplId, svgXML) {
+    templates[tmplId].init(svgXML);
+};
+
+<span class="comment">/**
+ * Registers a new panel.
+ * @param cfg
+ */</span>
+<span class="keyword">var</span> registerPanel = <span class="keyword">function</span>(cfg) {
+  <span class="keyword">if</span>(cfg.id) {
+      panels[cfg.id] = cfg;
+      event.trigger(EVENT_PANEL_LOADED, cfg);
+  }
+};
+
+<span class="keyword">var</span> _createTemplate = <span class="keyword">function</span>(tmplId, tmplRootEl) {
+    <span class="keyword">return</span> _addTemplate(<span class="keyword">new</span> Template(tmplId, <span class="literal">true</span>, tmplRootEl));
+};
+
+<span class="keyword">var</span> _addTemplate = <span class="keyword">function</span>(tmpl) {
+    templates[tmpl.id] = tmpl;
+    <span class="keyword">return</span> tmpl;
+};
+
+<span class="keyword">var</span> getSelectedTemplate = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> selectedTemplate;
+};
+
+<span class="keyword">var</span> getPanel = <span class="keyword">function</span>(panelId) {
+    <span class="keyword">return</span> panels[panelId];
+}
+
+module.exports = {
+    registerPanel : registerPanel,
+    registerTemplate : registerTemplate,
+    getPanel: getPanel,
+    getTemplate: getTemplate,
+    getTemplateSync : getTemplateSync,
+    getSelectedTemplate: getSelectedTemplate,
+    init : <span class="keyword">function</span>() {
+        init();
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    }
+};
+</code></pre>

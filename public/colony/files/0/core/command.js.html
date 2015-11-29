@@ -1,0 +1,78 @@
+<h1>command.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> CommandAction = <span class="keyword">function</span>(client, action) {
+    <span class="keyword">this</span>.client = client;
+    <span class="keyword">this</span>.action = action;
+};
+
+CommandAction.prototype.exec = <span class="keyword">function</span>(args) {
+    <span class="keyword">this</span>.action.apply(<span class="keyword">this</span>.client, args);
+};
+
+<span class="keyword">var</span> Command = <span class="keyword">function</span>(client, doAction, undoAction) {
+    <span class="keyword">if</span>(arguments.length > <span class="number">0</span>) {
+        <span class="comment">//Call the exec setter</span>
+        <span class="keyword">this</span>.exec(client,doAction);
+        <span class="keyword">this</span>.undo(client,undoAction);
+    }
+    <span class="keyword">this</span>.timestamp = Date.now();
+};
+
+Command.prototype.exec = <span class="keyword">function</span>(client, action, args) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.action(<span class="string">'do'</span>, client, action, args);
+};
+
+Command.prototype.undo = <span class="keyword">function</span>(client, action, args) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.action(<span class="string">'undo'</span>, client, action, args);
+};
+
+Command.prototype.instance = <span class="keyword">function</span>(doArgs, undoArgs) {
+    <span class="keyword">var</span> instance = $.extend(<span class="literal">true</span>, {}, <span class="keyword">this</span>);
+
+    <span class="comment">//If given, we overwrite the argument settings for the actions</span>
+    <span class="keyword">if</span>(doArgs) {
+        instance.doArgs = doArgs;
+    }
+
+    <span class="keyword">if</span>(undoArgs) {
+        instance.undoArgs = undoArgs;
+    }
+    <span class="keyword">return</span> instance;
+};
+
+<span class="comment">/**
+ * Just a helper to unify the logic for doAction and undoAction.
+ *
+ * - if just the type is given we assume all necessary action data is given for this type (do/undo) and call the action
+ * - if a there is another argument beside the type we assume an args array and call the action with the given array
+ * - if there are more args given, we assume a setter call to set the action data (do/undo)
+ *
+ * @param type do or undo
+ * @param client client object used as this
+ * @param action the function to call
+ * @param args arguments
+ * @returns {Command}
+ */</span>
+Command.prototype.action = <span class="keyword">function</span>(type, client, action, args) {
+    <span class="keyword">if</span>(args) {
+        <span class="keyword">this</span>[type + <span class="string">'Args'</span>] = args;
+    }
+
+    <span class="keyword">if</span>(client &amp;&amp; action) {
+        <span class="keyword">this</span>[type + <span class="string">'Action'</span>] = <span class="keyword">new</span> CommandAction(client, action);
+    } <span class="keyword">else</span> {
+        <span class="comment">//Execute either with args settings from this or from argument list</span>
+        <span class="keyword">this</span>[type + <span class="string">'Args'</span>] = arguments[<span class="number">1</span>] || <span class="keyword">this</span>[type + <span class="string">'Args'</span>];
+        <span class="keyword">var</span> action = <span class="keyword">this</span>[type + <span class="string">'Action'</span>];
+        <span class="keyword">if</span>(action) {
+            action.exec(<span class="keyword">this</span>[type + <span class="string">'Args'</span>]);
+        }
+    }
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+module.exports = Command;
+
+</code></pre>

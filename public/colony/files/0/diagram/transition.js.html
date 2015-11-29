@@ -1,0 +1,425 @@
+<h1>transition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> config = require(<span class="string">'../core/config'</span>);
+
+<span class="keyword">var</span> TransitionKnobManager = require(<span class="string">'./transitionKnobManager'</span>);
+<span class="keyword">var</span> TransitionDockingManager = require(<span class="string">'./transitionDockingManager'</span>);
+<span class="keyword">var</span> TransitionPathManager = require(<span class="string">'./curvedPathManager'</span>);
+<span class="keyword">var</span> transitionAdditions = require(<span class="string">'./transitionAdditions'</span>);
+
+<span class="keyword">var</span> pathManagerFactory = require(<span class="string">'./pathManagerFactory'</span>);
+
+<span class="keyword">var</span> STYLE_TRANSITION_ACTIVE = <span class="string">"stroke:red;stroke-width:1;fill:none;"</span>;
+<span class="keyword">var</span> STYLE_TRANSITION_INACTIVE = <span class="string">"stroke:black;stroke-width:1;fill:none;"</span>;
+<span class="keyword">var</span> STYLE_AREA = <span class="string">"stroke:grey;stroke-opacity:0.0;stroke-width:11;fill:none;"</span>;
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="keyword">var</span> Transition = <span class="keyword">function</span>(node, startPosition) {
+    <span class="keyword">if</span>(node) {
+        <span class="keyword">this</span>.diagram = node.diagram;
+        <span class="keyword">this</span>.event = node.event;
+        <span class="keyword">this</span>.svg = <span class="keyword">this</span>.diagram.svg;
+    }
+    <span class="keyword">this</span>.init(node, startPosition);
+};
+
+Transition.prototype.getPath = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.pathManager.path;
+};
+
+Transition.prototype.type = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(value &amp;&amp; value !== <span class="keyword">this</span>.pathManager.type) {
+        <span class="keyword">var</span> newPathManager = pathManagerFactory.get(<span class="keyword">this</span>, value);
+        <span class="keyword">if</span>(newPathManager) {
+            newPathManager.replace(<span class="keyword">this</span>.pathManager, <span class="keyword">this</span>.knobManager.getKnobPositions());
+            <span class="keyword">this</span>.update();
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.pathManager.type;
+    }
+};
+
+<span class="comment">/**
+ * Initializes a new transition by creating the svg nodes and startdocking
+ *
+ * @param {type} mouse
+ */</span>
+Transition.prototype.init = <span class="keyword">function</span>(node, mouse) {
+    <span class="comment">//TODO: user UUID.new or something</span>
+    <span class="keyword">this</span>.id = Date.now();
+    <span class="comment">//Initializes the transition group container</span>
+    <span class="keyword">this</span>.initSVGGroup();
+
+    transitionAdditions.init(<span class="keyword">this</span>);
+
+    <span class="comment">//Initialize the transition docking mechanism (start/end) docking to nodes.</span>
+    <span class="keyword">this</span>.dockingManager = <span class="keyword">new</span> TransitionDockingManager(<span class="keyword">this</span>, node, mouse);
+    <span class="comment">//Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.</span>
+    <span class="keyword">this</span>.pathManager = pathManagerFactory.get(<span class="keyword">this</span>);
+
+    <span class="comment">//Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions</span>
+    <span class="keyword">this</span>.knobManager = <span class="keyword">new</span> TransitionKnobManager(<span class="keyword">this</span>);
+
+    <span class="comment">//Calculate start position for outer orientation (mouse position)</span>
+    <span class="keyword">var</span> startDockingPosition = <span class="keyword">this</span>.dockingManager.calculateStart(mouse);
+
+    <span class="comment">//Init knob for startPosition</span>
+    <span class="keyword">var</span> startKnob = <span class="keyword">this</span>.knobManager.init(startDockingPosition);
+
+    <span class="comment">//Create SVG Elements in dom and transition events</span>
+    <span class="keyword">this</span>.initTransitionSVG();
+    <span class="keyword">this</span>.initEvents();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Transition.prototype.initSVGGroup = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.root = <span class="keyword">this</span>.group = <span class="keyword">this</span>.svg.g({prepend:<span class="literal">true</span>, <span class="string">"class"</span>:<span class="string">'transition'</span>, id : <span class="keyword">this</span>.id});
+};
+
+Transition.prototype.getStartAlignment = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = {source:[<span class="keyword">this</span>.dockingManager.startDocking.position()]};
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.knobManager.hasInnerKnobs()) {
+        result.target = [<span class="keyword">this</span>.dockingManager.endDocking.position()];
+    } <span class="keyword">else</span> {
+        result.target = [<span class="keyword">this</span>.knobManager.getKnob(<span class="number">1</span>).position()];
+    }
+    <span class="keyword">return</span> result;
+};
+
+Transition.prototype.getEndAlignment = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = {source:[<span class="keyword">this</span>.dockingManager.endDocking.position()]};
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.knobManager.hasInnerKnobs()) {
+        result.target = [<span class="keyword">this</span>.dockingManager.startDocking.position()];
+    } <span class="keyword">else</span> {
+        result.target = [<span class="keyword">this</span>.knobManager.getKnob(-<span class="number">2</span>).position()];
+    }
+    <span class="keyword">return</span> result;
+};
+
+Transition.prototype.start = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobManager.start();
+};
+
+Transition.prototype.end = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobManager.end();
+};
+
+
+Transition.prototype.getStartLocation = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.dockingManager.startNode.getRelativeLocation(<span class="keyword">this</span>.start());
+};
+
+Transition.prototype.getEndLocation = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.dockingManager.endNode.getRelativeLocation(<span class="keyword">this</span>.end());
+};
+
+Transition.prototype.dragStartOrientation = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">this</span>.dockingManager.dragStartOrientation(dx, dy);
+};
+
+Transition.prototype.dragEndOrientation = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">this</span>.dockingManager.dragEndOrientation(dx, dy);
+};
+
+Transition.prototype.strokeWidth = <span class="keyword">function</span>(value) {
+    <span class="keyword">var</span> result = <span class="keyword">this</span>.line.strokeWidth(value);
+    <span class="keyword">if</span>(value) {
+        <span class="keyword">this</span>.lineArea.strokeWidth(value + <span class="number">11</span>);
+    }
+    <span class="keyword">return</span> result;
+};
+
+Transition.prototype.getInnerSVG = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">return</span> $.qCache().svg(<span class="keyword">this</span>.getNodeSelector(prefix));
+};
+
+Transition.prototype.initTransitionSVG = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> path = <span class="keyword">this</span>.pathManager.path;
+
+    <span class="comment">//Note we share the path between line and lineArea an update</span>
+    <span class="keyword">this</span>.line = <span class="keyword">this</span>.svg.path({
+        d : path,
+        id : <span class="string">'line_'</span>+<span class="keyword">this</span>.id,
+        style  : STYLE_TRANSITION_ACTIVE
+    });
+
+    <span class="keyword">this</span>.lineArea = <span class="keyword">this</span>.svg.path({
+        d : path,
+        id: <span class="string">'lineArea_'</span>+<span class="keyword">this</span>.id,
+        style  : STYLE_AREA
+    });
+
+    <span class="comment">//TODO: make this configurable in node template or something !!!</span>
+    <span class="keyword">this</span>.endMarker(<span class="string">'trianglefill'</span>);
+
+    <span class="keyword">this</span>.group.prepend(<span class="keyword">this</span>.lineArea, <span class="keyword">this</span>.line);
+};
+
+Transition.prototype.initEvents = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.lineArea.hoverable({
+        <span class="keyword">in</span>: <span class="keyword">function</span>() {
+            that.hover();
+        },
+        out: <span class="keyword">function</span>() {
+            that.hoverOut();
+        }
+    });
+
+    <span class="keyword">this</span>.on(<span class="string">'mousedown'</span>, <span class="keyword">function</span>(evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+        that.event.trigger(<span class="string">'transition_select'</span>, that);
+
+        <span class="keyword">var</span> dragInitiated = <span class="literal">false</span>;
+        <span class="keyword">var</span> startPosition = that.diagram.getStagePosition(evt.pageX, evt.pageY);
+        <span class="keyword">var</span> knobIndex = that.getPath().getPathIndexForPosition(startPosition);
+
+        <span class="keyword">if</span> (knobIndex) {
+            event.once(document, <span class="string">"mouseup"</span>, <span class="keyword">function</span>(evt) {
+                that.preventDeselect = <span class="literal">false</span>;
+                event.off(that.diagram.svg.getRootNode(), <span class="string">"mousemove"</span>);
+            });
+            event.on(that.diagram.svg.getRootNode(),<span class="string">"mousemove"</span>, <span class="keyword">function</span>(event) {
+                <span class="keyword">var</span> movePosition = that.diagram.getStagePosition(event.pageX, event.pageY);
+
+                <span class="comment">//We just start the drag event in case we move more thant 5px away</span>
+                <span class="keyword">if</span>(!dragInitiated &amp;&amp; util.app.isMinDist(startPosition, movePosition, <span class="number">5</span>)) {
+                    that.preventDeselect = <span class="literal">true</span>;
+                    <span class="keyword">var</span> knob = that.knobManager.addKnob(startPosition, knobIndex);
+                    knob.initDrag(event);
+                    dragInitiated = <span class="literal">true</span>;
+                }
+            });
+        }
+    });
+};
+
+Transition.prototype.ownsKnobNode = <span class="keyword">function</span>(knobNode) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobManager.ownsKnobNode(knobNode);
+};
+
+Transition.prototype.update = <span class="keyword">function</span>(mouse) {
+    <span class="keyword">this</span>.updateEnd(mouse);
+    <span class="keyword">this</span>.updateStart(mouse);
+    <span class="keyword">this</span>.redraw();
+    <span class="keyword">this</span>.exec(<span class="string">'update'</span>,[], <span class="literal">true</span>);
+};
+
+Transition.prototype.redraw = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.line &amp;&amp; <span class="keyword">this</span>.lineArea) {
+        <span class="keyword">this</span>.line.update();
+        <span class="keyword">this</span>.lineArea.update();
+    }
+};
+
+Transition.prototype.updateStart = <span class="keyword">function</span>(mouse) {
+    <span class="keyword">var</span> outerOrientation = mouse || <span class="keyword">this</span>.knobManager.getPosition(<span class="number">1</span>);
+    <span class="keyword">this</span>.knobManager.updateStartKnob(<span class="keyword">this</span>.dockingManager.calculateStart(outerOrientation));
+};
+
+Transition.prototype.updateEnd = <span class="keyword">function</span>(mouse) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.isInitState()) {
+        mouse = <span class="keyword">this</span>.alignEndPositionForMouse(mouse);
+        <span class="keyword">this</span>.pathManager.dragLine(mouse);
+    } <span class="keyword">else</span> {
+        <span class="keyword">var</span> outerOrientation = <span class="keyword">this</span>.knobManager.getPosition(-<span class="number">2</span>);
+        <span class="keyword">this</span>.knobManager.updateEndKnob(<span class="keyword">this</span>.dockingManager.calculateEnd(outerOrientation));
+    }
+};
+
+Transition.prototype.isInitState = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> !<span class="keyword">this</span>.dockingManager.endNode;
+};
+
+Transition.prototype.alignEndPositionForMouse = <span class="keyword">function</span>(mouse) {
+    <span class="comment">//This prevents the line rendering to overlap the exact mouse position</span>
+    <span class="keyword">return</span> {
+        x : (<span class="keyword">this</span>.knobManager.startKnob.x() &lt; mouse.x) ? mouse.x - <span class="number">1</span> : mouse.x + <span class="number">1</span>,
+        y : (<span class="keyword">this</span>.knobManager.startKnob.y() &lt; mouse.y) ? mouse.y - <span class="number">1</span> : mouse.y + <span class="number">1</span>
+    };
+};
+
+Transition.prototype.setStartNode = <span class="keyword">function</span>(node, feature) {
+    <span class="keyword">this</span>.dockingManager.setStartNode(node,feature);
+
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.isInitState()) {
+        <span class="keyword">this</span>.checkDomPosition();
+    }
+    <span class="keyword">this</span>.update();
+};
+
+Transition.prototype.setEndNode = <span class="keyword">function</span>(node, mousePosition) {
+    <span class="keyword">this</span>.dockingManager.setEndNode(node, mousePosition);
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.knobManager.isInitState()) {
+        <span class="keyword">this</span>.knobManager.addKnob(<span class="keyword">this</span>.dockingManager.calculateEnd(mousePosition));
+    }
+
+    <span class="keyword">this</span>.checkDomPosition();
+    <span class="keyword">this</span>.update();
+};
+
+Transition.prototype.checkDomPosition = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> maxNodeIndex = Math.max(<span class="keyword">this</span>.dockingManager.startNode.index(), <span class="keyword">this</span>.dockingManager.endNode.index());
+    <span class="keyword">var</span> transitionIndex = <span class="keyword">this</span>.index();
+
+    <span class="keyword">if</span>(transitionIndex &lt; maxNodeIndex) {
+        dom.insertAfterIndex(<span class="keyword">this</span>.group.instance(), maxNodeIndex);
+    }
+};
+
+Transition.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.removed = <span class="literal">true</span>;
+    <span class="keyword">this</span>.group.remove();
+    <span class="keyword">this</span>.dockingManager.remove();
+    <span class="keyword">this</span>.event.trigger(<span class="string">'transition_removed'</span>, <span class="keyword">this</span>);
+};
+
+<span class="comment">/**
+ * Needed by Interface editable // See abstractEditAddition
+ */</span>
+Transition.prototype.exec = <span class="keyword">function</span>(func, args, prevDomEvent) {
+    <span class="keyword">this</span>.executeAddition(func, args);
+    <span class="keyword">if</span>(!prevDomEvent) {
+        <span class="keyword">this</span>.trigger(func, args);
+    }
+};
+
+Transition.prototype.executeAddition = <span class="keyword">function</span>(func, args) {
+    object.each(<span class="keyword">this</span>.additions, <span class="keyword">function</span>(key, addition) {
+        <span class="keyword">if</span>(object.isDefined(addition) &amp;&amp; object.isFunction(addition[func])) {
+            addition[func].apply(addition, args);
+        }
+    });
+};
+
+Transition.prototype.index = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.group.$().index();
+};
+
+Transition.prototype.instance = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.group) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.group.instance();
+    }
+};
+
+Transition.prototype.endMarker = <span class="keyword">function</span>(marker) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.marker(<span class="string">'end'</span>, marker);
+};
+
+Transition.prototype.endMarkerValue = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.markerValue(<span class="string">'end'</span>);
+};
+
+Transition.prototype.startMarker = <span class="keyword">function</span>(marker) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.marker(<span class="string">'start'</span>, marker);
+};
+
+Transition.prototype.startMarkerValue = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.markerValue(<span class="string">'start'</span>);
+};
+
+Transition.prototype.marker = <span class="keyword">function</span>(type, marker) {
+    <span class="keyword">var</span> key = <span class="string">'marker-'</span>+type;
+    <span class="keyword">if</span>(util.object.isDefined(marker)) {
+        <span class="keyword">this</span>.line.attr(key, <span class="keyword">this</span>.getMarkerValueString(marker));
+    } <span class="keyword">else</span> {
+        <span class="keyword">var</span> markerStr = <span class="keyword">this</span>.line.attr(key);
+        <span class="keyword">if</span>(markerStr) {
+            <span class="keyword">return</span> markerStr.substring(<span class="number">5</span>, markerStr.length - <span class="number">1</span>);
+        }
+    }
+};
+
+Transition.prototype.selector = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">var</span> stringSelector;
+    <span class="keyword">if</span>(object.isArray(prefix)) {
+        stringSelector = [];
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(prefix, <span class="keyword">function</span>(index, val) {
+            stringSelector.push(that.selector(val));
+        });
+        stringSelector = stringSelector.join(<span class="string">', '</span>);
+    } <span class="keyword">else</span> {
+        stringSelector = prefix;
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.getTransitionSelector(stringSelector);
+};
+
+Transition.prototype.getTransitionSelector = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+
+    <span class="keyword">if</span>(!util.string.startsWith(prefix, <span class="string">'#'</span>) &amp;&amp; !util.string.startsWith(prefix, <span class="string">'.'</span>)) {
+        result = <span class="string">'#'</span>+prefix;
+    } <span class="keyword">else</span> {
+        result = prefix;
+    }
+
+    <span class="keyword">return</span> util.string.endsWith(prefix, <span class="string">'_'</span>)
+        ? result + <span class="keyword">this</span>.id
+        : result + <span class="string">'_'</span> + <span class="keyword">this</span>.id;
+};
+
+Transition.prototype.markerValue = <span class="keyword">function</span>(type, marker) {
+    <span class="keyword">var</span> markerString = <span class="keyword">this</span>.marker(type, marker);
+    <span class="keyword">if</span>(markerString) { <span class="comment">// triangle_s_12312423 --> triangle_s</span>
+        <span class="keyword">return</span> markerString.substring(<span class="number">0</span>, markerString.length - <span class="keyword">this</span>.diagram.id.length - <span class="number">1</span>);
+    }
+};
+
+
+Transition.prototype.getMarkerValueString = <span class="keyword">function</span>(markerId) {
+    markerId = (util.string.endsWith(markerId, <span class="keyword">this</span>.diagram.id)) ? markerId : markerId + <span class="string">'_'</span> + <span class="keyword">this</span>.diagram.id;
+    <span class="keyword">return</span> <span class="string">'url(#'</span> + markerId + <span class="string">')'</span>;
+};
+
+Transition.prototype.select = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.exec(<span class="string">'select'</span>);
+    <span class="keyword">this</span>.activeStyle();
+    <span class="keyword">this</span>.selected = <span class="literal">true</span>;
+};
+
+Transition.prototype.hover = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.trigger(<span class="string">'hover'</span>);
+};
+
+Transition.prototype.hoverOut = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.trigger(<span class="string">'hoverOut'</span>);
+};
+
+Transition.prototype.activeStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.line.attr({style:STYLE_TRANSITION_ACTIVE});
+};
+
+Transition.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.preventDeselect) {
+        <span class="keyword">this</span>.exec(<span class="string">'deselect'</span>);
+        <span class="keyword">this</span>.inactiveStyle();
+        <span class="keyword">this</span>.selected = <span class="literal">false</span>;
+    }
+};
+
+Transition.prototype.inactiveStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.line.attr({style:STYLE_TRANSITION_INACTIVE});
+};
+
+Transition.prototype.on = <span class="keyword">function</span>(evt, handler) {
+    <span class="keyword">this</span>.lineArea.on(evt, handler);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Transition.prototype.trigger = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.lineArea.trigger(evt);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Transition.prototype.off = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.lineArea.off(evt);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+module.exports = Transition;</code></pre>

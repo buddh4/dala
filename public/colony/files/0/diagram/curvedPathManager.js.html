@@ -1,0 +1,27 @@
+<h1>curvedPathManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> AbstractPathManager = require(<span class="string">'./abstractPathManager'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+
+<span class="keyword">var</span> CurvedPathManager = <span class="keyword">function</span>(transition) {
+    AbstractPathManager.call(<span class="keyword">this</span>, transition);
+    <span class="keyword">this</span>.type = CurvedPathManager.type;
+};
+
+util.inherits(CurvedPathManager, AbstractPathManager);
+
+CurvedPathManager.type = <span class="string">'curved'</span>;
+
+CurvedPathManager.prototype.create = <span class="keyword">function</span>(position) {
+    <span class="keyword">this</span>.path.cBezier(<span class="literal">undefined</span>, <span class="literal">undefined</span>, position);
+};
+
+CurvedPathManager.prototype.add = <span class="keyword">function</span>(index, position) {
+    <span class="keyword">this</span>.path.insertCBezier(index,<span class="literal">undefined</span>, <span class="literal">undefined</span>, position);
+};
+
+CurvedPathManager.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.path.smoothen();
+};
+
+module.exports = CurvedPathManager;
+</code></pre>

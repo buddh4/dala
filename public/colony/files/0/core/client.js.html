@@ -1,0 +1,174 @@
+<h1>client.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'./event'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> string = require(<span class="string">'../util/string'</span>);
+
+<span class="keyword">var</span> Response = <span class="keyword">function</span>(data) {
+    <span class="keyword">this</span>.data = data;
+};
+
+Response.prototype.isConfirmation = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data &amp;&amp; (<span class="keyword">this</span>.data.status === <span class="number">0</span>);
+};
+
+Response.prototype.isError = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data &amp;&amp; <span class="keyword">this</span>.data.status &amp;&amp; (<span class="keyword">this</span>.data.status > <span class="number">0</span>);
+};
+
+Response.prototype.getError = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data.error;
+};
+
+Response.prototype.getErrorCode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data.errorCode;
+};
+
+Response.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="string">"{ status: "</span>+<span class="keyword">this</span>.data.status+<span class="string">" error: "</span>+<span class="keyword">this</span>.data.error+<span class="string">" data: "</span>+<span class="keyword">this</span>.data.data+<span class="string">" }"</span>;
+};
+
+<span class="keyword">var</span> config = {
+    host : <span class="string">'localhost'</span>,
+    port : <span class="number">3000</span>
+};
+
+<span class="keyword">var</span> errorHandler = <span class="keyword">function</span>(cfg, xhr,type,errorThrown, errorCode) {
+    errorCode = (xhr) ? xhr.status : parseInt(errorCode);
+    console.warn(<span class="string">"ajaxError: "</span>+type+<span class="string">" "</span>+errorThrown+<span class="string">" - "</span>+errorCode);
+
+    <span class="keyword">if</span>(cfg.errorMessage) {
+        <span class="keyword">if</span>(object.isString(cfg.errorMessage)) {
+            event.trigger(<span class="string">'error'</span>, cfg.errorMessage);
+        } <span class="keyword">else</span> <span class="keyword">if</span>(object.isObject(cfg.errorMessage, errorCode)) {
+            <span class="keyword">var</span> msg = cfg.errorMessage[errorCode] || cfg.errorMessage[<span class="string">'default'</span>];
+            <span class="keyword">if</span>(object.isDefined(msg)) {
+                event.trigger(<span class="string">'error'</span>, msg);
+            }
+        }
+    }
+
+    <span class="keyword">if</span>(cfg.error &amp;&amp; object.isFunction(cfg.error)) {
+        <span class="comment">// "timeout", "error", "abort", "parsererror" or "application"</span>
+        cfg.error(errorThrown, errorCode, type);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(cfg.error) {
+        <span class="keyword">var</span> msg = cfg.error[errorCode] || cfg.error[<span class="string">'default'</span>];
+        <span class="keyword">if</span>(object.isDefined(msg)) {
+            event.trigger(<span class="string">'error'</span>, msg);
+        }
+    }
+
+    <span class="keyword">if</span>(!cfg.error &amp;&amp; !cfg.errorMessage) {
+        console.warn(<span class="string">'Unhandled ajax error: '</span>+path+<span class="string">" type"</span>+type+<span class="string">" error: "</span>+errorThrown);
+    }
+};
+
+module.exports = {
+    test: <span class="keyword">function</span>(settings) {
+        <span class="keyword">this</span>.ping(settings);
+    },
+    ping: <span class="keyword">function</span>(settings) {
+        settings = settings || config;
+        <span class="keyword">var</span> result = <span class="literal">false</span>;
+        $.ajax({
+            url: <span class="string">"http://"</span>+settings.host+<span class="string">":"</span>+settings.port+<span class="string">"/service/ping"</span>,
+            <span class="comment">//crossDomain: true,</span>
+            type : <span class="string">"GET"</span>,
+            data: {<span class="string">'ping'</span>:<span class="literal">true</span>},
+            async : <span class="literal">false</span>,
+            dataType: <span class="string">"json"</span>,
+            success: <span class="function"><span class="keyword">function</span> <span class="params">(response)</span> {</span>
+                result = <span class="literal">true</span>;
+            },
+            error: <span class="function"><span class="keyword">function</span> <span class="params">(xhr, status, msg)</span> {</span>
+                result = <span class="literal">false</span>;
+            }
+        });
+
+        <span class="keyword">return</span> result;
+    },
+    ajax: <span class="keyword">function</span>(path, data, cfg) {
+        <span class="keyword">var</span> cfg = cfg || {};
+        <span class="keyword">var</span> async = cfg.async || <span class="literal">true</span>;
+        <span class="keyword">var</span> dataType = cfg.dataType || <span class="string">"json"</span>;
+
+        <span class="keyword">var</span> error = <span class="keyword">function</span>(xhr,type,errorThrown, errorCode) {
+            errorHandler(cfg, xhr,type,errorThrown, errorCode);
+        };
+
+        <span class="keyword">var</span> success = <span class="keyword">function</span>(response) {
+            <span class="keyword">var</span> responseWrapper = <span class="keyword">new</span> Response(response);
+
+            <span class="keyword">if</span>(responseWrapper.isError()) { <span class="comment">//Application errors</span>
+                <span class="keyword">return</span> error(<span class="literal">undefined</span>,<span class="string">"application"</span>,responseWrapper.getError(), responseWrapper.getErrorCode());
+            } <span class="keyword">else</span> <span class="keyword">if</span>(cfg.success) {
+                <span class="keyword">if</span>(object.isString(cfg.success)) {
+                    event.trigger(<span class="string">'info'</span>, cfg.success);
+                } <span class="keyword">else</span> {
+                    cfg.success(responseWrapper);
+                }
+            }
+
+            <span class="keyword">if</span> (cfg.successMessage) {
+                event.trigger(<span class="string">'info'</span>, cfg.successMessage);
+            }
+        };
+
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        $.ajax({
+            url: that.getUrl(path),
+            <span class="comment">//crossDomain: true, //TODO: read from config</span>
+            type : cfg.type,
+            processData : cfg.processData,
+            contentType: cfg.contentType,
+            data: data,
+            async : async,
+            dataType: dataType,
+            success: success,
+            error: error
+        });
+    },
+    post: <span class="keyword">function</span>(path, data, cfg) {
+        cfg = cfg || {};
+        cfg.type = <span class="string">'POST'</span>;
+        <span class="keyword">this</span>.ajax(path, data, cfg);
+    },
+    get: <span class="keyword">function</span>(path, cfg) {
+        cfg = cfg || {};
+        cfg.type = <span class="string">'GET'</span>;
+        <span class="keyword">this</span>.ajax(path, cfg.data, cfg);
+    },
+    xml: <span class="keyword">function</span>(path, cfg) {
+        cfg = cfg || {};
+        cfg.dataType = <span class="string">'xml'</span>;
+        <span class="keyword">return</span> <span class="keyword">this</span>.get(path,cfg);
+    },
+    getScript: <span class="keyword">function</span>(path, cfg) {
+        cfg = cfg || {};
+
+        <span class="keyword">return</span> $.getScript(path)
+            .done(<span class="keyword">function</span>(s, Status) {
+                <span class="keyword">if</span>(cfg.success) {
+                    cfg.success(s, Status);
+                }
+            }).fail(<span class="keyword">function</span>(xhr, settings, exception) {
+                errorHandler(cfg, xhr,<span class="string">'error'</span>,exception);
+            });
+    },
+    restGet: <span class="keyword">function</span>(path, id, cfg) {
+        <span class="keyword">var</span> path = string.endsWith(path, <span class="string">'/'</span>)? path+id : path+<span class="string">'/'</span>+id;
+        <span class="keyword">this</span>.get(path, cfg);
+    },
+    getUrl: <span class="keyword">function</span>(addition) {
+        <span class="keyword">var</span> url = <span class="string">"http://"</span>+config.host+<span class="string">":"</span>+config.port;
+        <span class="keyword">if</span>(addition) {
+            url += addition;
+        }
+        <span class="keyword">return</span> url;
+    },
+    set: <span class="keyword">function</span>(settings) {
+        config = settings;
+    },
+    getSettings: <span class="keyword">function</span>() {
+        <span class="keyword">return</span> config;
+    }
+}</code></pre>

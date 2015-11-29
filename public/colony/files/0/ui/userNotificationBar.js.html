@@ -1,0 +1,57 @@
+<h1>userNotificationBar.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> log = {};
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'info'</span>, info);
+    event.listen(<span class="string">'warn'</span>, warn);
+    event.listen(<span class="string">'error'</span>, error);
+    event.listen(<span class="string">'command_add'</span>, clear);
+    event.listen(<span class="string">'command_execute'</span>, clear);
+};
+
+<span class="keyword">var</span> info = <span class="keyword">function</span>(evt) {
+    infoNotification(evt, <span class="string">'info'</span>, <span class="number">10000</span>);
+};
+
+<span class="keyword">var</span> warn = <span class="keyword">function</span>(evt) {
+    infoNotification(evt, <span class="string">'warn'</span>);
+};
+
+<span class="keyword">var</span> error = <span class="keyword">function</span>(evt) {
+    infoNotification(evt, <span class="string">'error'</span>);
+};
+
+<span class="keyword">var</span> infoNotification = <span class="keyword">function</span>(evt, type, closeAfter) {
+    <span class="keyword">var</span> msg;
+    <span class="keyword">if</span>(!evt.data) {
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">if</span>(object.isString(evt.data)) {
+        msg = evt.data;
+    } <span class="keyword">else</span> {
+        msg = evt.data.message;
+    }
+
+    <span class="comment">//TODO: do something with this log and clear it after a defined size :)</span>
+    log[Date.now()] = msg;
+    showInfo(msg, type, closeAfter);
+};
+
+<span class="keyword">var</span> showInfo = <span class="keyword">function</span>(msg,type, closeAfter) {
+    clear();
+    $(<span class="string">'body'</span>).growl({ title: type, text: msg, growlClass: type, closeAfter: closeAfter });
+};
+
+<span class="keyword">var</span> clear = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>($(<span class="string">'body'</span>).data(<span class="string">'ui-tooltip'</span>)) {
+        $(<span class="string">'body'</span>).uitooltip(<span class="string">'close'</span>);
+    }
+};
+
+module.exports.init = <span class="keyword">function</span>() {
+    initListener();
+};</code></pre>

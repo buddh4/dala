@@ -1,0 +1,29 @@
+<h1>straightPathManager.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * Simple implementation of path manager
+ * @type {PathData|exports|module.exports}
+ */</span>
+<span class="keyword">var</span> AbstractPathManager = require(<span class="string">'./abstractPathManager'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+
+<span class="keyword">var</span> LinePathManager = <span class="keyword">function</span>(transition) {
+    AbstractPathManager.call(<span class="keyword">this</span>, transition);
+    <span class="keyword">this</span>.type = LinePathManager.type;
+};
+
+util.inherits(LinePathManager, AbstractPathManager);
+
+LinePathManager.type = <span class="string">'straight'</span>;
+
+LinePathManager.prototype.create = <span class="keyword">function</span>(position) {
+    <span class="keyword">this</span>.path.line(position);
+};
+
+LinePathManager.prototype.add = <span class="keyword">function</span>(index, position) {
+    <span class="keyword">this</span>.path.insertLine(index, position);
+};
+
+LinePathManager.prototype.update = <span class="keyword">function</span>(position) {<span class="comment">/* Nothing to do here */</span>};
+
+module.exports = LinePathManager;
+</code></pre>

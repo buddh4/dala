@@ -1,0 +1,21 @@
+<h1>error.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> ERROR_CODES = require(<span class="string">'./errorCodes'</span>);
+
+<span class="keyword">var</span> DalaError = <span class="keyword">function</span>(message, code, triggerError) {
+    <span class="keyword">this</span>.name = <span class="string">'DalaError'</span>;
+    <span class="keyword">this</span>.dalaError = <span class="literal">true</span>;
+    <span class="keyword">this</span>.error = triggerError
+    Error.call(<span class="keyword">this</span>, message);
+    <span class="keyword">this</span>.message = message;
+    <span class="keyword">this</span>.code = code || ERROR_CODES.UNKNOWN_APP_ERROR;
+};
+
+DalaError.CODES = ERROR_CODES;
+DalaError.prototype = Object.create(Error.prototype);
+DalaError.prototype.constructor = DalaError;
+
+DalaError.prototype.log = <span class="keyword">function</span>() {
+
+};
+
+module.exports = DalaError;</code></pre>

@@ -1,0 +1,29 @@
+<h1>gui.js</h1>
+<pre><code class="lang-js">require(<span class="string">'./../diagram/ui/templateNav'</span>).init();
+require(<span class="string">'./toolTip'</span>).init();
+require(<span class="string">'./editNav'</span>).init();
+require(<span class="string">'./infobox'</span>).init();
+require(<span class="string">'./userNotificationBar'</span>).init();
+require(<span class="string">'./fileMenu'</span>).init();
+require(<span class="string">'./../diagram/ui/stage'</span>).init();
+require(<span class="string">'./../project/ui/fileBrowser'</span>).init();
+require(<span class="string">'./overviewBox'</span>).init();
+require(<span class="string">'./../user/ui/userLogin'</span>).init();
+require(<span class="string">'./svgTester'</span>).init();
+
+<span class="keyword">var</span> ClientSettingDialog = require(<span class="string">'./clientSettingDialog'</span>);
+<span class="keyword">new</span> ClientSettingDialog();
+
+<span class="keyword">var</span> RegisterDialog = require(<span class="string">'./../user/ui/registerDialog'</span>);
+<span class="keyword">new</span> RegisterDialog();
+
+<span class="keyword">var</span> XmlViewDialog = require(<span class="string">'./xmlViewDialog'</span>);
+<span class="keyword">new</span> XmlViewDialog();
+
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+
+
+
+<span class="comment">// Main Content Tabs</span>
+$(<span class="string">'#contentTabs'</span>).tabs();</code></pre>

@@ -1,0 +1,51 @@
+<h1>abstractManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> Command = require(<span class="string">'../core/command'</span>);
+
+<span class="keyword">var</span> Manager = <span class="keyword">function</span>(diagram) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.event = diagram.event;
+};
+
+Manager.prototype.command = <span class="keyword">function</span>(cmdId, doAction, undoAction) {
+    <span class="keyword">this</span>.diagram.registerCommand(cmdId, <span class="keyword">new</span> Command(<span class="keyword">this</span>, doAction, undoAction));
+};
+
+Manager.prototype.exec = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">this</span>.diagram.executeCommand(cmdId, doArgs, undoArgs);
+};
+
+Manager.prototype.addCmd = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">this</span>.diagram.addCommand(cmdId, doArgs, undoArgs);
+};
+
+Manager.prototype.listen = <span class="keyword">function</span>(eventId, handler) {
+    <span class="keyword">this</span>.event.listen(eventId, handler, <span class="keyword">this</span>);
+}
+
+Manager.prototype.getNodeById = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.diagram.getNodeById(id);
+};
+
+Manager.prototype.getTransitionById = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.diagram.getTransitionById(id);
+};
+
+Manager.prototype.getSVG = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> $.svg(id);
+};
+
+Manager.prototype.getNodeMgr = <span class="keyword">function</span>(command) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.diagram.nodeMgr;
+};
+
+Manager.prototype.getTransitionMgr = <span class="keyword">function</span>(command) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.diagram.transitionMgr;
+};
+
+Manager.prototype.getSelectionMgr = <span class="keyword">function</span>(command) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.diagram.selectionMgr;
+};
+
+module.exports = Manager;</code></pre>

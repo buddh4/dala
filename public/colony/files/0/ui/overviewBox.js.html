@@ -1,0 +1,45 @@
+<h1>overviewBox.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> diagramMgr = require(<span class="string">'../diagram/diagramManager'</span>);
+
+<span class="keyword">var</span> rate = <span class="number">10</span>;
+<span class="keyword">var</span> $viewbox = $(<span class="string">'#viewbox'</span>);
+<span class="keyword">var</span> $viewport = $(<span class="string">'#viewport'</span>);
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'diagram_new'</span>, update);
+    event.listen(<span class="string">'viewport_update'</span>, update);
+    event.listen(<span class="string">'view_zoomedIn'</span>, update);
+    event.listen(<span class="string">'view_zoomedOut'</span>, update);
+}
+
+<span class="keyword">var</span> update = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> diagram = diagramMgr.getActiveDiagram();
+
+    <span class="keyword">var</span> scaledRate = rate * diagram.scale;
+
+    <span class="keyword">var</span> $stageContainer = $(diagram.svg.$containerNode);
+    <span class="keyword">var</span> stHeight = $stageContainer.height();
+    <span class="keyword">var</span> stWidth = $stageContainer.width();
+
+    $viewport.height(stHeight / scaledRate);
+    $viewport.width(stWidth / scaledRate);
+
+    <span class="keyword">var</span> left = diagram.mainPart.x() * -<span class="number">1</span> / scaledRate;
+    <span class="keyword">var</span> top = diagram.mainPart.y() * -<span class="number">1</span> / scaledRate;
+
+    $viewport.css(<span class="string">'left'</span>, left);
+    $viewport.css(<span class="string">'top'</span>, top);
+    <span class="comment">//var vHeight = $viewbox.height();</span>
+    <span class="comment">//var vWidth = $viewbox.width();</span>
+
+};
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    $(<span class="string">'#overviewBox'</span>).accordion({collapsible: <span class="literal">true</span>});
+    initListener();
+};
+
+module.exports = {
+    init : init
+};</code></pre>

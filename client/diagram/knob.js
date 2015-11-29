@@ -72,8 +72,8 @@ Knob.prototype.draggable = function(handler) {
     return this;
 };
 
-Knob.prototype.initDrag = function(evt) {
-    this.node.initDrag(evt);
+Knob.prototype.initDrag = function() {
+    this.node.initDrag();
 };
 
 Knob.prototype.hide = function() {
@@ -140,7 +140,7 @@ Knob.prototype.remove = function() {
 
 Knob.prototype.move = function(dx,dy) {
     this.node.root.move(dx,dy);
-    this.node.trigger('move' [dx,dy]);
+    this.node.trigger('move', [dx,dy]);
 };
 
 Knob.prototype.moveTo = function(x,y) {

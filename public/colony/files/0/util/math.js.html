@@ -1,0 +1,456 @@
+<h1>math.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'./object'</span>);
+<span class="keyword">var</span> bezier = require(<span class="string">'./bezier'</span>);
+
+<span class="keyword">var</span> calcLineIntersection = <span class="keyword">function</span>(pa1, pa2, pb1, pb2) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Line(pa1,pa2).calcLineIntercept(<span class="keyword">new</span> Line(pb1,pb2));
+};
+
+<span class="keyword">var</span> Point = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">var</span> p = getPoint(x,y);
+    <span class="keyword">this</span>.x = p.x;
+    <span class="keyword">this</span>.y = p.y;
+};
+
+Point.prototype.isWithinInterval = <span class="keyword">function</span>(start, end, tolerance) {
+    <span class="keyword">return</span> isPointInInterval(<span class="keyword">this</span>, start, end, tolerance);
+};
+
+Point.prototype.isWithinXInterval = <span class="keyword">function</span>(start, end, tolerance) {
+    <span class="keyword">return</span> _inInterval(<span class="keyword">this</span>, start, end, tolerance, <span class="string">'x'</span>);
+}
+
+Point.prototype.isWithinYInterval = <span class="keyword">function</span>(start, end, tolerance) {
+    <span class="keyword">return</span> _inInterval(<span class="keyword">this</span>, start, end, tolerance, <span class="string">'y'</span>);
+};;
+
+<span class="keyword">var</span> isPointInInterval = <span class="keyword">function</span>(point, start, end, tolerance) {
+    <span class="keyword">return</span> _inInterval(point, start, end, tolerance, <span class="string">'x'</span>) &amp;&amp; _isPointInInterval(point, start, end, tolerance, <span class="string">'y'</span>);
+};
+
+<span class="keyword">var</span> _inInterval = <span class="keyword">function</span>(p, start, end, tolerance, dimension) {
+    tolerance = tolerance || <span class="number">0</span>;
+    <span class="keyword">var</span> boundary = minMax(start[dimension], end[dimension]);
+    boundary.min -= tolerance;
+    boundary.max += tolerance;
+    <span class="keyword">return</span> (p[dimension] &lt;= boundary.max &amp;&amp; p[dimension] >= boundary.min);
+};
+
+<span class="keyword">var</span> minMax = <span class="keyword">function</span>(val1, val2) {
+    <span class="keyword">return</span> {
+        min :  Math.min(val1, val2),
+        max : Math.max(val1, val2)
+    };
+};
+
+<span class="keyword">var</span> Line = <span class="keyword">function</span>(p1, p2) {
+    <span class="comment">//y = mx + t</span>
+    <span class="keyword">if</span>(p1.x) {
+        <span class="keyword">this</span>.op1 = p1;
+        <span class="keyword">this</span>.op2 = p2;
+        <span class="keyword">this</span>.p1 = (p1.x &lt;= p2.x)? p1 : p2;
+        <span class="keyword">this</span>.p2 = (p1.x > p2.x)? p1 : p2;
+        <span class="keyword">this</span>.m = <span class="keyword">this</span>.calcGradient();
+        <span class="keyword">this</span>.t = <span class="keyword">this</span>.calcYIntercept();
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.m = p1;
+        <span class="keyword">this</span>.t = p2;
+    }
+};
+
+Line.prototype.calcYIntercept = <span class="keyword">function</span>() {
+    <span class="comment">// y = m * x + t => t = -mx + y</span>
+    <span class="keyword">return</span> (-<span class="number">1</span> * <span class="keyword">this</span>.m * <span class="keyword">this</span>.p1.x) + <span class="keyword">this</span>.p1.y;
+};
+
+Line.prototype.getOrthogonal = <span class="keyword">function</span>(p) {
+    <span class="comment">//</span>
+    <span class="keyword">var</span> newM = -<span class="number">1</span> / <span class="keyword">this</span>.m;
+    <span class="keyword">var</span> t = p.y - (newM * p.x);
+    <span class="keyword">return</span> <span class="keyword">new</span> Line(newM,t);
+};
+
+Line.prototype.calcGradient = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> Line.calcGradient(<span class="keyword">this</span>.p1, <span class="keyword">this</span>.p2);
+};
+
+Line.prototype.calcNormalizedLineVector = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> Line.calcNormalizedLineVector(<span class="keyword">this</span>.p1, <span class="keyword">this</span>.p2);
+};
+
+Line.prototype.isLtR = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.op1.x &lt; <span class="keyword">this</span>.op2.x;
+};
+
+Line.prototype.isTtB = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.op1.y &lt; <span class="keyword">this</span>.op2.y;
+};
+
+
+Line.calcNormalizedLineVector = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">var</span> vector = {
+        x : p2.x - p1.x,
+        y : p2.y - p1.y
+    };
+
+    <span class="keyword">var</span> length = Math.sqrt(vector.x*vector.x + vector.y*vector.y);
+
+    vector.x = vector.x / length;
+    vector.y = vector.y / length;
+    <span class="keyword">return</span> vector;
+};
+
+<span class="comment">/*
+ *  TODO: this is working if you provide start/end and distance (negative or positive) but not tested (and presumably not working)
+ *  when given start/end dist and direction e.g move from start point -30 back.
+ */</span>
+Line.moveAlong = <span class="keyword">function</span>(p1,p2, dist, direction) {
+    <span class="keyword">var</span> vector = Line.calcNormalizedLineVector(p1,p2);
+
+    <span class="comment">//If there is no direction given we handle negative distances as direction -1 (from end to start)</span>
+    direction = direction || (dist &lt; <span class="number">0</span>) ? -<span class="number">1</span> : <span class="number">1</span>;
+
+    <span class="keyword">if</span>(direction &lt; <span class="number">1</span>) {
+        dist = Line.calcDistance(p1,p2) + dist;
+    }
+
+    <span class="keyword">return</span> {
+        x : p1.x + vector.x * dist,
+        y : p1.y + vector.y * dist
+    };
+};
+
+Line.calcGradient = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">return</span> (p2.y - p1.y) / (p2.x - p1.x);
+};
+
+Line.prototype.calcFX = <span class="keyword">function</span>(x) {
+    <span class="keyword">var</span> y = (<span class="keyword">this</span>.m) * x + <span class="keyword">this</span>.t;
+    <span class="keyword">return</span> {
+        x : x,
+        y : y
+    };
+};
+
+Line.prototype.calcMidPoint = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> Line.calcMidPoint(<span class="keyword">this</span>.p1, <span class="keyword">this</span>.p2);
+};
+
+Line.calcMidPoint = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">return</span> {
+        x : (p1.x+p2.x) / <span class="number">2</span>,
+        y : (p1.y+p2.y) / <span class="number">2</span>
+    };
+};
+
+Line.prototype.isVertical = <span class="keyword">function</span>(x) {
+    <span class="keyword">return</span> !isFinite(<span class="keyword">this</span>.m);
+};
+
+Line.prototype.isHorizontal = <span class="keyword">function</span>(x) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.m === <span class="number">0</span>;
+};
+
+Line.prototype.calcLineIntercept = <span class="keyword">function</span>(other) {
+    <span class="comment">//mx(1) + t(1) = mx(2) +t(2)</span>
+    <span class="keyword">var</span> m = other.m + (-<span class="number">1</span> * <span class="keyword">this</span>.m);
+    <span class="keyword">var</span> t = <span class="keyword">this</span>.t + (-<span class="number">1</span> * other.t);
+    <span class="keyword">var</span> x = (m !== <span class="number">0</span>) ? t / m : t;
+    <span class="keyword">return</span> <span class="keyword">this</span>.calcFX(x);
+};
+
+Line.calcDistance = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">return</span> Math.sqrt(Math.pow((p2.y - p1.y),<span class="number">2</span>) + Math.pow((p2.x - p1.x),<span class="number">2</span>));
+}
+
+<span class="keyword">var</span> SimpleVector = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">this</span>.x = x;
+    <span class="keyword">this</span>.y = y;
+};
+
+SimpleVector.prototype.dot = <span class="keyword">function</span>(that) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.x*that.x + <span class="keyword">this</span>.y*that.y;
+};
+
+SimpleVector.fromPoints = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">return</span> <span class="keyword">new</span> SimpleVector(
+        p2.x - p1.x,
+        p2.y - p1.y
+    );
+};
+
+SimpleVector.prototype.subtract = <span class="keyword">function</span>(that) {
+    <span class="keyword">return</span> <span class="keyword">new</span> SimpleVector(<span class="keyword">this</span>.x - that.x, <span class="keyword">this</span>.y - that.y);
+};
+
+<span class="keyword">var</span> Ellipse = <span class="keyword">function</span>(cx, cy, rx, ry) {
+    <span class="keyword">switch</span>(arguments.length) {
+        <span class="keyword">case</span> <span class="number">4</span>:
+            <span class="keyword">this</span>.c = {x:cx,y:cy};
+            <span class="keyword">this</span>.rx = rx;
+            <span class="keyword">this</span>.ry = ry;
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">3</span>:
+            <span class="keyword">this</span>.c = cx;
+            <span class="keyword">this</span>.rx = cy;
+            <span class="keyword">this</span>.ry = rx;
+            <span class="keyword">break</span>;
+    }
+};
+
+Ellipse.prototype.calcLineIntercept = <span class="keyword">function</span>(p1,p2) {
+    <span class="keyword">var</span> result = [];
+
+    <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        p2 = p1.p2;
+        p1 = p1.p1;
+    }
+
+    <span class="keyword">var</span> origin = <span class="keyword">new</span> SimpleVector(p1.x, p1.y);
+    <span class="keyword">var</span> dir = SimpleVector.fromPoints(p1, p2);
+    <span class="keyword">var</span> center = <span class="keyword">new</span> SimpleVector(<span class="keyword">this</span>.c.x, <span class="keyword">this</span>.c.y);
+    <span class="keyword">var</span> diff = origin.subtract(center);
+    <span class="keyword">var</span> mDir = <span class="keyword">new</span> SimpleVector(dir.x/(<span class="keyword">this</span>.rx*<span class="keyword">this</span>.rx),  dir.y/(<span class="keyword">this</span>.ry*<span class="keyword">this</span>.ry));
+    <span class="keyword">var</span> mDiff = <span class="keyword">new</span> SimpleVector(diff.x/(<span class="keyword">this</span>.rx*<span class="keyword">this</span>.rx), diff.y/(<span class="keyword">this</span>.ry*<span class="keyword">this</span>.ry));
+
+    <span class="keyword">var</span> aDiff = dir.dot(mDir);
+    <span class="keyword">var</span> bDiff = dir.dot(mDiff);
+    <span class="keyword">var</span> cDiff = diff.dot(mDiff) - <span class="number">1.0</span>;
+    <span class="keyword">var</span> dDiff = bDiff*bDiff - aDiff*cDiff;
+
+    <span class="keyword">if</span> (dDiff > <span class="number">0</span>) {
+        <span class="keyword">var</span> root = Math.sqrt(dDiff);
+        <span class="keyword">var</span> tA  = (-bDiff - root) / aDiff;
+        <span class="keyword">var</span> tB  = (-bDiff + root) / aDiff;
+
+        <span class="keyword">if</span> (!((tA &lt; <span class="number">0</span> || <span class="number">1</span> &lt; tA) &amp;&amp; (tB &lt; <span class="number">0</span> || <span class="number">1</span> &lt; tB))) {
+            <span class="keyword">if</span> (<span class="number">0</span> &lt;= tA &amp;&amp; tA &lt;= <span class="number">1</span>) {
+                result.push(lerp(p1, p2, tA));
+            }
+            <span class="keyword">if</span> ( <span class="number">0</span> &lt;= tB &amp;&amp; tB &lt;= <span class="number">1</span> ) {
+                result.push(lerp(p1, p2, tB));
+            }
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">var</span> t = -bDiff/aDiff;
+        <span class="keyword">if</span> (<span class="number">0</span> &lt;= t &amp;&amp; t &lt;= <span class="number">1</span>) {
+            result.push(lerp(p1. a2, t));
+        }
+    }
+
+    <span class="keyword">return</span> result;
+};
+
+<span class="keyword">var</span> Circle = <span class="keyword">function</span>(cx, cy, r) {
+    <span class="keyword">if</span>(arguments.length === <span class="number">2</span>) {
+        <span class="keyword">this</span>.c = cx;
+        <span class="keyword">this</span>.r = cy;
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.c = {x: cx, y : cy};
+        <span class="keyword">this</span>.r = r;
+    }
+
+};
+
+Circle.prototype.calcLineIntercept = <span class="keyword">function</span>(p1, p2) {
+    <span class="keyword">var</span> result = [];
+
+    <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        p2 = p1.p2;
+        p1 = p1.p1;
+    }
+
+    <span class="keyword">var</span> a = (p2.x - p1.x) * (p2.x - p1.x)
+        + (p2.y - p1.y) * (p2.y - p1.y);
+    <span class="keyword">var</span> b  = <span class="number">2</span> * ((p2.x - p1.x) * (p1.x - <span class="keyword">this</span>.c.x)
+        + (p2.y - p1.y) * (p1.y - <span class="keyword">this</span>.c.y)   );
+    <span class="keyword">var</span> cc = <span class="keyword">this</span>.c.x*<span class="keyword">this</span>.c.x + <span class="keyword">this</span>.c.y*<span class="keyword">this</span>.c.y + p1.x*p1.x + p1.y*p1.y -
+        <span class="number">2</span> * (<span class="keyword">this</span>.c.x * p1.x + <span class="keyword">this</span>.c.y * p1.y) - <span class="keyword">this</span>.r*<span class="keyword">this</span>.r;
+    <span class="keyword">var</span> deter = b*b - <span class="number">4</span>*a*cc;
+
+    <span class="keyword">if</span>(deter > <span class="number">0</span>) {
+        <span class="keyword">var</span> root  = Math.sqrt(deter);
+        <span class="keyword">var</span> tA = (-b + root) / (<span class="number">2</span>*a);
+        <span class="keyword">var</span> tB = (-b - root) / (<span class="number">2</span>*a);
+
+        <span class="keyword">if</span> (!((tA &lt; <span class="number">0</span> || tA > <span class="number">1</span>) &amp;&amp; (tB &lt; <span class="number">0</span> || tB > <span class="number">1</span>))) {
+            <span class="keyword">if</span> (<span class="number">0</span> &lt;= tA &amp;&amp; tA &lt;= <span class="number">1</span>) {
+                result.push(lerp(p1, p2, tA));
+            }
+
+            <span class="keyword">if</span> (<span class="number">0</span> &lt;= tB &amp;&amp; tB &lt;= <span class="number">1</span>) {
+                result.push(lerp(p1, p2, tB));
+            }
+        }
+    }
+    <span class="keyword">return</span> result;
+};
+
+<span class="keyword">var</span> lerp = <span class="keyword">function</span>(a, b, t) {
+    <span class="keyword">return</span> {
+        x : a.x + (b.x - a.x) * t,
+        y : a.y + (b.y - a.y) * t
+    };
+};
+
+<span class="keyword">var</span> Vector = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.vectors = [];
+    <span class="keyword">var</span> currentArr;
+    <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; arguments.length; i++) {
+        <span class="keyword">if</span>(object.isArray(arguments[i])) {
+            <span class="keyword">if</span>(currentArr) {
+                <span class="keyword">this</span>.add(currentArr);
+                currentArr = <span class="literal">undefined</span>;
+            }
+            <span class="keyword">this</span>.add(arguments[i]);
+        } <span class="keyword">else</span> {
+            currentArr = currentArr || [];
+            currentArr.push(arguments[i]);
+        }
+    };
+
+    <span class="keyword">if</span>(currentArr) {
+        <span class="keyword">this</span>.add(currentArr);
+        <span class="keyword">delete</span> currentArr;
+    }
+};
+
+<span class="comment">/**
+ * Adds a vector value either by providing seperated arguments or an array of values
+ */</span>
+Vector.prototype.add = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> value;
+    <span class="keyword">if</span>(arguments.length > <span class="number">1</span>) {
+        value = [];
+        <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; arguments.length; i++) {
+            value.push(arguments[i]);
+        }
+    } <span class="keyword">else</span> <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        value = arguments[<span class="number">0</span>];
+    }
+    <span class="keyword">this</span>.vectors.push(value);
+};
+
+Vector.prototype.value = <span class="keyword">function</span>() {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> path = object.isArray(arguments[<span class="number">0</span>]) ? arguments[<span class="number">0</span>] : Array.prototype.slice.call(arguments);
+        <span class="keyword">return</span> getVectorValue(<span class="keyword">this</span>.vectors, path);
+    } <span class="keyword">catch</span>(e) {
+        console.error(<span class="string">'get value vector failed - '</span>+<span class="keyword">this</span>.vectors+<span class="string">' args: '</span>+arguments);
+    }
+};
+
+Vector.prototype.clear = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.vectors = [];
+};
+
+Vector.prototype.setValue = <span class="keyword">function</span>(pathArr, value) {
+    <span class="keyword">try</span> {
+        pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+        <span class="keyword">var</span> parentPath = pathArr.splice(<span class="number">0</span>, pathArr.length -<span class="number">1</span>);
+        <span class="keyword">this</span>.value(parentPath)[pathArr[pathArr.length -<span class="number">1</span>]] = value;
+    } <span class="keyword">catch</span>(e) {
+        console.error(<span class="string">'set value vector failed - '</span>+<span class="keyword">this</span>.vectors+<span class="string">' args: '</span>+arguments);
+    }
+};
+
+Vector.prototype.insert = <span class="keyword">function</span>(pathArr, value) {
+    <span class="keyword">try</span> {
+        pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+        <span class="keyword">var</span> parentPath = pathArr.splice(<span class="number">0</span>, pathArr.length -<span class="number">1</span>);
+        <span class="keyword">this</span>.value(parentPath).splice(pathArr[pathArr.length -<span class="number">1</span>], <span class="number">0</span>, value);
+    } <span class="keyword">catch</span>(e) {
+        console.error(<span class="string">'set value vector failed - '</span>+<span class="keyword">this</span>.vectors+<span class="string">' args: '</span>+arguments);
+    }
+};
+
+Vector.prototype.length = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.vectors.length;
+}
+
+Vector.prototype.remove = <span class="keyword">function</span>(pathArr) {
+    pathArr = !object.isArray(pathArr) ? [pathArr] : pathArr;
+    <span class="keyword">var</span> parentPath = pathArr.splice(<span class="number">0</span>, pathArr.length -<span class="number">1</span>);
+    <span class="keyword">this</span>.value(parentPath).splice(pathArr[pathArr.length -<span class="number">1</span>], <span class="number">1</span>);
+};
+
+Vector.prototype.last = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.vectors[<span class="keyword">this</span>.vectors.length -<span class="number">1</span>];
+};
+
+Vector.prototype.each = <span class="keyword">function</span>(handler) {
+    object.each(<span class="keyword">this</span>.vectors, <span class="keyword">function</span>(index, value) {
+        handler(index,value);
+    });
+};
+
+<span class="comment">/**
+ * Note the indexes can be negative to retrieve values from the end of the vector e.g. -1 is the last
+ * @param vectorArr
+ * @param args
+ * @returns {*}
+ */</span>
+<span class="keyword">var</span> getVectorValue = <span class="keyword">function</span>(vectorArr, args) {
+    <span class="keyword">if</span>(!args) {
+        <span class="keyword">return</span> vectorArr;
+    }<span class="keyword">else</span> <span class="keyword">if</span>(object.isArray(args)) {
+        <span class="keyword">switch</span>(args.length) {
+            <span class="keyword">case</span> <span class="number">0</span>:
+                <span class="keyword">return</span> vectorArr;
+            <span class="keyword">case</span> <span class="number">1</span>:
+                <span class="keyword">return</span> object.valueByIndex(vectorArr, args[<span class="number">0</span>]);
+            <span class="keyword">default</span>:
+                <span class="keyword">var</span> index = args[<span class="number">0</span>];
+                <span class="keyword">return</span> getVectorValue(vectorArr[index], args.splice(<span class="number">1</span>));
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> object.valueByIndex(vectorArr, args);
+    }
+};
+
+<span class="comment">/**
+ * Checks if the difference between source and target value is lower than the given range value
+ */</span>
+<span class="keyword">var</span> checkRangeDiff = <span class="keyword">function</span>(source, target, range) {
+    <span class="keyword">return</span> isInDiffRange(target, source, range);
+};
+
+<span class="keyword">var</span> isInDiffRange = <span class="keyword">function</span>(p1, p2, range) {
+    <span class="keyword">return</span> Math.abs(p1 - p2) &lt; range;
+};
+
+<span class="keyword">var</span> getPoint = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(x &amp;&amp; object.isDefined(x.x) &amp;&amp; object.isDefined(x.y)) {
+        result = x;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!isNaN(x) &amp;&amp; !isNaN(y)) {
+        result = {
+            x : x,
+            y : y
+        };
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isDefined(x) &amp;&amp; object.isDefined(y)) {
+        result = toPoint(x,y);
+    }
+    <span class="keyword">return</span> result;
+};
+
+<span class="keyword">var</span> toPoint = <span class="keyword">function</span>(x,y) {
+    x = (object.isString(x)) ? parseFloat(x) : x;
+    y = (object.isString(y)) ? parseFloat(y) : y;
+
+    <span class="keyword">return</span> {x:x,y:y};
+};
+
+module.exports = {
+    calcLineIntersection : calcLineIntersection,
+    Line : Line,
+    Circle : Circle,
+    Ellipse : Ellipse,
+    Vector : Vector,
+    Point : Point,
+    isPointInInterval : isPointInInterval,
+    minMax : minMax,
+    checkRangeDiff : checkRangeDiff,
+    getPoint : getPoint,
+    bezier : bezier
+};</code></pre>

@@ -1,0 +1,156 @@
+<h1>domElement.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/Util'</span>).object;
+<span class="keyword">var</span> dom = require(<span class="string">'../util/Util'</span>).dom;
+
+<span class="keyword">var</span> Element = <span class="keyword">function</span>(tagName, cfg, attributeSetter) {
+    <span class="keyword">this</span>.attributeSetter = attributeSetter || {};
+    <span class="keyword">this</span>.attributes = {};
+
+    <span class="keyword">if</span>(object.isObject(tagName)) {
+        cfg = tagName;
+        tagName = cfg.name;
+        <span class="keyword">delete</span> cfg.name;
+    }
+
+    <span class="keyword">this</span>.name = tagName;
+
+    <span class="keyword">if</span>(object.isObject(cfg)) {
+        <span class="keyword">if</span>(cfg.children) {
+            <span class="keyword">this</span>.children = cfg.children;
+            <span class="keyword">delete</span> cfg.children;
+        }
+
+        <span class="keyword">this</span>.single = cfg.single || <span class="literal">false</span>;
+        <span class="keyword">delete</span> cfg.single;
+
+        <span class="comment">//We assume all remaining cfg entries are attributes</span>
+        <span class="keyword">for</span>(<span class="keyword">var</span> attributeKey <span class="keyword">in</span> cfg) {
+            <span class="keyword">if</span>(cfg.hasOwnProperty(attributeKey)) {
+                <span class="keyword">this</span>.setSecureAttribute(attributeKey, cfg[attributeKey]);
+            }
+        }
+    }
+};
+
+Element.prototype.getType = <span class="keyword">function</span>(instance) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.name.toLowerCase();
+};
+
+Element.prototype.instance = <span class="keyword">function</span>(instance) {
+    <span class="keyword">if</span>(object.isDefined(instance)) {
+        <span class="keyword">this</span>.domInstance = instance;
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.domInstance;
+    }
+};
+
+Element.prototype.id = <span class="keyword">function</span>(newId) {
+    <span class="keyword">if</span>(object.isString(newId)) {
+        setSecureAttribute(<span class="string">'id'</span>,newId);
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'id'</span>);
+    }
+};
+
+Element.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">for</span>(attributeKey <span class="keyword">in</span> <span class="keyword">this</span>.attributeSetter) {
+        <span class="keyword">if</span>(<span class="keyword">this</span>.attributeSetter.hasOwnProperty(attributeKey)) {
+            <span class="keyword">this</span>.setSecureAttribute(attributeKey, <span class="keyword">this</span>.attributes[attributeKey]);
+        }
+    }
+};
+
+Element.prototype.setSecureAttribute = <span class="keyword">function</span>(key, value) {
+    <span class="comment">// If first arg is object handle its properties as attributes</span>
+    <span class="keyword">if</span>(object.isObject(key)) {
+        <span class="keyword">for</span>(<span class="keyword">var</span> attribute <span class="keyword">in</span> key) {
+            <span class="keyword">if</span>(object.isDefined(attribute) &amp;&amp; key.hasOwnProperty(attribute)) {
+                <span class="keyword">this</span>.setSecureAttribute(attribute, key[attribute]);
+            }
+        }
+    } <span class="keyword">else</span> {
+
+        <span class="comment">// Some elementtypes can transform specific types of attributes to special objects</span>
+        <span class="comment">// which are able to render and set the values in a special way.</span>
+        <span class="keyword">if</span>(!<span class="keyword">this</span>.hasClass(<span class="string">'noParse'</span>) &amp;&amp; object.isString(value) &amp;&amp; object.isDefined(<span class="keyword">this</span>.attributeSetter[key])) {
+            value = <span class="keyword">this</span>.attributeSetter[key](value);
+        }
+
+        <span class="keyword">if</span>(!object.isDefined(value) || value.length === <span class="number">0</span>) {
+            <span class="keyword">return</span>;
+        }
+
+        <span class="comment">// Just transform stringlits values to arrays in case its a string list</span>
+        <span class="keyword">this</span>.attributes[key] = value;
+
+        <span class="comment">// Directly set it to the SVG instance if already rendered</span>
+        <span class="keyword">if</span>(<span class="keyword">this</span>.domInstance) {
+            <span class="keyword">var</span> val = Element.getAttributeString(value);
+            <span class="keyword">this</span>.domInstance.setAttribute(key,val);
+        }
+    }
+};
+
+Element.prototype.hasClass = <span class="keyword">function</span>(searchClass) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.domInstance) {
+        <span class="comment">//Jquery hasclass does not work with svg elements</span>
+        <span class="keyword">var</span> elementClass = <span class="string">' '</span>+ <span class="keyword">this</span>.$(<span class="keyword">this</span>.domInstance).attr(<span class="string">'class'</span>)+<span class="string">' '</span>;
+        <span class="keyword">return</span> elementClass.indexOf(<span class="string">' '</span>+searchClass+<span class="string">' '</span>) > -<span class="number">1</span>;
+    }
+};
+
+Element.prototype.$ = <span class="keyword">function</span>(selector) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.$domInstance &amp;&amp; <span class="keyword">this</span>.domInstance) {
+        <span class="keyword">this</span>.$domInstance = $(<span class="keyword">this</span>.domInstance);
+    }
+
+    <span class="keyword">return</span> (selector) ? <span class="keyword">this</span>.$domInstance.find(selector) : <span class="keyword">this</span>.$domInstance;
+};
+
+Element.getAttributeString = <span class="keyword">function</span>(value) {
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+
+    <span class="keyword">if</span>(!object.isDefined(value)) {
+        <span class="keyword">return</span> <span class="string">''</span>;
+    }
+
+    <span class="keyword">if</span>(object.isArray(value)) {
+        object.each(value, <span class="keyword">function</span>(index, part) {
+            result += (++index === value.length) ? part : part+<span class="string">' '</span>;
+        });
+    } <span class="keyword">else</span> {
+        result = value.toString();
+    }
+    <span class="keyword">return</span> result;
+};
+
+Element.getAttributeValueFromStringList = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(object.isString(value) &amp;&amp; value.indexOf(<span class="string">' '</span>) > -<span class="number">1</span>) {
+        <span class="keyword">return</span> value.split(<span class="regexp">/[\s]+/</span>);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> value;
+    }
+};
+
+Element.prototype.attr = <span class="keyword">function</span>(attribute) {
+    <span class="keyword">if</span>(arguments.length > <span class="number">1</span> &amp;&amp; arguments[<span class="number">1</span>]) {
+        <span class="comment">//TODO: implement for mor thant 2</span>
+        <span class="keyword">var</span> obj = {};
+        obj[arguments[<span class="number">0</span>]] = arguments[<span class="number">1</span>];
+        <span class="keyword">return</span> <span class="keyword">this</span>.attr(obj);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isString(attribute)) {
+        <span class="keyword">if</span>(<span class="keyword">this</span>.attributes) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.attributes[attribute];
+        } <span class="keyword">else</span> {
+            <span class="keyword">return</span> <span class="string">''</span>;
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.setSecureAttribute(attribute);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+module.exports =  Element;
+</code></pre>

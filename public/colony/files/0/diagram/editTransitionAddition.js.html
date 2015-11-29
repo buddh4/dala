@@ -1,0 +1,106 @@
+<h1>editTransitionAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> AbstractEditAddition = require(<span class="string">'./abstractEditAddition'</span>);
+
+<span class="keyword">var</span> EditTransitionAddition = <span class="keyword">function</span>(transition) {
+    AbstractEditAddition.call(<span class="keyword">this</span>, transition, editFunctions, config);
+    <span class="keyword">this</span>.transition = transition;
+};
+
+util.inherits(EditTransitionAddition, AbstractEditAddition );
+
+<span class="keyword">var</span> editFunctions = {
+    stroke : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.line.stroke();
+        },
+        set : <span class="keyword">function</span>(binding, value) {
+            <span class="keyword">this</span>.transition.line.stroke(value);
+        }
+    },
+    <span class="string">'stroke-width'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.strokeWidth();
+        },
+        set : <span class="keyword">function</span>(binding, value) {
+            <span class="keyword">this</span>.transition.strokeWidth(value);
+        }
+    },
+    <span class="string">'stroke-dash'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.line.strokeDashType();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.transition.line.strokeDashType(value);
+        }
+    },
+    text : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> $(<span class="keyword">this</span>.transition.getTransitionSelector(editItem.bind)).text();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            $(<span class="keyword">this</span>.transition.getTransitionSelector(editItem.bind)).text(value);
+        }
+    },
+    textarea : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> $(<span class="keyword">this</span>.transition.getTransitionSelector(editItem.bind)).text();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">var</span> $editSVGNode = $(<span class="keyword">this</span>.transition.getTransitionSelector(editItem.bind));
+            <span class="keyword">this</span>.setTextAreaContent($editSVGNode,value);
+        }
+    },
+    <span class="string">'text-size'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">var</span> definition = <span class="keyword">this</span>.transition.getInnerSVG(editItem.bind).style(<span class="string">'font-size'</span>);
+            <span class="keyword">if</span>(definition) {
+                <span class="keyword">return</span> definition.substring(<span class="number">0</span>, definition.length - <span class="number">2</span>);
+            }
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.transition.getInnerSVG(editItem.bind).style(<span class="string">'font-size'</span>, value+<span class="string">'px'</span>);
+        }
+    },
+    <span class="string">'type'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.type();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.transition.type(value);
+        }
+    },
+    <span class="string">'startMarker'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.startMarkerValue();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            value = value || <span class="string">''</span>;
+            <span class="keyword">this</span>.transition.startMarker(value);
+        }
+    },
+    <span class="string">'endMarker'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.transition.endMarkerValue();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            value = value || <span class="string">''</span>;
+            <span class="keyword">this</span>.transition.endMarker(value);
+        }
+    }
+};
+
+<span class="keyword">var</span> config = {
+    <span class="string">'text0'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text0'</span>, trigger : <span class="string">'text0'</span>},
+    <span class="string">'text1'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text1'</span>, trigger : <span class="string">'text1'</span>},
+    <span class="string">'text2'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text2'</span>, trigger : <span class="string">'text2'</span>},
+    <span class="string">'text3'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text3'</span>, trigger : <span class="string">'text3'</span>},
+    <span class="string">'text4'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text4'</span>, trigger : <span class="string">'text4'</span>},
+    <span class="string">'text5'</span> : {type : <span class="string">'text'</span>, bind : <span class="string">'text5'</span>, trigger : <span class="string">'text5'</span>},
+    <span class="string">'type'</span>  : {type : <span class="string">'type'</span>, bind : <span class="string">'line'</span>},
+    <span class="string">'transition'</span> : { type : <span class="string">'stroke'</span>, bind : <span class="string">'line'</span>},
+    <span class="string">'startMarker'</span> : { type : <span class="string">'startMarker'</span>, bind : <span class="string">'line'</span>},
+    <span class="string">'endMarker'</span> : { type : <span class="string">'endMarker'</span>, bind : <span class="string">'line'</span>}
+};
+
+module.exports = EditTransitionAddition;</code></pre>

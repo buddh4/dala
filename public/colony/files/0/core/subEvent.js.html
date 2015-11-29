@@ -1,0 +1,53 @@
+<h1>subEvent.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> SubEvent = <span class="keyword">function</span>(context, event) {
+    <span class="keyword">this</span>.context = context;
+    <span class="keyword">this</span>.event = event;
+}
+
+SubEvent.prototype.getSubType = <span class="keyword">function</span>(type) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.context+<span class="string">':'</span>+type;
+}
+
+SubEvent.prototype.listen = <span class="keyword">function</span>(type, handler, module) {
+    <span class="comment">//TODO: implement bubble</span>
+    <span class="keyword">this</span>.event.listen(<span class="keyword">this</span>.getSubType(type), handler, module);
+};
+
+SubEvent.prototype.unlisten = <span class="keyword">function</span>(type, func) {
+    <span class="keyword">this</span>.event.unlisten(<span class="keyword">this</span>.getSubType(type), func);
+};
+
+SubEvent.prototype.trigger = <span class="keyword">function</span>(type, data, rootEvt, preventBubble) {
+    <span class="keyword">this</span>.event.trigger(<span class="keyword">this</span>.getSubType(type), data, rootEvt);
+    <span class="keyword">if</span>(!preventBubble) {
+        <span class="keyword">this</span>.event.trigger(type, data, rootEvt);
+    }
+};
+
+SubEvent.prototype.command = <span class="keyword">function</span>(command, execute) {
+    <span class="keyword">this</span>.event.command(command, execute);
+};
+
+SubEvent.prototype.on = <span class="keyword">function</span>(node, event, selector, data, handler) {
+    <span class="keyword">this</span>.event.on(node, event, selector, data, handler);
+};
+
+SubEvent.prototype.off = <span class="keyword">function</span>(node, event, selector, handler) {
+    <span class="keyword">this</span>.event.off(node, event, selector, handler);
+};
+
+SubEvent.prototype.once = <span class="keyword">function</span>(node, event, selector, data, handler) {
+    <span class="keyword">this</span>.event.once(node, event, selector, data, handler);
+};
+
+SubEvent.prototype.triggerDom = <span class="keyword">function</span>(node, event) {
+    <span class="keyword">this</span>.event.triggerDom(node,event);
+}
+
+SubEvent.prototype.sub = <span class="keyword">function</span>(context) {
+    <span class="keyword">return</span> <span class="keyword">new</span> SubEvent(context, <span class="keyword">this</span>);
+}
+
+module.exports = SubEvent;</code></pre>

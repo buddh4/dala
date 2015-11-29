@@ -1,0 +1,70 @@
+<h1>abstractPathManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> PathData = require(<span class="string">'../svg/pathData'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> AbstractPathManager = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.transition = transition;
+};
+
+AbstractPathManager.prototype.dragLine = <span class="keyword">function</span>(position) {
+    <span class="comment">// Init path if no path was created yet</span>
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.path) {
+        <span class="keyword">this</span>._init(position)
+    }
+
+    <span class="comment">// Create full path if the path only consist of the start path part yet or update the end position of the path</span>
+    <span class="keyword">if</span>(<span class="keyword">this</span>.path.length() === <span class="number">1</span>) {
+        <span class="keyword">this</span>.create(position);
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.path.end(position);
+    }
+
+    <span class="keyword">this</span>.update();
+};
+
+AbstractPathManager.prototype._init = <span class="keyword">function</span>(position) {
+    <span class="keyword">this</span>.path = <span class="keyword">new</span> PathData().start(position);
+};
+
+AbstractPathManager.prototype.updatePart = <span class="keyword">function</span>(index, position) {
+    <span class="keyword">this</span>.path.setTo(index, position);
+    <span class="keyword">this</span>.update();
+};
+
+AbstractPathManager.prototype.addPathPart = <span class="keyword">function</span>(index, position) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.path) {
+        <span class="keyword">this</span>._init(position);
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.add(index,position);
+        <span class="keyword">this</span>.update();
+    }
+};
+
+AbstractPathManager.prototype.removePathPart = <span class="keyword">function</span>(index) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.path) {
+        <span class="keyword">this</span>.path.removePath(index);
+    }
+};
+
+AbstractPathManager.prototype.replace = <span class="keyword">function</span>(old, positions) {
+    <span class="keyword">this</span>._init(positions[<span class="number">0</span>]);
+
+    <span class="keyword">for</span>(<span class="keyword">var</span> i  = <span class="number">1</span>; i &lt; positions.length; i++) {
+        <span class="keyword">this</span>.add(i, positions[i]);
+    }
+
+    <span class="keyword">this</span>.update();
+
+    <span class="comment">//We set our created path data to the existing path, since the transition line and linearea are dependent on this path instance</span>
+    old.path.data = <span class="keyword">this</span>.path.data;
+    <span class="keyword">this</span>.path = old.path;
+
+    <span class="keyword">this</span>.transition.pathManager = <span class="keyword">this</span>;
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+AbstractPathManager.prototype.create = <span class="keyword">function</span>(position) {<span class="comment">/*Abstract*/</span>};
+AbstractPathManager.prototype.update = <span class="keyword">function</span>(position) {<span class="comment">/*Abstract*/</span>};
+AbstractPathManager.prototype.add = <span class="keyword">function</span>(index, position) {<span class="comment">/*Abstract*/</span>};
+
+module.exports = AbstractPathManager;</code></pre>

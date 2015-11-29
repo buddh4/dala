@@ -119,4 +119,4 @@ module.exports = {
         return $.extend(deep, {}, oldObject);
     }
     
-}
+};

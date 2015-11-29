@@ -45,4 +45,8 @@ DiagramAPI.prototype.createTransition = function(node1, node2) {
     return node1.additions.transition.startNewTransition(node2);
 };
 
+DiagramAPI.prototype.getTransitionById = function(id) {
+    return this.diagram.transitionMgr.getTransition(id);
+};
+
 module.exports = DiagramAPI;

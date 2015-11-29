@@ -1,0 +1,147 @@
+<h1>abstractEditAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> dom = require(<span class="string">'../dom/dom'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> EditPanel = require(<span class="string">'../ui/editPanel'</span>);
+
+<span class="keyword">var</span> editPanel = <span class="keyword">new</span> EditPanel();
+
+<span class="keyword">var</span> AbstractEditAddition = <span class="keyword">function</span>(editable, editFunctions, config) {
+    <span class="keyword">this</span>.editable = editable;
+    <span class="keyword">this</span>.editFunctions = editFunctions;
+    <span class="keyword">this</span>.config = config;
+    <span class="keyword">this</span>.initEditTrigger();
+};
+
+AbstractEditAddition.prototype.initEditTrigger = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(<span class="keyword">this</span>.config, <span class="keyword">function</span>(key, editItem) {
+        <span class="keyword">if</span>(object.isDefined(editItem.trigger)) {
+            that.addEditTextTrigger(key);
+        }
+    });
+};
+
+AbstractEditAddition.prototype.addEditTrigger = <span class="keyword">function</span>(key) {
+    <span class="keyword">switch</span>(type) {
+        <span class="keyword">case</span> <span class="string">'text'</span>:
+        <span class="keyword">case</span> <span class="string">'textarea'</span>:
+            <span class="keyword">this</span>.addEditTextTrigger(key);
+            <span class="keyword">break</span>;
+    }
+};
+
+AbstractEditAddition.prototype.addEditTextTrigger = <span class="keyword">function</span>(key) {
+    <span class="keyword">var</span> editItem = <span class="keyword">this</span>.getEditItem(key);
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    <span class="keyword">var</span> selector = <span class="keyword">this</span>.editable.selector(editItem.trigger);
+    <span class="comment">//$triggerNode.css('cursor', 'pointer');</span>
+
+    <span class="comment">//TODO: evtl move this to text.editable();</span>
+    <span class="comment">/*
+    this.editable.root.$.on('click', selector,  function(evt) {
+        if(that.isTriggerAllowed()) {
+            switch(editItem.type) {
+                case 'textarea':
+                    editPanel.createTextAreaEdit(evt.pageX, evt.pageY,
+                        function() {
+                            return that.getValue(key);
+                        },
+                        function(value) {
+                            that.setValue(key, value);
+                            that.editable.exec('contentChanged');
+                        });
+                    break;
+                case 'text':
+                    editPanel.createTextEdit(evt.pageX, evt.pageY, function() {
+                            return that.getValue(key);
+                        },
+                        function(value) {
+                            that.setValue(key, value);
+                            that.editable.exec('contentChanged');
+                        });
+                    break;
+            }
+        }
+    });*/</span>
+};
+
+AbstractEditAddition.prototype.getValue = <span class="keyword">function</span>(key) {
+    <span class="keyword">var</span> editItem = <span class="keyword">this</span>.getEditItem(key);
+    <span class="keyword">if</span>(<span class="keyword">this</span>.editFunctions[editItem.type]) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.editFunctions[editItem.type].get.call(<span class="keyword">this</span>, editItem, key);
+    }
+};
+
+AbstractEditAddition.prototype.setValue = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">var</span> editItem = <span class="keyword">this</span>.getEditItem(key);
+    <span class="keyword">if</span>(<span class="keyword">this</span>.editFunctions[editItem.type]) {
+        <span class="keyword">this</span>.editFunctions[editItem.type].set.call(<span class="keyword">this</span>, editItem, value);
+        <span class="keyword">this</span>.onSetValue(editItem, value);
+    }
+};
+
+<span class="comment">/**
+ * This method either returns a clone of the editItem for normal keys like 'title', or
+ * creates a new editItem out of a combined key like 'title_text-size' with key title and type text-size
+ */</span>
+AbstractEditAddition.prototype.getEditItem = <span class="keyword">function</span>(key) {
+    <span class="keyword">var</span> type;
+    <span class="keyword">var</span> editItem;
+    <span class="keyword">if</span>(key.indexOf(<span class="string">'_'</span>) > -<span class="number">1</span>) {
+        <span class="keyword">var</span> splitted = key.split(<span class="string">'_'</span>);
+        editItem = object.cloneObject(<span class="keyword">this</span>.config[splitted[<span class="number">0</span>]]);
+        editItem.type = splitted[<span class="number">1</span>];
+    } <span class="keyword">else</span> {
+        editItem = <span class="keyword">this</span>.config[key];
+    }
+    <span class="keyword">return</span> editItem;
+};
+
+AbstractEditAddition.prototype.isTriggerAllowed = <span class="keyword">function</span>() {
+    <span class="comment">//Since the</span>
+    <span class="keyword">var</span> now = Date.now();
+    <span class="keyword">return</span> !<span class="keyword">this</span>.lastSelect || (now - <span class="keyword">this</span>.lastSelect > <span class="number">200</span>);
+};
+
+<span class="comment">//TODO handle svg texts more elegant within a seperated module</span>
+AbstractEditAddition.prototype.setTextAreaContent = <span class="keyword">function</span>($textAreaNode, txtAreaContent) {
+    $textAreaNode.empty();
+    <span class="comment">//TODO: we do not consider the text size for dy !</span>
+    <span class="keyword">var</span> dy = <span class="number">11</span>;
+    $.each(txtAreaContent.split(<span class="string">'\n'</span>), <span class="keyword">function</span>(index, value) {
+        <span class="keyword">if</span>(object.isDefined(value) &amp;&amp; value.trim().length > <span class="number">0</span>) {
+            dom.appendSVGElement($textAreaNode.get(<span class="number">0</span>), {
+                name : <span class="string">'tspan'</span>,
+                attributes : {
+                    dy : dy,
+                    x : <span class="number">2</span>
+                }
+            }, value);
+        }
+    });
+};
+
+AbstractEditAddition.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.remove();
+};
+
+AbstractEditAddition.prototype.select = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.lastSelect = Date.now();
+};
+
+AbstractEditAddition.prototype.remove = <span class="keyword">function</span>() {
+    editPanel.close();
+};
+
+AbstractEditAddition.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.remove();
+};
+
+AbstractEditAddition.prototype.activate = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.remove();
+};
+
+AbstractEditAddition.prototype.onSetValue = <span class="keyword">function</span>(editItem, value) { };
+
+module.exports = AbstractEditAddition;</code></pre>

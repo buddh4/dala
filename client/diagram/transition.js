@@ -220,7 +220,7 @@ Transition.prototype.initEvents = function() {
         }
 
         var dragInitiated = false;
-        var startPosition = that.diagram.getStagePosition(evt.pageX, evt.pageY);
+        var startPosition = that.diagram.getStagePosition(evt);
         var knobIndex = that.getPath().getPathIndexForPosition(startPosition);
 
         if (knobIndex) {
@@ -233,12 +233,22 @@ Transition.prototype.initEvents = function() {
                 //We just start the drag event in case we move more thant 5px away
                 if(!dragInitiated && util.app.isMinDist(startPosition, movePosition, 5)) {
                     var knob = that.knobManager.addKnob(startPosition, knobIndex);
-                    knob.initDrag(event);
+                    knob.initDrag();
                     dragInitiated = true;
                 }
             });
         }
     });
+};
+
+Transition.prototype.addKnob = function(position, index) {
+    if(!this.isInitState()) {
+        index = index || 1;
+        var knob = this.knobManager.addKnob(position, index);
+        this.exec('knob_add', [index, position]);
+        this.update();
+        return knob;
+    }
 };
 
 Transition.prototype.ownsKnobNode = function(knobNode) {
@@ -446,9 +456,9 @@ Transition.prototype.on = function(evt, handler) {
     return this;
 };
 
-Transition.prototype.trigger = function(evt) {
+Transition.prototype.trigger = function(evt, args) {
     if(this.lineArea) {
-        this.lineArea.trigger(evt);
+        this.lineArea.trigger(evt, args);
     }
     return this;
 };

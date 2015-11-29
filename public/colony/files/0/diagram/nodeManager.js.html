@@ -1,0 +1,257 @@
+<h1>nodeManager.js</h1>
+<pre><code class="lang-js">require(<span class="string">'./draggable'</span>);
+require(<span class="string">'./hoverable'</span>);
+
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> xml = require(<span class="string">'../util/xml'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> Node = require(<span class="string">'./node'</span>);
+<span class="keyword">var</span> AbstractManager = require(<span class="string">'./abstractManager'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="keyword">var</span> CMD_ADD = <span class="string">'node_add'</span>;
+<span class="keyword">var</span> CMD_DELETE = <span class="string">'node_delete'</span>;
+<span class="keyword">var</span> CMD_COPY = <span class="string">'node_copy'</span>;
+<span class="keyword">var</span> CMD_DROP = <span class="string">'node_drop'</span>;
+<span class="keyword">var</span> CMD_RESIZE = <span class="string">'node_resize'</span>;
+<span class="keyword">var</span> CMD_EDIT = <span class="string">'node_edit'</span>;
+
+<span class="keyword">var</span> NodeManager = <span class="keyword">function</span>(diagram) {
+    <span class="comment">// Contains all nodes added to the diagram</span>
+    AbstractManager.call(<span class="keyword">this</span>, diagram);
+    <span class="keyword">this</span>.nodes = {};
+
+    <span class="keyword">this</span>.listen(<span class="string">'node_create'</span>, <span class="keyword">this</span>.createNodeListener);
+    <span class="keyword">this</span>.listen(<span class="string">'node_delete'</span>, <span class="keyword">this</span>.deleteNodeListener);
+    <span class="keyword">this</span>.listen(<span class="string">'node_copy'</span>, <span class="keyword">this</span>.copyNodeListener);
+    <span class="keyword">this</span>.listen(<span class="string">'node_droped'</span>, <span class="keyword">this</span>.dropNodeListener);
+    <span class="keyword">this</span>.listen(<span class="string">'node_resized'</span>, <span class="keyword">this</span>.resizeNodeListener);
+
+    <span class="keyword">this</span>.command(CMD_ADD, <span class="keyword">this</span>.createNodeCmd, <span class="keyword">this</span>.deleteNodeCmd);
+    <span class="keyword">this</span>.command(CMD_DELETE, <span class="keyword">this</span>.deleteNodeCmd, <span class="keyword">this</span>.importNodeCmd);
+    <span class="keyword">this</span>.command(CMD_COPY, <span class="keyword">this</span>.importNodeCmd, <span class="keyword">this</span>.deleteNodeCmd);
+    <span class="keyword">this</span>.command(CMD_DROP, <span class="keyword">this</span>.moveNodeCmd, <span class="keyword">this</span>.moveNodeCmd);
+    <span class="keyword">this</span>.command(CMD_RESIZE, <span class="keyword">this</span>.resizeCmd, <span class="keyword">this</span>.resizeCmd);
+    <span class="keyword">this</span>.command(CMD_EDIT, <span class="keyword">this</span>.editCmd, <span class="keyword">this</span>.undoEditCmd);
+};
+
+NodeManager.prototype = Object.create(AbstractManager.prototype);
+<span class="keyword">var</span> _super = AbstractManager.prototype;
+
+NodeManager.prototype.createNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> stagePosition = <span class="keyword">this</span>.diagram.getStagePosition(evt);
+        <span class="keyword">this</span>.createNode(evt.data, stagePosition);
+    } <span class="keyword">catch</span>(err) {
+        console.log(err);
+        event.trigger(<span class="string">'error'</span>, <span class="string">'Error occured while creating node !'</span>);
+    }
+};
+
+NodeManager.prototype.createNode = <span class="keyword">function</span>(tmpl, config) {
+    config = config || {};
+
+    <span class="keyword">if</span>(!tmpl) {
+        event.trigger(<span class="string">'warn'</span>, <span class="string">'Could not create Node: No template selected!'</span>);
+        <span class="keyword">return</span>;
+    }
+
+    config.node_id = <span class="keyword">this</span>.diagram.uniqueId();
+    config.diagramId = <span class="keyword">this</span>.diagram.id;
+    <span class="keyword">return</span> <span class="keyword">this</span>.exec(CMD_ADD, [tmpl, config], [config.node_id]);
+};
+
+NodeManager.prototype.createNodeCmd = <span class="keyword">function</span>(tmpl, config) {
+    <span class="keyword">var</span> node = tmpl.createNode(config, <span class="keyword">this</span>.diagram).init();
+    <span class="keyword">if</span>(!config.preventDrag) {
+        node.draggable();
+    }
+    <span class="keyword">this</span>.addNode(node);
+};
+
+NodeManager.prototype.addNode = <span class="keyword">function</span>(node) {
+    <span class="keyword">this</span>.nodes[node.id] = node;
+    <span class="keyword">this</span>.event.trigger(<span class="string">'node_added'</span>, node);
+};
+
+NodeManager.prototype.activateNode = <span class="keyword">function</span>(elementId, tmpl) {
+    <span class="keyword">var</span> node = tmpl.createNode({}, <span class="keyword">this</span>.diagram)
+        .activate(elementId)
+        .draggable();
+
+    <span class="keyword">this</span>.addNode(node);
+    <span class="keyword">return</span> node;
+};
+
+NodeManager.prototype.deleteNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> node = <span class="keyword">this</span>.getNode(evt.data);
+        <span class="keyword">if</span>(node.knob) {
+            <span class="comment">//CMD is handled by transitionMgr</span>
+            node.remove();
+        } <span class="keyword">else</span> <span class="keyword">if</span>(node) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.exec(CMD_DELETE, [node.id], [<span class="keyword">this</span>.getNodeAsString(node)]);
+        }
+    } <span class="keyword">catch</span>(err) {
+        console.error(err);
+        event.trigger(<span class="string">'error'</span>, <span class="string">'Could not delete node('</span>+node.id+<span class="string">')'</span>);
+    }
+};
+
+NodeManager.prototype.deleteNodeCmd = <span class="keyword">function</span>(node) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">if</span>(node) {
+        node.remove();
+        <span class="keyword">delete</span> <span class="keyword">this</span>.nodes[node.id];
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'delete node was called for unknown node'</span>);
+    }
+};
+
+NodeManager.prototype.importNodeCmd = <span class="keyword">function</span>(nodeStr, cfg) {
+    cfg = cfg || {};
+
+    <span class="comment">//If set we replace the old node id with a new one e.g. when we copy a node</span>
+    <span class="keyword">if</span>(cfg.newId &amp;&amp; cfg.oldId) {
+        nodeStr = nodeStr.replace(<span class="keyword">new</span> RegExp(cfg.oldId, <span class="string">'g'</span>), cfg.newId);
+    }
+
+    <span class="comment">//Insert to dom and activate the new node</span>
+    <span class="keyword">var</span> targetInstance = <span class="keyword">this</span>.diagram.import(nodeStr);
+    <span class="keyword">var</span> node = <span class="keyword">this</span>.diagram.activateNode(targetInstance);
+    <span class="keyword">this</span>.addNode(node);
+
+    <span class="comment">//If set we move the new node to a given position</span>
+    <span class="keyword">if</span>(cfg.mouse) {
+        <span class="keyword">var</span> stagePosition = <span class="keyword">this</span>.diagram.getStagePosition(cfg.mouse);
+        node.moveTo(stagePosition.x, stagePosition.y);
+    }
+};
+
+NodeManager.prototype.getNodeAsString = <span class="keyword">function</span>(node) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">return</span> xml.serializeToString(node.instance());
+};
+
+NodeManager.prototype.copyNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> node = <span class="keyword">this</span>.getNode(evt.data);
+        <span class="keyword">if</span>(object.isDefined(node)) {
+            <span class="keyword">var</span> nodeStr = <span class="keyword">this</span>.getNodeAsString(node);
+            <span class="keyword">var</span> newNodeId = Date.now();
+            <span class="keyword">return</span> <span class="keyword">this</span>.exec(CMD_COPY, [nodeStr,
+                {
+                    mouse : evt.mouse,
+                    oldId : node.id,
+                    newId : newNodeId
+                }], [newNodeId]);
+        }
+    } <span class="keyword">catch</span>(err) {
+        console.log(err);
+        event.trigger(<span class="string">'error'</span>, <span class="string">'Could not copy node !'</span>);
+    }
+};
+
+NodeManager.prototype.dropNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> node = evt.data;
+        <span class="keyword">if</span>(node) {
+            <span class="comment">//We just add the command since we don't want to execute the drag twice</span>
+            <span class="keyword">this</span>.addCmd(CMD_DROP,
+                [node.id, node.dragContext.dxSum, node.dragContext.dySum],
+                [node.id, (-<span class="number">1</span> * node.dragContext.dxSum), (-<span class="number">1</span> * node.dragContext.dySum)]);
+        }
+    } <span class="keyword">catch</span>(err) {
+        console.error(err);
+    }
+};
+
+NodeManager.prototype.moveNodeCmd = <span class="keyword">function</span>(node, dxSum, dySum) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">if</span>(node) {
+        node.triggerDrag(dxSum, dySum);
+    }
+};
+
+NodeManager.prototype.resizeNodeListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">try</span> {
+        <span class="keyword">var</span> node = evt.data;
+        <span class="keyword">if</span>(node) {
+            <span class="keyword">var</span> resizeInstance = node.additions.resize.get();
+            <span class="keyword">this</span>.addCmd(CMD_RESIZE,
+                [node.id, resizeInstance.dx, resizeInstance.dy, resizeInstance.knob],
+                [node.id, (-<span class="number">1</span>*resizeInstance.dx), (-<span class="number">1</span>*resizeInstance.dy), resizeInstance.knob]);
+        }
+    } <span class="keyword">catch</span>(err) {
+        console.log(err);
+    }
+};
+
+NodeManager.prototype.resizeCmd = <span class="keyword">function</span>(node, dx, dy, knob) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">if</span>(node) {
+        node.additions.resize.get().resize(dx,dy,knob);
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'resizeCmd was for unknown node :'</span>+node.toString());
+    }
+};
+
+NodeManager.prototype.getNode = <span class="keyword">function</span>(id) {
+    <span class="keyword">if</span>(object.isString(id) &amp;&amp; !isNaN(id)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.nodes[parseInt(id)];
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!isNaN(id)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.nodes[id];
+    } <span class="keyword">else</span> <span class="keyword">if</span>(id <span class="keyword">instanceof</span> Node) {
+        <span class="comment">//We assume a node instance</span>
+        <span class="keyword">return</span> id;
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'getNode call with no result for :'</span>+id);
+    }
+};
+
+NodeManager.prototype.getNodes = <span class="keyword">function</span>(filter) {
+    <span class="keyword">if</span>(!filter) {
+        <span class="keyword">return</span> object.toArray(<span class="keyword">this</span>.nodes);
+    } <span class="keyword">else</span> {
+        <span class="keyword">var</span> result = [];
+        object.each(<span class="keyword">this</span>.nodes, <span class="keyword">function</span>(key, value) {
+            <span class="keyword">if</span>(filter(value)) {
+                result.push[value];
+            }
+        });
+        <span class="keyword">return</span> result;
+    }
+};
+
+NodeManager.prototype.setEditValue = <span class="keyword">function</span>(node, editKey, newValue) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">if</span>(node) {
+        <span class="keyword">var</span> editConfigItem = <span class="keyword">this</span>.getEditItem(node, editKey);
+        <span class="keyword">return</span> <span class="keyword">this</span>.exec(CMD_EDIT, [node.id, editKey, newValue], [node.id, editKey, editConfigItem.currentVal]);
+    }
+};
+
+NodeManager.prototype.getEditItem = <span class="keyword">function</span>(node, editKey) {
+    node = <span class="keyword">this</span>.getNode(node);
+    <span class="keyword">return</span> node.additions.edit.getEditItem(editKey);
+};
+
+NodeManager.prototype.editCmd = <span class="keyword">function</span>(node, editKey, newValue) {
+    node = <span class="keyword">this</span>.getNode(node);
+    node.additions.edit.setValue(editKey, newValue);
+    event.trigger(<span class="string">'node_edit'</span>, node);
+};
+
+NodeManager.prototype.undoEditCmd = <span class="keyword">function</span>(node, editKey, newValue) {
+    node = <span class="keyword">this</span>.getNode(node);
+    node.additions.edit.setValue(editKey, newValue);
+    event.trigger(<span class="string">'node_edit_undo'</span>, node);
+};
+
+NodeManager.prototype.clear = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.nodes = {};
+};
+
+module.exports = NodeManager;</code></pre>

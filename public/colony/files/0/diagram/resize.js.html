@@ -1,0 +1,351 @@
+<h1>resize.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> Command = require(<span class="string">'../core/command'</span>);
+<span class="keyword">var</span> Transform = require(<span class="string">'../svg/transform'</span>);
+<span class="keyword">var</span> SVG = require(<span class="string">'../svg/svg'</span>);
+<span class="keyword">var</span> DragConfig = require(<span class="string">'../svg/dragConfig'</span>);
+<span class="keyword">var</span> Knob = require(<span class="string">'./knob'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="comment">// We create a small sub query cache for caching all queries without filling the global cache</span>
+<span class="keyword">var</span> cache = $.qCache().sub();
+
+<span class="comment">// Used to identify the different knobs from north west clockwise</span>
+<span class="keyword">var</span> KNOB_NW = <span class="number">0</span>;
+<span class="keyword">var</span> KNOB_N = <span class="number">1</span>;
+<span class="keyword">var</span> KNOB_NE = <span class="number">2</span>;
+<span class="keyword">var</span> KNOB_E = <span class="number">3</span>;
+<span class="keyword">var</span> KNOB_SE = <span class="number">4</span>;
+<span class="keyword">var</span> KNOB_S = <span class="number">5</span>;
+<span class="keyword">var</span> KNOB_SW = <span class="number">6</span>;
+<span class="keyword">var</span> KNOB_W = <span class="number">7</span>;
+
+
+<span class="comment">// specifies the space between node and resize knob</span>
+<span class="keyword">var</span> DIF = <span class="number">3</span>;
+
+<span class="comment">// specifies the size of a knob</span>
+<span class="keyword">var</span> SIZE = <span class="number">5</span>;
+
+<span class="comment">// used for calculating the position of the knobs</span>
+<span class="keyword">var</span> DIF_REL = DIF + SIZE;
+
+<span class="keyword">var</span> Resize = <span class="keyword">function</span>(node, diagram) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.event = diagram.event;
+    <span class="keyword">this</span>.knobs = [];
+    <span class="keyword">this</span>.node = node;
+    <span class="keyword">this</span>.config = <span class="keyword">this</span>.node.template.config.resize;
+};
+
+<span class="comment">/**
+ * Renders the knobs around the node.
+ */</span>
+Resize.prototype.activateKnobs = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> positions = <span class="keyword">this</span>.calculateKnobPosition();
+
+    <span class="keyword">var</span> translX = <span class="keyword">this</span>.node.root.x() - DIF_REL;
+    <span class="keyword">var</span> translY = <span class="keyword">this</span>.node.root.y() - DIF_REL;
+    <span class="keyword">this</span>.group = <span class="keyword">this</span>.diagram.svg.g({}).translate(translX, translY);
+
+    <span class="comment">//Initialize the different knobs with different drag restricitons</span>
+    <span class="keyword">this</span>.createKnob(KNOB_NW,positions[KNOB_NW],<span class="keyword">new</span> DragConfig());
+    <span class="keyword">this</span>.createKnob(KNOB_N, positions[KNOB_N],<span class="keyword">new</span> DragConfig().yOnly());
+    <span class="keyword">this</span>.createKnob(KNOB_NE,positions[KNOB_NE],<span class="keyword">new</span> DragConfig());
+    <span class="keyword">this</span>.createKnob(KNOB_E, positions[KNOB_E],<span class="keyword">new</span> DragConfig().xOnly());
+    <span class="keyword">this</span>.createKnob(KNOB_SE,positions[KNOB_SE],<span class="keyword">new</span> DragConfig());
+    <span class="keyword">this</span>.createKnob(KNOB_S, positions[KNOB_S], <span class="keyword">new</span> DragConfig().yOnly());
+    <span class="keyword">this</span>.createKnob(KNOB_SW,positions[KNOB_SW],<span class="keyword">new</span> DragConfig());
+    <span class="keyword">this</span>.createKnob(KNOB_W, positions[KNOB_W],<span class="keyword">new</span> DragConfig().xOnly());
+
+
+};
+
+<span class="comment">/**
+ * Renders a knob to the given position and configures the drag and hover
+ * logic. The total drag amount of one drag is can be acessed through
+ * this.dx and this.dy.
+ */</span>
+Resize.prototype.createKnob = <span class="keyword">function</span>(knob, p, dragCfg) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="comment">// Initialize draglogic</span>
+    <span class="keyword">var</span> dragHook = dragCfg
+        .dragStart(<span class="keyword">function</span>(evt) {
+            that.dx = <span class="number">0</span>;
+            that.dy = <span class="number">0</span>;
+            that.dragKnob = knob;
+        })
+        .dragMove(<span class="keyword">function</span>(evt, dx, dy) {
+            <span class="comment">//We keep track of the total drag movement</span>
+            that.dx += dx;
+            that.dy += dy;
+            that.resize(dx,dy);
+        })
+        .dragEnd(<span class="keyword">function</span>(evt) {
+            that.event.trigger(<span class="string">'node_resized'</span>, that.node);
+        })
+        .getScale(<span class="keyword">function</span>() {
+            <span class="keyword">return</span> that.diagram.scale;
+        }).get();
+
+    dragHook.preventAlignment = <span class="literal">true</span>;
+
+    <span class="comment">// Render the knob on stage</span>
+    <span class="keyword">this</span>.knobs[knob] = <span class="keyword">new</span> Knob(<span class="keyword">this</span>.diagram, p, {type:<span class="string">'rect'</span>, fill:<span class="string">'black'</span>, stroke:<span class="string">'none'</span>, selectable:<span class="literal">false</span>, <span class="string">'stroke-width'</span>:<span class="number">0</span>, size:SIZE, <span class="string">'fill-opacity'</span>:<span class="number">1</span>}, <span class="keyword">this</span>.group)
+        .draggable(dragHook).hoverable();
+};
+
+<span class="comment">/**
+ * Determines all svg elements participating in the resize process, which
+ * are configured in the resize config bind attribute
+ */</span>
+Resize.prototype.getResizeElements = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(<span class="keyword">this</span>.config, <span class="keyword">function</span>(index, value) {
+        result[index] = SVG.get(cache.$(that.node.getNodeSelector(value.bind)));
+    });
+    <span class="keyword">return</span> result;
+};
+
+<span class="comment">/**
+ * Updates the resize logic
+ */</span>
+Resize.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize(<span class="number">0</span>,<span class="number">0</span>);
+};
+
+<span class="comment">/**
+ * Resizes the node by applying the configured resize logic to the inner
+ * svg elements of the nodes. The dx and dy values specifie the resize
+ * amount of the x- and y-axis. After the actual resize process the knobs
+ * are aligned to the new node dimension.
+ */</span>
+Resize.prototype.resize = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">this</span>.updateNodes(dx,dy);
+    <span class="keyword">this</span>.updateKnobs(<span class="literal">true</span>);
+};
+
+<span class="comment">/**
+ * Aligns a single knob to the
+ * @param {type} resizeKnob
+ * @returns {undefined}
+ */</span>
+Resize.prototype.updateKnobs = <span class="keyword">function</span>(resizeKnob) {
+    <span class="keyword">if</span>(object.isDefined(<span class="keyword">this</span>.group)) {
+        <span class="keyword">if</span>(object.isDefined(resizeKnob) &amp;&amp; resizeKnob) {
+            <span class="keyword">var</span> positions = <span class="keyword">this</span>.calculateKnobPosition();
+
+            <span class="keyword">this</span>.knobs[KNOB_NW].moveTo(positions[KNOB_NW]);
+            <span class="keyword">this</span>.knobs[KNOB_N].moveTo(positions[KNOB_N]);
+            <span class="keyword">this</span>.knobs[KNOB_NE].moveTo(positions[KNOB_NE]);
+            <span class="keyword">this</span>.knobs[KNOB_E].moveTo(positions[KNOB_E]);
+            <span class="keyword">this</span>.knobs[KNOB_SE].moveTo(positions[KNOB_SE]);
+            <span class="keyword">this</span>.knobs[KNOB_S].moveTo(positions[KNOB_S]);
+            <span class="keyword">this</span>.knobs[KNOB_SW].moveTo(positions[KNOB_SW]);
+            <span class="keyword">this</span>.knobs[KNOB_W].moveTo(positions[KNOB_W]);
+            <span class="keyword">this</span>.node.exec(<span class="string">'resize'</span>);
+        } <span class="keyword">else</span> {
+            <span class="comment">//If the flag is not set we just do an update probably from simple node drag/drop</span>
+            <span class="keyword">var</span> translX = <span class="keyword">this</span>.node.root.getTransformation().translate().x - DIF_REL;
+            <span class="keyword">var</span> translY = <span class="keyword">this</span>.node.root.getTransformation().translate().y - DIF_REL;
+            <span class="keyword">this</span>.group.translate(translX, translY);
+        }
+    }
+};
+
+Resize.prototype.calculateKnobPosition = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> rightX = SIZE + (DIF*<span class="number">2</span>) + <span class="keyword">this</span>.node.width();
+    <span class="keyword">var</span> centerX = rightX / <span class="number">2</span>;
+    <span class="keyword">var</span> bottomY = SIZE + (DIF*<span class="number">2</span>) + <span class="keyword">this</span>.node.height();
+    <span class="keyword">var</span> centerY = bottomY / <span class="number">2</span>;
+
+
+    <span class="keyword">var</span> result = [];
+    result[KNOB_NW] = {x:<span class="number">0</span>, y:<span class="number">0</span>};
+    result[KNOB_N] = {x:centerX, y:<span class="number">0</span>};
+    result[KNOB_NE] = {x:rightX, y:<span class="number">0</span>};
+    result[KNOB_E] = {x:rightX, y:centerY};
+    result[KNOB_SE] = {x:rightX, y:bottomY};
+    result[KNOB_S] = {x:centerX, y:bottomY};
+    result[KNOB_SW] = {x:<span class="number">0</span>, y:bottomY};
+    result[KNOB_W] = {x:<span class="number">0</span>, y:centerY};
+    <span class="keyword">return</span> result;
+
+};
+
+Resize.prototype.removeKnobs = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(object.isDefined(<span class="keyword">this</span>.group)) {
+        <span class="keyword">this</span>.group.remove();
+    }
+    <span class="keyword">delete</span> <span class="keyword">this</span>.group;
+};
+
+Resize.prototype.updateNodes = <span class="keyword">function</span>(dx,dy) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">if</span>(!object.isDefined(<span class="keyword">this</span>.resizeElements)) {
+        <span class="keyword">this</span>.resizeElements = <span class="keyword">this</span>.getResizeElements();
+    }
+
+    object.each(<span class="keyword">this</span>.resizeElements, <span class="keyword">function</span>(index, element) {
+        that.updateNode(index,element,dx,dy);
+    }) ;
+};
+
+Resize.prototype.updateNode = <span class="keyword">function</span>(index, element, dx, dy) {
+    dx = (!object.isDefined(dx))? <span class="number">0</span> : dx;
+    dy = (!object.isDefined(dy))? <span class="number">0</span> : dy;
+
+    <span class="keyword">var</span> elementConfig = <span class="keyword">this</span>.config[index];
+    <span class="keyword">if</span>(object.isDefined(elementConfig.value)) {
+        <span class="keyword">if</span>(elementConfig.value[<span class="number">0</span>].type !== <span class="string">'vertical'</span>) {
+            <span class="keyword">this</span>.setResize(element, elementConfig, elementConfig.value[<span class="number">0</span>], dx, <span class="string">'width'</span>);
+        }
+        <span class="comment">//We just set one dimension for a circle</span>
+        <span class="keyword">if</span>(elementConfig.value[<span class="number">0</span>].type !== <span class="string">'circle'</span> || <span class="keyword">this</span>.dragKnob === KNOB_S || <span class="keyword">this</span>.dragKnob === KNOB_N) {
+            <span class="keyword">this</span>.setResize(element,elementConfig, elementConfig.value[<span class="number">1</span>], dy, <span class="string">'height'</span>);
+        }
+    }
+
+    <span class="keyword">if</span>(object.isDefined(elementConfig.min)) {
+        <span class="keyword">this</span>.alignValueLimit(element, elementConfig.min[<span class="number">0</span>], <span class="string">'width'</span>, <span class="string">'min'</span>);
+        <span class="keyword">this</span>.alignValueLimit(element, elementConfig.min[<span class="number">1</span>], <span class="string">'height'</span>, <span class="string">'min'</span>);
+    }
+
+    <span class="keyword">if</span>(object.isDefined(elementConfig.max)) {
+        <span class="keyword">this</span>.alignValueLimit(element, elementConfig.max[<span class="number">0</span>], <span class="string">'width'</span>, <span class="string">'max'</span>);
+        <span class="keyword">this</span>.alignValueLimit(element, elementConfig.max[<span class="number">1</span>], <span class="string">'height'</span>, <span class="string">'max'</span>);
+    }
+
+    <span class="keyword">if</span>(object.isDefined(elementConfig.position)) {
+        <span class="keyword">this</span>.alignPosition(element, elementConfig);
+    }
+};
+
+Resize.prototype.setResize = <span class="keyword">function</span>(svgElement, elementConfig, setting, d, dimension) {
+    <span class="keyword">switch</span>(setting.type) {
+        <span class="keyword">case</span> <span class="string">'static'</span>:
+        <span class="keyword">case</span> <span class="string">'none'</span>:
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'vertical'</span>:
+            <span class="keyword">var</span> newY = parseInt(svgElement.attr(<span class="string">'y2'</span>)) + d;
+            svgElement.attr(<span class="string">'y2'</span>, newY);
+        <span class="keyword">case</span> <span class="string">'parent'</span>:
+            <span class="comment">//We could check the resize settings of the parent if this is static</span>
+            <span class="comment">//we do not have to change anything when resizing.</span>
+            svgElement[dimension](<span class="number">1</span>);
+
+            <span class="comment">//Get the dimension from parent node</span>
+            <span class="keyword">var</span> parentVal = svgElement.$().parent().get(<span class="number">0</span>).getBBox()[dimension];
+            svgElement[dimension](parentVal + setting.value);
+            <span class="keyword">break</span>;
+        <span class="keyword">default</span>:
+            <span class="keyword">var</span> currentVal = svgElement[dimension]() ;
+            <span class="keyword">var</span> newValue = (currentVal + d);
+            <span class="keyword">if</span>(newValue > <span class="number">0</span>) {
+                svgElement[dimension]((currentVal + d));
+            }
+            <span class="keyword">break</span>;
+    }
+};
+
+Resize.prototype.alignValueLimit = <span class="keyword">function</span>(svgElement, setting, dimension, type) {
+    <span class="keyword">var</span> value = setting.type;
+    <span class="keyword">var</span> limit;
+
+    <span class="keyword">if</span>(value === <span class="string">'parent'</span>) {
+        limit = svgElement.$().parent()[<span class="number">0</span>].getBBox()[dimension];
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!isNaN(value)) {
+        limit = parseInt(value);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(util.string.startsWith(value, <span class="string">'#'</span>)) {
+        limit = cache.$(<span class="keyword">this</span>.node.getNodeSelector(value))[<span class="number">0</span>].getBBox()[dimension];
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">if</span>(object.isDefined(setting.value)) {
+        limit += setting.value;
+    }
+
+    <span class="keyword">var</span> currentVal = svgElement[dimension]()
+    <span class="keyword">if</span>((type === <span class="string">'min'</span> &amp;&amp; currentVal &lt; limit) || (type === <span class="string">'max'</span> &amp;&amp; currentVal > limit)) {
+        svgElement[dimension](limit);
+    }
+};
+
+Resize.prototype.alignPosition = <span class="keyword">function</span>(svgElement, elementConfig) {
+    <span class="comment">//var setting = elementConfig.</span>
+    <span class="comment">//TODO: set alignElement id in config !</span>
+    <span class="keyword">var</span> x = <span class="keyword">this</span>.getAlignedValue(svgElement,elementConfig.position[<span class="number">0</span>], elementConfig.alignto, <span class="string">'width'</span> , <span class="string">'x'</span>);
+    <span class="keyword">var</span> y = <span class="keyword">this</span>.getAlignedValue(svgElement,elementConfig.position[<span class="number">1</span>], elementConfig.alignto, <span class="string">'height'</span>, <span class="string">'y'</span>);
+
+    <span class="keyword">if</span>(object.isDefined(x)) {
+        svgElement.moveX(x);
+    }
+
+    <span class="keyword">if</span>(object.isDefined(y)) {
+        svgElement.moveY(y);
+    }
+};
+
+Resize.prototype.getAlignedValue = <span class="keyword">function</span>(svgElement, settings, alignto, dimension, dimensionCoord) {
+    <span class="keyword">switch</span>(settings.type) {
+        <span class="keyword">case</span> <span class="string">'none'</span>:
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'center'</span>:
+            <span class="keyword">var</span> alignSVG = <span class="keyword">this</span>.getAlignElement(alignto, svgElement);
+            <span class="keyword">if</span>(object.isDefined(alignSVG)) {
+                <span class="keyword">var</span> alignVal = alignSVG[dimension]();
+                <span class="keyword">return</span> (alignVal - svgElement[dimension]()) / <span class="number">2</span> + settings.value;
+            };
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'relative'</span>:
+            <span class="keyword">var</span> $prevNode = svgElement.$().prev();
+            <span class="keyword">if</span>($prevNode.length) {
+                <span class="keyword">var</span> prevSVG = cache.svg($prevNode);
+                <span class="keyword">var</span> prevVal = prevSVG[dimension]();
+                <span class="keyword">var</span> prevCoord = prevSVG[dimensionCoord]();
+                <span class="keyword">return</span> (prevCoord + prevVal) + settings.value;
+            } <span class="keyword">else</span> {
+                <span class="comment">//No prev sibling</span>
+                <span class="keyword">return</span> <span class="number">0</span>;
+            };
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'right'</span>:
+        <span class="keyword">case</span> <span class="string">'bottom'</span>:
+            <span class="keyword">var</span> alignSVG = <span class="keyword">this</span>.getAlignElement(alignto, svgElement);
+            <span class="keyword">if</span>(object.isDefined(alignSVG)) {
+                <span class="keyword">var</span> alignVal = (settings.type === <span class="string">'right'</span>)? alignSVG.getRightX():alignSVG.getBottomY();
+                <span class="keyword">return</span> (alignVal - svgElement[dimension]()) - settings.value;
+            };
+            <span class="keyword">break</span>;
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span>;
+    }
+};
+
+Resize.prototype.getAlignElement = <span class="keyword">function</span>(alignto, svgElement) {
+    <span class="keyword">var</span> elementToAlign;
+    <span class="comment">//The alignto setting can be the parent-, root- or an explicit element default is the previous sibling element</span>
+    <span class="keyword">if</span>(!alignto || alignto === <span class="string">'prev'</span>) {
+        elementToAlign = cache.svg(svgElement.$().prev());
+    }<span class="keyword">else</span> <span class="keyword">if</span>(!alignto || alignto === <span class="string">'parent'</span>) {
+        elementToAlign = cache.svg(svgElement.$().parent());;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(alignto === <span class="string">'root'</span>) {
+        elementToAlign = <span class="keyword">this</span>.node.root;
+    } <span class="keyword">else</span> {
+        elementToAlign = $.qCache(<span class="keyword">this</span>.node.getNodeSelector(alignto)).svg();
+    }
+
+    <span class="keyword">if</span>(!elementToAlign) {
+        console.warn(<span class="string">'Could not determine alignto element "'</span>+alignto+<span class="string">'" for node '</span>+node.id);
+    }
+
+    <span class="keyword">return</span> elementToAlign;
+};
+
+module.exports = Resize;
+</code></pre>

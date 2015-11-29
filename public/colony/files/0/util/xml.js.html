@@ -1,0 +1,64 @@
+<h1>xml.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> string = require(<span class="string">'./string'</span>);
+
+<span class="keyword">var</span> serializeToString = <span class="keyword">function</span>(node) {
+    <span class="keyword">var</span> s = <span class="keyword">new</span> XMLSerializer();
+    node = (node.jQuery) ? node[<span class="number">0</span>] : node;
+    <span class="keyword">return</span> s.serializeToString(node);
+};
+
+<span class="keyword">var</span> parseXML = <span class="keyword">function</span>(strData) {
+    <span class="keyword">return</span> $.parseXML(strData);
+};
+
+<span class="keyword">var</span> format = <span class="function"><span class="keyword">function</span> <span class="params">(xml)</span> {</span>
+    <span class="keyword">var</span> intend = -<span class="number">1</span>;
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+    xml = xml.replace(<span class="regexp">/(\r\n|\n|\r)/gm</span>,<span class="string">""</span>);
+    <span class="keyword">var</span> lastWasClose = <span class="literal">false</span>;
+    <span class="keyword">var</span> lastHadText = <span class="literal">false</span>;
+    $.each(xml.split(<span class="string">'&lt;'</span>), <span class="keyword">function</span>(index, node) {
+        node = node.trim();
+        <span class="keyword">if</span>(node) {
+            <span class="keyword">if</span>(node.indexOf(<span class="string">'/'</span>) !== <span class="number">0</span>) {
+                <span class="keyword">if</span>(!lastWasClose) {
+                    intend++;
+                }
+
+                lastHadText = !string.endsWith(node, <span class="string">'>'</span>);
+                lastWasClose = string.endsWith(node, <span class="string">'/>'</span>);
+            } <span class="keyword">else</span> {
+                <span class="keyword">if</span>(!lastHadText) {
+                    lastWasClose = <span class="literal">true</span>;
+                    intend--;
+                }
+                lastHadText = !string.endsWith(node, <span class="string">'>'</span>);
+            }
+
+            <span class="keyword">var</span> padding = <span class="string">''</span>;
+            <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; intend; i++) {
+                padding += <span class="string">'  '</span>;
+            }
+
+            <span class="keyword">var</span> text;
+            <span class="keyword">if</span>(lastHadText) {
+                <span class="keyword">var</span> splitted = node.split(<span class="string">'>'</span>);
+                node = splitted[<span class="number">0</span>] + <span class="string">'>'</span>;
+                text = splitted[<span class="number">1</span>];
+            }
+            result += padding + <span class="string">'&lt;'</span>+node+<span class="string">'\r\n'</span>;
+
+            <span class="keyword">if</span>(text) {
+                result += padding + <span class="string">'  '</span> + text+<span class="string">'\r\n'</span>;
+            }
+
+        }
+    });
+    <span class="keyword">return</span> result;
+};
+
+module.exports = {
+    serializeToString : serializeToString,
+    parseXML : parseXML,
+    format: format
+};</code></pre>

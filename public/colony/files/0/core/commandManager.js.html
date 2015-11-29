@@ -1,0 +1,98 @@
+<h1>commandManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+<span class="keyword">var</span> event = require(<span class="string">'./event'</span>);
+
+<span class="comment">//Command instances for diagrams</span>
+<span class="keyword">var</span> instances = {};
+
+<span class="keyword">var</span> sub = <span class="keyword">function</span>(subId, updateHandler) {
+    <span class="keyword">return</span> instances[subId] = <span class="keyword">new</span> CommandManager(subId, updateHandler);
+};
+
+<span class="keyword">var</span> exec = <span class="keyword">function</span>(subId, cmdId, doArgs, undoArgs, preventRedo) {
+    <span class="keyword">var</span> instance = instances[subId];
+    <span class="keyword">if</span>(instance) {
+        instance.exec(cmdId, doArgs, undoArgs, preventRedo);
+    }
+};
+
+<span class="keyword">var</span> CommandManager = <span class="keyword">function</span>(subId, updateHandler) {
+    <span class="keyword">this</span>.subId = subId;
+    <span class="keyword">this</span>.commands = {};
+    <span class="keyword">this</span>.undoCommands = [];
+    <span class="keyword">this</span>.redoCommands = [];
+    <span class="keyword">this</span>.updateHandler = updateHandler;
+};
+
+<span class="comment">/**
+ * We can register a new command for this given command instance (mostly a command for a specific diagram instance)
+ * which is identified by its string id.
+ *
+ * The client and action attribute for the do and undo action should be set for the given actions.
+ *
+ * @param cmdId string id
+ * @param cmd command instance
+ */</span>
+CommandManager.prototype.register = <span class="keyword">function</span>(cmdId, cmd) {
+    <span class="keyword">this</span>.commands[cmdId] = cmd;
+};
+
+CommandManager.prototype.exec = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">var</span> cmdInstance = <span class="keyword">this</span>.add(cmdId, doArgs, undoArgs);
+    <span class="keyword">if</span>(cmdInstance) {
+        console.log(<span class="string">'Execute command '</span>+cmdInstance.id);
+        cmdInstance.exec();
+    }
+};
+
+CommandManager.prototype.add = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">var</span> command = <span class="keyword">this</span>.commands[cmdId];
+    <span class="keyword">if</span>(command) {
+        <span class="keyword">this</span>.updated(command);
+        <span class="keyword">var</span> cmdInstance = command.instance(doArgs,undoArgs);
+        <span class="keyword">if</span>(cmdInstance) {
+            cmdInstance.id = cmdId+<span class="string">'_'</span>+Date.now();
+            console.log(<span class="string">'Add command '</span>+cmdInstance.id);
+            <span class="keyword">this</span>.undoCommands.push(cmdInstance);
+            <span class="keyword">this</span>.redoCommands = [];
+        }
+        <span class="keyword">return</span> cmdInstance
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'Unregistered command '</span>+cmdId+<span class="string">' was called.'</span>);
+    }
+};
+
+CommandManager.prototype.undo = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> command = <span class="keyword">this</span>.undoCommands.pop();
+    <span class="keyword">if</span>(object.isDefined(command) &amp;&amp; object.isDefined(command.undo)) {
+        command.undo.apply(command);
+        console.log(<span class="string">'Undo command '</span>+command.id);
+        <span class="keyword">this</span>.redoCommands.push(command);
+        <span class="keyword">this</span>.updated(command);
+    }
+};
+
+CommandManager.prototype.redo = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> command = <span class="keyword">this</span>.redoCommands.pop();
+    <span class="keyword">if</span>(object.isDefined(command) &amp;&amp; object.isDefined(command.exec)) {
+        command.exec.apply(command);
+        console.log(<span class="string">'Redo command '</span>+command.id);
+        <span class="keyword">this</span>.undoCommands.push(command);
+        <span class="keyword">this</span>.updated(command);
+    }
+};
+
+CommandManager.prototype.updated = <span class="keyword">function</span>(command) {
+    <span class="keyword">this</span>.lastChange = Date.now();
+    <span class="keyword">if</span>(<span class="keyword">this</span>.updateHandler) {
+        <span class="keyword">this</span>.updateHandler(command);
+    }
+}
+
+module.exports = {
+    sub : sub
+};
+
+</code></pre>

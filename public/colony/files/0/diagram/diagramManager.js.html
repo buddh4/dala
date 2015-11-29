@@ -1,0 +1,93 @@
+<h1>diagramManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Diagram = require(<span class="string">'./diagram'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> client = require(<span class="string">'../core/client'</span>);
+
+<span class="keyword">var</span> userManager = require(<span class="string">'../user/userManager'</span>);
+
+<span class="keyword">var</span> diagrams = {};
+<span class="keyword">var</span> activeDiagramId;
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'diagram_new'</span>, newDiagramListener);
+    event.listen(<span class="string">'tab_activated'</span>, activeTabListener);
+    event.listen(<span class="string">'key_save_press'</span>, saveDiagram);
+
+    event.listen(<span class="string">'view_zoomIn'</span>, zoomIn);
+    event.listen(<span class="string">'view_zoomOut'</span>, zoomOut);
+
+    event.listen(<span class="string">'key_redo_press'</span>, redoCommand);
+    event.listen(<span class="string">'key_undo_press'</span>, undoCommand);
+};
+
+<span class="keyword">var</span> undoCommand = <span class="keyword">function</span>(evt) {
+    getActiveDiagram().undoCommand();
+};
+
+<span class="keyword">var</span> redoCommand = <span class="keyword">function</span>(evt) {
+    getActiveDiagram().redoCommand();
+};
+
+<span class="keyword">var</span> saveDiagram = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> activeDiagram = getActiveDiagram();
+    <span class="keyword">if</span>(activeDiagram &amp;&amp; userManager.isLoggedIn()){
+        <span class="comment">//TODO: Remove Dockings.....</span>
+        <span class="comment">//TODO: check if loggedIn, if not login first dialog... or save via browser cache ?</span>
+        <span class="keyword">var</span> data = {
+            <span class="string">"diagram"</span> : activeDiagram.asString(),
+            <span class="string">"diagramId"</span> : activeDiagram.id,
+            <span class="string">"projectId"</span> : activeDiagram.projectId,
+            <span class="string">"title"</span> : activeDiagram.title
+        };
+        client.post(<span class="string">'/project/saveDiagram'</span>, data, {
+            success : <span class="keyword">function</span>(response) {},
+            error : <span class="keyword">function</span>(status, error, errorcode) {},
+            errorMessage : {
+                <span class="string">'default'</span>: <span class="string">'Could not save diagram, please try again later or backup via download!'</span>,
+                <span class="string">'401'</span>:  <span class="string">'Could not save diagram. Please login or create an account first!'</span>
+            },
+            successMessage : <span class="string">'Diagram was saved !'</span>
+        });
+    }
+
+}
+
+<span class="keyword">var</span> createDiagramId = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> Date.now() + <span class="string">'_'</span> +userManager.getUserId();
+}
+
+<span class="keyword">var</span> newDiagramListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> diagramId = evt.data.diagramId;
+    <span class="keyword">var</span> stageId = evt.data.stageId;
+    <span class="keyword">var</span> projectId = evt.data.projectId;
+    <span class="keyword">var</span> title = evt.data.title;
+    evt.data.diagramId = diagramId;
+    diagrams[diagramId] = <span class="keyword">new</span> Diagram({id:diagramId, container:<span class="string">'#'</span>+stageId, projectId: projectId, title: title});
+    event.trigger(<span class="string">'diagram_initialized'</span>, evt.data);
+};
+
+<span class="keyword">var</span> activeTabListener = <span class="keyword">function</span>(evt) {
+    activeDiagramId = evt.data;
+    console.log(<span class="string">'AcitveDiagramId: '</span>+activeDiagramId);
+};
+
+<span class="keyword">var</span> zoomIn = <span class="keyword">function</span>() {
+    getActiveDiagram().zoomIn();
+    event.trigger(<span class="string">'view_zoomedIn'</span>);
+}
+
+<span class="keyword">var</span> zoomOut = <span class="keyword">function</span>() {
+    getActiveDiagram().zoomOut();
+    event.trigger(<span class="string">'view_zoomedOut'</span>);
+}
+
+<span class="keyword">var</span> getActiveDiagram = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> diagrams[activeDiagramId];
+}
+
+initListener();
+
+module.exports = {
+    getActiveDiagram: getActiveDiagram,
+    createDiagramId : createDiagramId
+};</code></pre>

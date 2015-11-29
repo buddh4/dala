@@ -1,0 +1,94 @@
+<h1>transform.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> DomElement = require(<span class="string">'../dom/domElement'</span>);
+
+<span class="keyword">var</span> Transform = <span class="keyword">function</span>(def) {
+    <span class="keyword">if</span>(<span class="keyword">typeof</span> def !== <span class="string">'undefined'</span> ) {
+        <span class="keyword">if</span>(object.isString(def)) {
+            <span class="keyword">this</span>.setDefinitionFromString(def);
+        } <span class="keyword">else</span> {
+            <span class="keyword">this</span>.definition = def;
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.definition = {};
+    }
+};
+
+Transform.prototype.setDefinitionFromString = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.definition) {
+        <span class="keyword">this</span>.definition = {};
+    }
+
+    <span class="comment">// extract 'translate(200 200) rotate(45 50 50)' to "translate" "200 200" " rotate" "45 50 50" ""</span>
+    <span class="keyword">var</span> transformations = value.split(<span class="regexp">/[\(\)]+/</span>);
+    <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>;i &lt; transformations.length; i += <span class="number">2</span>) {
+        <span class="keyword">var</span> transformation = transformations[i].trim();
+        <span class="keyword">if</span>(transformation.length > <span class="number">0</span>) {
+            <span class="keyword">var</span> values = DomElement.getAttributeValueFromStringList(transformations[i+<span class="number">1</span>]);
+            <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; values.length; i++) {
+                <span class="comment">// We prefer integer values for calculations</span>
+                <span class="keyword">if</span>(!isNaN(values[i])) {
+                    values[i] = parseInt(values[i]);
+                }
+            }
+            <span class="keyword">this</span>.definition[transformation] = values;
+        }
+    }
+};
+
+Transform.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> values = [];
+    <span class="keyword">for</span>(<span class="keyword">var</span> key <span class="keyword">in</span> <span class="keyword">this</span>.definition) {
+        <span class="keyword">if</span>(<span class="keyword">this</span>.definition.hasOwnProperty((key))) {
+            <span class="comment">// first we assamble all transformations in an array ['translate(30)','rotate(45 50 50)']</span>
+            <span class="keyword">var</span> singleTransformation = key+<span class="string">'('</span>+DomElement.getAttributeString(<span class="keyword">this</span>.definition[key])+<span class="string">')'</span>;
+            values.push(singleTransformation);
+        }
+    }
+    <span class="comment">// merge the transformations to one attributestring</span>
+    <span class="keyword">var</span> valueStr = DomElement.getAttributeString(values);
+
+    <span class="keyword">if</span>(valueStr.length > <span class="number">0</span>) {
+        <span class="keyword">return</span> valueStr;
+    } <span class="keyword">else</span> {
+        <span class="comment">// if we don't have any transormations set we just return an empty string</span>
+        <span class="keyword">return</span> <span class="string">''</span>;
+    }
+};
+
+Transform.prototype.hasTransformation = <span class="keyword">function</span>(key) {
+    <span class="keyword">return</span> (<span class="keyword">typeof</span> definition[key] !== <span class="string">'undefined'</span>);
+};
+
+Transform.prototype.scale = <span class="keyword">function</span>(s) {
+    <span class="keyword">if</span>(s) {
+        <span class="keyword">this</span>.definition.scale = s;
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.definition.scale;
+    }
+};
+
+Transform.prototype.translate = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">var</span> p = util.math.getPoint(x,y);
+
+    <span class="keyword">if</span>(object.isDefined(p)) {
+        <span class="keyword">this</span>.definition.translate = [p.x, p.y];
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="keyword">if</span>(<span class="keyword">this</span>.definition.translate) {
+            <span class="keyword">return</span> {
+                x : <span class="keyword">this</span>.definition.translate[<span class="number">0</span>],
+                y : <span class="keyword">this</span>.definition.translate[<span class="number">1</span>]
+            };
+        } <span class="keyword">else</span> {
+            <span class="keyword">return</span> {
+                x : <span class="number">0</span>,
+                y : <span class="number">0</span>
+            }
+        }
+    }
+}
+
+module.exports = Transform;</code></pre>

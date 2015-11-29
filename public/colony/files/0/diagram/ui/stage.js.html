@@ -1,0 +1,113 @@
+<h1>stage.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../../core/event'</span>);
+<span class="keyword">var</span> stringUtil = require(<span class="string">'../../util/string'</span>);
+<span class="keyword">var</span> objectUtil = require(<span class="string">'../../util/object'</span>);
+<span class="keyword">var</span> diagramManager = require(<span class="string">'../diagramManager'</span>);
+<span class="keyword">var</span> userManager = require(<span class="string">'../../user/userManager'</span>);
+
+<span class="keyword">var</span> CONTAINER_SELECTOR = <span class="string">'#diagramStage'</span>
+<span class="keyword">var</span> $CONTAINER_NODE = $(CONTAINER_SELECTOR);
+<span class="keyword">var</span> TAB_CONTAINER_PREFIX = <span class="string">'file_'</span>;
+<span class="keyword">var</span> TAB_STAGE_PREFIX = <span class="string">'stage_'</span>;
+
+<span class="keyword">var</span> tabs;
+
+<span class="keyword">var</span> tabTemplate = <span class="string">'&lt;li>&lt;a href="#{href}">#{label}&lt;/a> &lt;span class="ui-icon ui-icon-close" style="float:right;" role="presentation">Remove Tab&lt;/span>&lt;/li>'</span>;
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'tab_new'</span>, newFileListener);
+    event.listen(<span class="string">'diagram_updated'</span>, diagramUpdatedListener);
+    event.listen(<span class="string">'diagram_initialized'</span>, showTabListener);
+};
+
+<span class="keyword">var</span> newFileListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> settings = (evt.data) ? evt.data : {
+        projectId : <span class="string">'default'</span>,
+        title : <span class="string">'new'</span>
+    }
+    addTab(settings);
+};
+
+<span class="keyword">var</span> diagramUpdatedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> diagramId = evt.data;
+    <span class="keyword">var</span> $tabLink = getTabLinkForDiagramId(diagramId);
+    <span class="keyword">var</span> text = $tabLink.text();
+    <span class="keyword">if</span>(!stringUtil.endsWith(text, <span class="string">'*'</span>)) {
+        $tabLink.text(text+<span class="string">'*'</span>);
+    }
+};
+
+<span class="keyword">var</span> addTab = <span class="keyword">function</span>(settings) {
+    <span class="keyword">var</span> projectId = (objectUtil.isString(settings)) ? settings : settings.projectId;
+    <span class="keyword">var</span> title = (objectUtil.isString(settings)) ? <span class="string">'new'</span> : settings.title;
+
+    <span class="comment">// We use the timestamp to identify the tab/stage/diagram</span>
+    <span class="keyword">var</span> diagramId = diagramManager.createDiagramId();
+    <span class="keyword">var</span> id = TAB_CONTAINER_PREFIX+diagramId;
+    <span class="keyword">var</span> stageId = TAB_STAGE_PREFIX+diagramId;
+    <span class="keyword">var</span> label = title+<span class="string">'.dala'</span>;
+    <span class="keyword">var</span> li = $( tabTemplate.replace( <span class="regexp">/#\{href\}/g</span>, <span class="string">"#"</span> + id ).replace( <span class="regexp">/#\{label\}/g</span>, label ) );
+
+    $CONTAINER_NODE.find( <span class="string">".ui-tabs-nav"</span> ).append( li );
+    $CONTAINER_NODE.append( <span class="string">'&lt;div id='</span> + id + <span class="string">' class="stageFile">&lt;div id='</span>+stageId+<span class="string">' class="svgStage">&lt;/div>&lt;/div>'</span> );
+    $CONTAINER_NODE.tabs( <span class="string">"refresh"</span> );
+
+    $(<span class="string">'#stageTabs'</span>).removeClass(<span class="string">'ui-corner-all'</span>).addClass(<span class="string">'ui-corner-top'</span>);
+
+    event.trigger(<span class="string">'diagram_new'</span>, {diagramId: diagramId, stageId: stageId, projectId: projectId, title: title, label: label });
+}
+
+<span class="keyword">var</span> showTabListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> diagramId = evt.data.diagramId;
+    getTabLinkForDiagramId(diagramId).click();
+    event.trigger(<span class="string">'tab_activated'</span>, diagramId);
+};
+
+<span class="keyword">var</span> getTabLinkForDiagramId = <span class="keyword">function</span>(diagramId) {
+    <span class="comment">// We search the tab link which has a href="#file_" attribute and trigger an click event to open it</span>
+    <span class="keyword">var</span> tabContentSelector = <span class="string">'#'</span>+TAB_CONTAINER_PREFIX+diagramId;
+    <span class="keyword">return</span> $(<span class="string">'a[href="'</span>+tabContentSelector+<span class="string">'"]'</span>);
+}
+
+module.exports.init = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> tabs = $CONTAINER_NODE.tabs({
+        activate: <span class="keyword">function</span>( evt, ui ) {
+            <span class="keyword">var</span> a = ui.newTab.children(<span class="string">'a'</span>);
+            <span class="keyword">var</span> href = a.attr(<span class="string">'href'</span>);
+            <span class="keyword">var</span> diagramId = href.split(<span class="string">'_'</span>)[<span class="number">1</span>];
+            event.trigger(<span class="string">'tab_activated'</span>, diagramId);
+        }
+    });
+
+    <span class="comment">//TODO: no direct closing, either show save dialog or auto save it to cache/draft</span>
+    <span class="comment">// close icon: removing the tab on click</span>
+    tabs.delegate( <span class="string">"span.ui-icon-close"</span>, <span class="string">"click"</span>, <span class="keyword">function</span>() {
+        <span class="keyword">var</span> panelId = $( <span class="keyword">this</span> ).closest( <span class="string">"li"</span> ).remove().attr( <span class="string">"aria-controls"</span> );
+        $( <span class="string">"#"</span> + panelId ).remove();
+        tabs.tabs( <span class="string">"refresh"</span> );
+    });
+
+    tabs.bind( <span class="string">"keyup"</span>, <span class="keyword">function</span>( event ) {
+        <span class="keyword">if</span> (event.altKey &amp;&amp; event.keyCode === $.ui.keyCode.BACKSPACE) {
+            <span class="keyword">var</span> panelId = tabs.find(<span class="string">".ui-tabs-active"</span>).remove().attr(<span class="string">"aria-controls"</span>);
+            $(<span class="string">"#"</span> + panelId).remove();
+            tabs.tabs(<span class="string">"refresh"</span>);
+        }
+    });
+
+    $(<span class="string">'#zoomIn'</span>).on(<span class="string">'click'</span>, <span class="keyword">function</span>() {
+        event.trigger(<span class="string">'view_zoomIn'</span>);
+    });
+
+    $(<span class="string">'#zoomOut'</span>).on(<span class="string">'click'</span>, <span class="keyword">function</span>() {
+        event.trigger(<span class="string">'view_zoomOut'</span>);
+    });
+
+    $CONTAINER_NODE.droppable({
+        drop: <span class="keyword">function</span>( event, ui ) {
+            console.log(<span class="string">'DROPPPPPPED'</span>);
+        }
+    });
+
+    initListener();
+}</code></pre>

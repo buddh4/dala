@@ -1,0 +1,59 @@
+<h1>svgTester.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Dialog = require(<span class="string">'./dialog'</span>);
+<span class="keyword">var</span> SVG = require(<span class="string">'../svg/svg'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> xml = require(<span class="string">'../util/xml'</span>);
+
+<span class="keyword">var</span> dialog, svg;
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    dialog = <span class="keyword">new</span> Dialog({
+        width: <span class="string">'600px'</span>,
+        dialogId : <span class="string">"#svgTester-dialog"</span>,
+        triggerId : <span class="string">"#svgTestButton"</span>,
+        buttons : {
+            <span class="string">"update"</span>: update
+        }
+    });
+
+    svg = <span class="keyword">new</span> SVG(<span class="string">'#svgTestStage'</span>);
+
+    $(<span class="string">'#svgTestInput'</span>).on(<span class="string">'change'</span>, <span class="keyword">function</span>(evt) {
+        update();
+    });
+};
+
+<span class="keyword">var</span> update = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> value = $(<span class="string">'#svgTestInput'</span>).val();
+    svg.empty();
+    updateSVG(value);
+};
+
+<span class="keyword">var</span> updateSVG = <span class="keyword">function</span>(value, secondTry) {
+    <span class="keyword">try</span> {
+        svg.import(value.trim());
+        updateInputText();
+        $(<span class="string">'#svgTestStage_svg'</span>).find(<span class="string">'g, rect, circle, ellipse'</span>).each(<span class="function"><span class="keyword">function</span> <span class="params">(index, val)</span> {</span>
+            svg.get(val).draggable({
+                dragEnd: <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                    updateInputText();
+                }
+            });
+        });
+    } <span class="keyword">catch</span>(e) {
+        <span class="keyword">if</span>(!secondTry) {
+            updateSVG(<span class="string">'&lt;g>'</span> + value.trim() + <span class="string">'&lt;/g>'</span>, <span class="literal">true</span>);
+        } <span class="keyword">else</span> {
+            event.trigger(<span class="string">'error'</span>, <span class="string">'Could not render SVG!'</span>);
+            console.error(e);
+        }
+    }
+};
+
+<span class="keyword">var</span> updateInputText = <span class="keyword">function</span>() {
+    $(<span class="string">'#svgTestInput'</span>).val(xml.format(svg.root.firstChild().toString()));
+};
+
+module.exports = {
+    init : init
+}</code></pre>

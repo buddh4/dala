@@ -1,0 +1,25 @@
+<h1>xmlViewDialog.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Dialog = require(<span class="string">'./dialog'</span>);
+<span class="keyword">var</span> diagramManager = require(<span class="string">'../diagram/diagramManager'</span>);
+<span class="keyword">var</span> xml = require(<span class="string">'../util/xml'</span>);
+
+<span class="keyword">var</span> XMLView = <span class="keyword">function</span>() {
+    <span class="comment">//TODO listen for change diagram/file events</span>
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.dialog = <span class="keyword">new</span> Dialog({
+        dialogId : <span class="string">"#dom-view"</span>,
+        triggerId : <span class="string">"#viewXML"</span>,
+        width: <span class="number">1000</span>,
+        height: <span class="number">300</span>,
+        open: <span class="keyword">function</span>() {
+            <span class="keyword">var</span> diagramAsString = diagramManager.getActiveDiagram().asString();
+            $(<span class="string">'#dom-view'</span>).find(<span class="string">'textarea'</span>).val(xml.format(diagramAsString));
+        }
+    });
+};
+
+XMLView.prototype.close = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.dialog.close();
+};
+
+module.exports = XMLView;</code></pre>

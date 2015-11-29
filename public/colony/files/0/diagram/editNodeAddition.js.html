@@ -1,0 +1,82 @@
+<h1>editNodeAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> AbstractEditAddition = require(<span class="string">'./abstractEditAddition'</span>);
+
+<span class="keyword">var</span> EditNodeAddition = <span class="keyword">function</span>(node) {
+    AbstractEditAddition.call(<span class="keyword">this</span>, node, editFunctions, node.config.edit);
+    <span class="keyword">this</span>.node = node;
+    <span class="comment">//this.event = transition.event;</span>
+};
+
+util.inherits(EditNodeAddition, AbstractEditAddition);
+
+<span class="keyword">var</span> editFunctions = {
+    stroke : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).stroke();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).stroke(value);
+        }
+    },
+    <span class="string">'stroke-width'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).strokeWidth();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).strokeWidth(value);
+        }
+    },
+    <span class="string">'stroke-dash'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).strokeDashType();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).strokeDashType(value);
+        }
+    },
+    text : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> $(<span class="keyword">this</span>.node.getNodeSelector(editItem.bind)).text();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            $(<span class="keyword">this</span>.node.getNodeSelector(editItem.bind)).text(value);
+            <span class="keyword">this</span>.node.exec(<span class="string">'contentChanged'</span>);
+        }
+    },
+    textarea : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> $(<span class="keyword">this</span>.node.getNodeSelector(editItem.bind)).text();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">var</span> $editSVGNode = $(<span class="keyword">this</span>.node.getNodeSelector(editItem.bind));
+            <span class="keyword">this</span>.setTextAreaContent($editSVGNode,value);
+            <span class="keyword">this</span>.node.exec(<span class="string">'contentChanged'</span>);
+        }
+    },
+    <span class="string">'text-size'</span> : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">var</span> definition = <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).style(<span class="string">'font-size'</span>);
+            <span class="comment">//TODO: better textimplementation</span>
+            <span class="keyword">if</span>(definition) {
+                <span class="keyword">return</span> definition.substring(<span class="number">0</span>, definition.length - <span class="number">2</span>);
+            }
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).style(<span class="string">'font-size'</span>, value+<span class="string">'px'</span>);
+            <span class="keyword">this</span>.node.exec(<span class="string">'contentChanged'</span>);
+        }
+    },
+    color : {
+        get : <span class="keyword">function</span>(editItem) {
+            <span class="keyword">return</span> <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).fill();
+        },
+        set : <span class="keyword">function</span>(editItem, value) {
+            <span class="keyword">this</span>.node.getInnerSVG(editItem.bind).fill(value);
+        }
+    }
+};
+
+EditNodeAddition.requireConfig = <span class="literal">true</span>;
+
+module.exports = EditNodeAddition;</code></pre>

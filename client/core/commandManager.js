@@ -48,7 +48,9 @@ CommandManager.prototype.add = function(cmdId, doArgs, undoArgs) {
             cmdInstance.id = cmdId+'_'+Date.now();
             console.log('Add command '+cmdInstance.id);
             this.undoCommands.push(cmdInstance);
-            this.redoCommands = [];
+            if(!this.lockRedo) {
+                this.redoCommands = [];
+            }
         }
         return cmdInstance
     } else {
@@ -59,8 +61,8 @@ CommandManager.prototype.add = function(cmdId, doArgs, undoArgs) {
 CommandManager.prototype.undo = function() {
     var command = this.undoCommands.pop();
     if(object.isDefined(command) && object.isDefined(command.undo)) {
-        command.undo.apply(command);
         console.log('Undo command '+command.id);
+        command.undo.apply(command);
         this.redoCommands.push(command);
         this.updated(command);
     }
@@ -69,8 +71,10 @@ CommandManager.prototype.undo = function() {
 CommandManager.prototype.redo = function() {
     var command = this.redoCommands.pop();
     if(object.isDefined(command) && object.isDefined(command.exec)) {
-        command.exec.apply(command);
         console.log('Redo command '+command.id);
+        this.lockRedo = true;
+        command.exec.apply(command);
+        this.lockRedo = false;
         this.undoCommands.push(command);
         this.updated(command);
     }

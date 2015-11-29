@@ -1,0 +1,13 @@
+<h1>transitionAdditions.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> additions = require(<span class="string">'./additions'</span>);
+
+<span class="comment">//Init default additions</span>
+additions.registerTransitionAddition(<span class="string">'text'</span>, require(<span class="string">'./transitionTextAddition'</span>));
+additions.registerTransitionAddition(<span class="string">'edit'</span>, require(<span class="string">'./editTransitionAddition'</span>));
+
+module.exports = {
+    init : <span class="keyword">function</span>(transition) {
+        additions.initTransitionAddition(<span class="string">'text'</span>, transition);
+        additions.initTransitionAddition(<span class="string">'edit'</span>, transition);
+    }
+};</code></pre>

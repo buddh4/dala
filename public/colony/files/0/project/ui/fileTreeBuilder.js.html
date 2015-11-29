@@ -1,0 +1,58 @@
+<h1>fileTreeBuilder.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> ROOT_PROJECT_ID = <span class="string">'root_projects'</span>;
+
+<span class="keyword">var</span> FileTreeBuilder = <span class="keyword">function</span>(refreshHandler) {
+    <span class="keyword">this</span>.init();
+    <span class="keyword">this</span>.refreshHandler = refreshHandler;
+};
+
+FileTreeBuilder.prototype.init = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.data = [];
+    <span class="comment">//Init root Project folder</span>
+    <span class="keyword">this</span>.data.push({ <span class="string">"id"</span> : ROOT_PROJECT_ID, <span class="string">"parent"</span> : <span class="string">"#"</span>, <span class="string">"text"</span> : <span class="string">"Projects"</span>, type:<span class="string">'root'</span>, state: { opened: <span class="literal">true</span>}});
+};
+
+FileTreeBuilder.prototype.projects = <span class="keyword">function</span>(projectArr) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    $.each(projectArr, <span class="keyword">function</span>(index, project) {
+        that.addProject(project);
+    });
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+}
+
+FileTreeBuilder.prototype.addProject = <span class="keyword">function</span>(project, opened) {
+    <span class="keyword">var</span> projectId = project._id || project.id;
+    <span class="keyword">var</span> state = (opened) ? { opened: <span class="literal">true</span>} : {}
+    <span class="keyword">this</span>.data.push({
+        <span class="string">"id"</span>    : <span class="string">"project_"</span>+projectId,
+        <span class="string">"parent"</span>: ROOT_PROJECT_ID,
+        <span class="string">"text"</span>  :project.title,
+        <span class="string">"type"</span>  :<span class="string">"project"</span>,
+        state: state
+    });
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+    <span class="comment">//TODO: add diagrams / folder / subdiagram</span>
+};
+
+FileTreeBuilder.prototype.addDiagram = <span class="keyword">function</span>(projectId, diagram) {
+    <span class="keyword">var</span> projectNodeId = <span class="string">"project_"</span>+projectId;
+    <span class="keyword">this</span>.data.push({
+        <span class="string">"id"</span>: <span class="string">"diagram_"</span>+diagram.id,
+        <span class="string">"parent"</span>:projectNodeId,
+        <span class="string">"text"</span>:diagram.label,
+        <span class="string">"type"</span>:<span class="string">"diagram"</span>
+    });
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+    <span class="comment">//TODO: add diagrams / folder / subdiagram</span>
+};
+
+FileTreeBuilder.prototype.refresh = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.refreshHandler) {
+        <span class="keyword">this</span>.refreshHandler(<span class="keyword">this</span>.data);
+    }
+};
+
+module.exports = FileTreeBuilder
+
+
+</code></pre>

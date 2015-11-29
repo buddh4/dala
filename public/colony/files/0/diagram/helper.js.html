@@ -1,0 +1,34 @@
+<h1>helper.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Helper = <span class="keyword">function</span>(diagram) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.points = {};
+};
+
+Helper.prototype.point = <span class="keyword">function</span>(id, p, color, prevText) {
+    color = color || <span class="string">'red'</span>;
+    <span class="keyword">var</span> text = id+<span class="string">'(x:'</span>+p.x + <span class="string">' y:'</span>+p.y+<span class="string">')'</span>;
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.points[id]) {
+        <span class="keyword">var</span> point = <span class="keyword">this</span>.diagram.svg.circle({
+            r:<span class="number">2</span>,
+            style:<span class="string">'fill:'</span>+color
+        });
+        <span class="keyword">var</span> t = <span class="keyword">this</span>.diagram.svg.text(text);
+        <span class="keyword">var</span> group = <span class="keyword">this</span>.diagram.svg.g({id:<span class="string">'helper_'</span>+id}, t, point);
+        <span class="keyword">this</span>.points[id] = {
+            group : group,
+            text : t,
+            point : point
+        }
+
+        <span class="keyword">if</span>(prevText) {
+            t.hide();
+        }
+    }
+
+    <span class="keyword">this</span>.points[id].point.moveTo(p);
+    <span class="keyword">this</span>.points[id].text.$().text(text);
+    <span class="keyword">this</span>.points[id].text.moveTo(p);
+};
+
+module.exports = Helper;
+</code></pre>

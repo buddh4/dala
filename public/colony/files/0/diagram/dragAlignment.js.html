@@ -1,0 +1,136 @@
+<h1>dragAlignment.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> config = require(<span class="string">'../core/config'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> DEF_TOLERANCE = <span class="number">10</span>;
+
+<span class="keyword">var</span> Alignment = <span class="keyword">function</span>(tolerance, dimension) {
+    <span class="keyword">this</span>.dimension = dimension;
+    <span class="keyword">this</span>.tolerance = tolerance;
+    <span class="keyword">this</span>.actualD = <span class="number">0</span>;
+};
+
+Alignment.prototype.check = <span class="keyword">function</span>(source, sourceIndexArr,target, d) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.checkRange(source, target, d)) {
+        <span class="comment">// We keep the source position for the realignment</span>
+        <span class="keyword">if</span>(!<span class="keyword">this</span>.wasAligned) {
+            <span class="keyword">this</span>.source = source;
+            <span class="keyword">this</span>.sourceIndex = sourceIndexArr;
+        }
+        <span class="comment">// Calculate d between target and source before drag</span>
+        <span class="keyword">this</span>.d = (target[<span class="keyword">this</span>.dimension] - (source[<span class="keyword">this</span>.dimension]));
+        <span class="keyword">this</span>.target = target;
+        <span class="comment">// Keep track of the actual drag while beeing aligned for the realign</span>
+        <span class="keyword">this</span>.actualD += d;
+    }
+};
+
+Alignment.prototype.checkRange = <span class="keyword">function</span>(source, target, d) {
+    <span class="comment">//Check if the difference between source (after drag) and target is within the tolerane</span>
+    <span class="keyword">return</span> util.math.checkRangeDiff(target[<span class="keyword">this</span>.dimension], (source[<span class="keyword">this</span>.dimension] + <span class="keyword">this</span>.actualD + d), <span class="keyword">this</span>.tolerance);
+};
+
+Alignment.prototype.realign = <span class="keyword">function</span>(alignConfig, d) {
+    <span class="comment">// We just have to calculate the realignment if an alignment was set</span>
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(<span class="keyword">this</span>.wasAligned) {
+        <span class="comment">//Now we retrieve the current position of the aligned source by our sourceIndex</span>
+        <span class="keyword">var</span> currentSourcePosition = alignConfig[<span class="keyword">this</span>.sourceIndex[<span class="number">0</span>]].source[<span class="keyword">this</span>.sourceIndex[<span class="number">1</span>]];
+        result = (<span class="keyword">this</span>.source[<span class="keyword">this</span>.dimension] + <span class="keyword">this</span>.actualD + d) - currentSourcePosition[<span class="keyword">this</span>.dimension];
+    } <span class="keyword">else</span> {
+        result = d;
+
+    }
+    <span class="keyword">this</span>.actualD = <span class="number">0</span>;
+    <span class="keyword">return</span> result;
+};
+
+Alignment.prototype.reset = <span class="keyword">function</span>(initialize) {
+    <span class="keyword">if</span>(!initialize) {
+        <span class="keyword">this</span>.wasAligned = <span class="keyword">this</span>.isAligned();
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.wasAligned = <span class="literal">false</span>;
+    }
+
+    <span class="keyword">delete</span> <span class="keyword">this</span>.target;
+    <span class="keyword">delete</span> <span class="keyword">this</span>.d;
+};
+
+Alignment.prototype.isAligned = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> object.isDefined(<span class="keyword">this</span>.target);
+};
+
+<span class="keyword">var</span> DragAlignment = <span class="keyword">function</span>(diagram, getConfig, tolerance) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.tolerance = tolerance || DEF_TOLERANCE;
+    <span class="keyword">this</span>.getConfig = getConfig;
+    <span class="keyword">this</span>.alignX = <span class="keyword">new</span> Alignment(<span class="keyword">this</span>.tolerance, <span class="string">'x'</span>);
+    <span class="keyword">this</span>.alignY = <span class="keyword">new</span> Alignment(<span class="keyword">this</span>.tolerance, <span class="string">'y'</span>);
+    <span class="keyword">this</span>.actualDrag = {x:<span class="number">0</span>, y:<span class="number">0</span>};
+};
+
+DragAlignment.prototype.check = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(config.val(<span class="string">'dragAlign'</span>, <span class="literal">true</span>) &amp;&amp; !<span class="keyword">this</span>.diagram.isMultiSelection()) {
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+        <span class="comment">// Reset the alignments to notify a new search loop</span>
+        <span class="keyword">this</span>.alignX.reset();
+        <span class="keyword">this</span>.alignY.reset();
+
+        <span class="keyword">var</span> alignmentConfig = <span class="keyword">this</span>.getConfig(dx, dy);
+        object.each(alignmentConfig, <span class="keyword">function</span>(configIndex, value) {
+            <span class="keyword">var</span> sourceArr = value.source;
+            <span class="keyword">var</span> targetArr = value.target;
+            object.each(sourceArr, <span class="keyword">function</span>(sourceIndex, value) {
+                that.checkAlignment(value, targetArr, [configIndex, sourceIndex], dx, dy);
+
+                <span class="keyword">if</span>(that.alignX.isAligned() &amp;&amp; that.alignY.isAligned()) {
+                    <span class="keyword">return</span> <span class="literal">false</span>; <span class="comment">//Escape the each loop since we found both alingments</span>
+                }
+            })
+        });
+
+        result = {
+            dx : (<span class="keyword">this</span>.alignX.isAligned()) ? <span class="keyword">this</span>.alignX.d : <span class="keyword">this</span>.alignX.realign(alignmentConfig, dx),
+            dy : (<span class="keyword">this</span>.alignY.isAligned()) ? <span class="keyword">this</span>.alignY.d : <span class="keyword">this</span>.alignY.realign(alignmentConfig, dy)
+        };
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.alignX.reset(<span class="literal">true</span>);
+        <span class="keyword">this</span>.alignY.reset(<span class="literal">true</span>);
+        result = {dx : dx, dy : dy};
+    }
+
+    <span class="keyword">return</span> result;
+};
+
+DragAlignment.prototype.checkAlignment = <span class="keyword">function</span>(source, targets, sourceIndexArr, dx, dy) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(targets, <span class="keyword">function</span>(index, target) {
+        <span class="keyword">if</span>(!that.alignX.isAligned()) {
+            that.alignX.check(source,sourceIndexArr, target, dx);
+        }
+
+        <span class="keyword">if</span>(!that.alignY.isAligned()) {
+            that.alignY.check(source,sourceIndexArr, target, dy);
+        }
+
+        <span class="keyword">if</span>(that.alignX.isAligned() &amp;&amp; that.alignY.isAligned()) {
+            <span class="keyword">return</span> <span class="literal">false</span>; <span class="comment">//Escape the each loop since we found both alingments</span>
+        }
+    });
+}
+
+DragAlignment.prototype.reset = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.alignX.reset(<span class="literal">true</span>);
+    <span class="keyword">this</span>.alignY.reset(<span class="literal">true</span>);
+};
+
+DragAlignment.prototype.isAligned = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.alignX.isAligned || <span class="keyword">this</span>.alignY.isAligned();
+};
+
+module.exports = DragAlignment;
+
+</code></pre>

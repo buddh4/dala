@@ -1,0 +1,27 @@
+<h1>hoverable.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> SVGElement = require(<span class="string">'../svg/svgElement'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+SVGElement.prototype.hoverable = <span class="keyword">function</span>(handler) {
+    handler = handler || {};
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    <span class="keyword">this</span>.on(<span class="string">'mouseenter'</span>, <span class="keyword">function</span>(evt) {
+        that.hovered = <span class="literal">true</span>;
+        event.trigger(<span class="string">'element_hoverIn'</span>, that);
+        <span class="keyword">if</span>(handler.<span class="keyword">in</span>) {
+            handler.<span class="keyword">in</span>.apply(that, [evt]);
+        }
+    });
+
+    <span class="keyword">this</span>.on(<span class="string">'mouseleave'</span>, <span class="keyword">function</span>(evt) {
+        that.hovered = <span class="literal">false</span>;
+        event.trigger(<span class="string">'element_hoverOut'</span>, that);
+        <span class="keyword">if</span>(handler.out) {
+            handler.out.apply(that, [evt]);
+        }
+    });
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};</code></pre>

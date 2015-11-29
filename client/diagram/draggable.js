@@ -26,7 +26,7 @@ DragContext.prototype.dragStart = function(evt) {
 };
 
 DragContext.prototype.wasMoved = function(evt) {
-    return this.dxSum > 0 || this.dySum > 0;
+    return this.dxSum !== 0 || this.dySum !== 0;
 };
 
 DragContext.prototype.dragMove = function(evt, dx, dy) {

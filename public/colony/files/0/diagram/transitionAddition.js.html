@@ -1,0 +1,188 @@
+<h1>transitionAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> Transition = require(<span class="string">'./transition'</span>);
+
+<span class="comment">/**
+ * The transitionaddition for nodes is responsible for creating and updating/rendering the incoming and outgoing
+ * transitions of a node.
+ *
+ * @param node
+ * @constructor
+ */</span>
+<span class="keyword">var</span> TransitionAddition = <span class="keyword">function</span>(node) {
+    <span class="keyword">this</span>.node = node;
+    <span class="keyword">this</span>.event = node.event;
+    <span class="keyword">this</span>.diagram = <span class="keyword">this</span>.node.diagram;
+    <span class="keyword">this</span>.transitionMgr = <span class="keyword">this</span>.diagram.transitionMgr;
+    <span class="keyword">this</span>.outgoingTransitions = [];
+    <span class="keyword">this</span>.incomingTransitions = [];
+};
+
+TransitionAddition.prototype.dragMove = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">this</span>.updateOrientations(dx ,dy);
+    <span class="keyword">this</span>.update();
+};
+
+TransitionAddition.prototype.updateOrientations = <span class="keyword">function</span>(dx ,dy) {
+    <span class="keyword">this</span>.executeOnOutgoingTransitions(<span class="keyword">function</span>(transition) {
+        transition.dragStartOrientation(dx,dy);
+    });
+
+    <span class="keyword">this</span>.executeOnIncomingTransitions(<span class="keyword">function</span>(transition) {
+        transition.dragEndOrientation(dx,dy);
+    });
+};
+
+TransitionAddition.prototype.resize = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.update();
+};
+
+TransitionAddition.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.executeOnAllTransitions(<span class="keyword">function</span>(transition) {
+        transition.update();
+    });
+};
+
+TransitionAddition.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.executeOnAllTransitions(<span class="keyword">function</span>( transition) {
+        transition.remove();
+    });
+};
+
+TransitionAddition.prototype.moveUp = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.executeOnAllTransitions(<span class="keyword">function</span>(transition) {
+        transition.checkDomPosition();
+    });
+};
+
+<span class="comment">/**
+ * Node dbclick triggers the creation of a transition.
+ */</span>
+TransitionAddition.prototype.dbclick = <span class="keyword">function</span>() {
+    <span class="comment">//Start Transition Init Drag Event</span>
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.transitionMgr.isDragTransition()) {
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        event.on(<span class="keyword">this</span>.diagram.svg.getRootNode(), <span class="string">"mousemove"</span>, <span class="keyword">function</span>(event) {
+            that.transitionDrag(event);
+        });
+    }
+};
+
+TransitionAddition.prototype.transitionDrag = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> mouse = <span class="keyword">this</span>.diagram.getStagePosition(evt);
+
+    <span class="comment">//Initialize a new transition or update the current dragTransition</span>
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.transitionMgr.isDragTransition()) {
+        <span class="keyword">this</span>.transitionMgr.startDragTransition(<span class="keyword">new</span> Transition(<span class="keyword">this</span>.node, mouse));
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.transitionMgr.getDragTransition().update(mouse);
+    }
+};
+
+<span class="comment">/**
+ * Node mousedown ends a transitionDrag even (if there is one) and sets this node as endnode
+ */</span>
+TransitionAddition.prototype.mousedown = <span class="keyword">function</span>(evt) {
+    <span class="comment">// Stop transition drag event and set end node</span>
+    <span class="keyword">if</span>(<span class="keyword">this</span>.transitionMgr.isDragTransition()) {
+        <span class="keyword">var</span> transition = <span class="keyword">this</span>.transitionMgr.getDragTransition();
+        transition.setEndNode(<span class="keyword">this</span>.node, <span class="keyword">this</span>.diagram.getStagePosition(evt));
+        <span class="keyword">this</span>.transitionMgr.endDragTransition();
+        event.off(<span class="keyword">this</span>.diagram.svg.getRootNode(), <span class="string">'mousemove'</span>);
+    }
+};
+
+TransitionAddition.prototype.addOutgoingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.outgoingTransitions.push(transition);
+    <span class="keyword">return</span> transition;
+};
+
+TransitionAddition.prototype.undockStart = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.edgeDockingDragListener(transition, <span class="string">'Start'</span>);
+};
+
+TransitionAddition.prototype.undockEnd = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.edgeDockingDragListener(transition, <span class="string">'End'</span>);
+};
+
+TransitionAddition.prototype.undockEdgeDocking = <span class="keyword">function</span>(transition, dockingType) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="comment">//We wait till the drag event stops (mouseup)</span>
+    event.once(<span class="keyword">this</span>.diagram.svg.getRootNode(), <span class="string">"mouseup"</span>, <span class="keyword">function</span>(mouseUpEvent) {
+        <span class="keyword">var</span> mouse = that.diagram.getStagePosition(mouseUpEvent);
+        <span class="keyword">var</span> hoverNode = that.diagram.overlaysNode(mouse);
+        <span class="keyword">if</span>(hoverNode !== transition[<span class="string">'get'</span>+dockingType+<span class="string">'Node'</span>]()) {
+            <span class="comment">//If we are hovering another node we swap start/end node</span>
+            transition[<span class="string">'set'</span>+dockingType+<span class="string">'Node'</span>](hoverNode);
+        } <span class="keyword">else</span> <span class="keyword">if</span>(hoverNode === transition[<span class="string">'get'</span>+dockingType+<span class="string">'Node'</span>]()){
+            <span class="comment">//If we are hovering the same node we set a relative docking</span>
+            transition[<span class="string">'setRelative'</span>+dockingType+<span class="string">'Knob'</span>](mouse.x, mouse.y);
+            transition.update();
+        } <span class="keyword">else</span> {
+            <span class="comment">//Mouse is hovering empty space</span>
+            transition.update();
+        }
+    });
+};
+
+TransitionAddition.prototype.executeOnAllTransitions = <span class="keyword">function</span>(handler) {
+    <span class="keyword">this</span>.executeOnOutgoingTransitions(handler);
+    <span class="keyword">this</span>.executeOnIncomingTransitions(handler);
+};
+
+TransitionAddition.prototype.executeOnOutgoingTransitions = <span class="keyword">function</span>(handler) {
+    object.each(<span class="keyword">this</span>.outgoingTransitions, <span class="keyword">function</span>(index, transition) {
+        <span class="keyword">if</span>(transition) {
+            handler(transition);
+        }
+    });
+};
+
+TransitionAddition.prototype.executeOnIncomingTransitions = <span class="keyword">function</span>(handler) {
+    object.each(<span class="keyword">this</span>.incomingTransitions, <span class="keyword">function</span>(index, transition) {
+        <span class="keyword">if</span>(transition) {
+            handler(transition);
+        }
+    });
+};
+
+TransitionAddition.prototype.getTransitionAlignmentTargets = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+    object.each(<span class="keyword">this</span>.outgoingTransitions, <span class="keyword">function</span>(index, transition) {
+        <span class="keyword">if</span>(object.isDefined(transition)) {
+            result.push(transition.getStartAlignment());
+        }
+    });
+
+    object.each(<span class="keyword">this</span>.incomingTransitions, <span class="keyword">function</span>(index, transition) {
+        <span class="keyword">if</span> (object.isDefined(transition)) {
+            result.push(transition.getEndAlignment());
+        }
+    });
+    <span class="keyword">return</span> result;
+};
+
+TransitionAddition.prototype.removeOutgoingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">var</span> index = <span class="keyword">this</span>.outgoingTransitions.indexOf(transition);
+    <span class="keyword">if</span> (index !== -<span class="number">1</span>) {
+        <span class="keyword">this</span>.outgoingTransitions.splice(index, <span class="number">1</span>);
+    }
+};
+
+TransitionAddition.prototype.addIncomingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.incomingTransitions.push(transition);
+};
+
+TransitionAddition.prototype.removeIncomingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">var</span> index = <span class="keyword">this</span>.incomingTransitions.indexOf(transition);
+    <span class="keyword">if</span> (index !== -<span class="number">1</span>) {
+        <span class="keyword">this</span>.incomingTransitions.splice(index, <span class="number">1</span>);
+    }
+};
+
+TransitionAddition.requireConfig = <span class="literal">false</span>;
+
+module.exports = TransitionAddition;
+
+</code></pre>

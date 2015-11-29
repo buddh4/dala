@@ -1,0 +1,52 @@
+<h1>dragConfig.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> DragConfig = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.hooks = {};
+};
+
+DragConfig.prototype.xOnly = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.hooks.restrictionY = <span class="keyword">function</span>(event, dx, dy) {
+        <span class="keyword">return</span> <span class="number">0</span>;
+    };
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.yOnly = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.hooks.restrictionX = <span class="keyword">function</span>(event, dx, dy) {
+        <span class="keyword">return</span> <span class="number">0</span>;
+    };
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.getScale = <span class="keyword">function</span>(gsHook) {
+    <span class="keyword">this</span>.hooks.getScale = gsHook;
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.dragMove = <span class="keyword">function</span>(drmHook) {
+    <span class="keyword">this</span>.hooks.dragMove = drmHook;
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.dragStart = <span class="keyword">function</span>(drsHook) {
+    <span class="keyword">this</span>.hooks.dragStart = drsHook;
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.dragEnd = <span class="keyword">function</span>(dreHook) {
+    <span class="keyword">this</span>.hooks.dragEnd = dreHook;
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+DragConfig.prototype.restrictionX = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.hooks.restrictionX;
+};
+
+DragConfig.prototype.restrictionY = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.hooks.restrictionY;
+};
+
+DragConfig.prototype.get = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.hooks;
+};
+
+module.exports = DragConfig;</code></pre>

@@ -1,0 +1,34 @@
+<h1>knobTemplate.js</h1>
+<pre><code class="lang-js">require(<span class="string">'./template'</span>);
+require(<span class="string">'./node'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> templateMgr = require(<span class="string">'./templateManager'</span>);
+
+<span class="keyword">var</span> defaultConfig = {
+    dockingType: <span class="string">"CENTER"</span>,
+    fill: <span class="string">"silver"</span>,
+    <span class="string">'fill-active'</span>: <span class="string">'green'</span>,
+    <span class="string">'fill-opacity'</span>: <span class="string">'0.5'</span>,
+    radius: <span class="number">3</span>,
+    stroke: <span class="string">'#7C7C7C'</span>,
+    <span class="string">'stroke-width'</span>: <span class="string">'1'</span>,
+    <span class="string">'cssClass'</span>: <span class="string">'knob'</span>,
+    preventSelection: <span class="literal">true</span>
+};
+
+<span class="keyword">var</span> circleConfig = object.extend({}, defaultConfig,
+    {
+        rootName: <span class="string">'circle'</span>,
+        svg :<span class="string">'&lt;circle cx="0" cy="0" r="{radius}" id="{node_id}" class="{cssClass}" style="stroke-width:{stroke-width};stroke:{stroke};fill:{fill};fill-opacity:{fill-opacity};" transform="translate({x} {y})">&lt;/circle>'</span>
+    });
+
+templateMgr.registerTemplate(<span class="string">'knob_circle'</span>, circleConfig);
+
+<span class="keyword">var</span> rectConfig = object.extend({}, defaultConfig,
+    {
+        rootName: <span class="string">'rect'</span>,
+        svg :<span class="string">'&lt;rect x="0" y="0" id="{node_id}" height="{size}" width="{size}" class="{cssClass}" style="stroke-width:{stroke-width};stroke:{stroke};fill:{fill};fill-opacity:{fill-opacity};" transform="translate({x} {y})">&lt;/rect>'</span>
+    });
+
+templateMgr.registerTemplate(<span class="string">'knob_rect'</span>, rectConfig);</code></pre>

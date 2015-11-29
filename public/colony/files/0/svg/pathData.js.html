@@ -1,0 +1,547 @@
+<h1>pathData.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> Vector = require(<span class="string">'../util/math'</span>).Vector;
+<span class="keyword">var</span> math = require(<span class="string">'../util/math'</span>);
+<span class="keyword">var</span> util = require(<span class="string">"../util/util"</span>);
+
+<span class="keyword">var</span> AbstractPathDataType = <span class="keyword">function</span>(type, absolute) {
+    <span class="keyword">this</span>.vector = <span class="keyword">new</span> Vector();
+    <span class="keyword">this</span>.vector.add(type);
+    <span class="keyword">this</span>.absolute = absolute || <span class="literal">true</span>;
+};
+
+AbstractPathDataType.prototype.getType = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> type = <span class="keyword">this</span>.value(<span class="number">0</span>,<span class="number">0</span>);
+    <span class="keyword">return</span> <span class="keyword">this</span>.absolute ? type.toUpperCase() : type.toLowerCase();
+};
+
+AbstractPathDataType.prototype.value = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.vector.value(Array.prototype.slice.call(arguments));
+};
+
+AbstractPathDataType.prototype.setValue = <span class="keyword">function</span>(pathArr, value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.vector.setValue(pathArr, value);
+};
+
+AbstractPathDataType.prototype.insert = <span class="keyword">function</span>(pathArr, values) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.vector.setValue(pathArr, values);
+};
+
+AbstractPathDataType.prototype.is = <span class="keyword">function</span>(type) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getType().toUpperCase() === type.toUpperCase();
+};
+
+AbstractPathDataType.prototype.to = <span class="keyword">function</span>(pathArr, values) {
+    <span class="comment">//ABSTRACT</span>
+};
+
+AbstractPathDataType.prototype.pointToString = <span class="keyword">function</span>(p) {
+    <span class="keyword">return</span> p.x + <span class="string">','</span> + p.y+<span class="string">' '</span>;
+};
+
+AbstractPathDataType.prototype.getOrSet = <span class="keyword">function</span>(index, value) {
+    <span class="keyword">if</span>(value) {
+        <span class="keyword">this</span>.setValue(index, value);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.value(index);
+    }
+}
+
+<span class="comment">/**
+ * Vector = [['l'], {x:x, y:y}]
+ */</span>
+<span class="keyword">var</span> LineTo = <span class="keyword">function</span>(p, absolute) {
+    AbstractPathDataType.call(<span class="keyword">this</span>, <span class="string">'l'</span>, absolute);
+    <span class="keyword">this</span>.to(p);
+};
+
+util.inherits(LineTo, AbstractPathDataType);
+
+LineTo.prototype.to = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">1</span>,p);
+};
+
+LineTo.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getType()+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.to());
+};
+
+LineTo.prototype.x = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(value) {
+        <span class="keyword">this</span>.value(<span class="number">1</span>).x = value
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.value(<span class="number">1</span>).x;
+};
+
+LineTo.prototype.y = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(value) {
+        <span class="keyword">this</span>.value(<span class="number">1</span>).y = value
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.value(<span class="number">1</span>).y;
+};
+
+LineTo.prototype.moveAlong = <span class="keyword">function</span>(from, distance) {
+    <span class="keyword">return</span> math.Line.moveAlong(from, <span class="keyword">this</span>.to(), distance);
+};
+
+<span class="keyword">var</span> QBezier = <span class="keyword">function</span>(controlP, toP, absolute) {
+    AbstractPathDataType.call(<span class="keyword">this</span>, <span class="string">'l'</span>, absolute);
+    <span class="keyword">this</span>.control(controlP);
+    <span class="keyword">this</span>.to(toP);
+};
+
+util.inherits(QBezier, AbstractPathDataType);
+
+QBezier.prototype.to = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">2</span>,p);
+};
+
+QBezier.prototype.control = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">1</span>,p);
+};
+
+QBezier.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getType()+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.control())+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.to());
+};
+
+<span class="keyword">var</span> CBezier = <span class="keyword">function</span>(controlP1, controlP2, toP, absolute) {
+    AbstractPathDataType.call(<span class="keyword">this</span>, <span class="string">'c'</span>, absolute);
+    <span class="keyword">this</span>.control1(controlP1);
+    <span class="keyword">this</span>.control2(controlP2);
+    <span class="keyword">this</span>.to(toP);
+};
+
+util.inherits(CBezier, AbstractPathDataType);
+
+CBezier.prototype.control = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.control1(x,y);
+}
+
+CBezier.prototype.control1 = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">1</span>,p);
+};
+
+CBezier.prototype.control2 = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">2</span>,p);
+};
+
+CBezier.prototype.to = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">return</span> <span class="keyword">this</span>.getOrSet(<span class="number">3</span>,p);
+};
+
+CBezier.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getType()+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.control1())+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.control2())+<span class="keyword">this</span>.pointToString(<span class="keyword">this</span>.to());
+};
+
+<span class="comment">/**
+ * calculates the nearest point of the bezier curve to the given position. since the CBezier does not know its start
+ * point, we have to provide the from position as well as the search base position.
+ * @param from
+ * @param position
+ * @returns {{point, location}|*}
+ */</span>
+CBezier.prototype.getNearestPoint = <span class="keyword">function</span>(from, position) {
+    <span class="keyword">return</span> math.bezier.nearestPointOnCurve(position, <span class="keyword">this</span>.getCurve(from)).point;
+};
+
+CBezier.prototype.moveAlong = <span class="keyword">function</span>(from, distance) {
+    <span class="keyword">return</span> math.bezier.moveAlong(<span class="keyword">this</span>.getCurve(from), distance);
+};
+
+CBezier.prototype.getCurve = <span class="keyword">function</span>(from) {
+    <span class="keyword">return</span> [from, <span class="keyword">this</span>.control1(), <span class="keyword">this</span>.control2(), <span class="keyword">this</span>.to()];
+}
+
+<span class="keyword">var</span> MoveTo = <span class="keyword">function</span>(toP, absolute) {
+    AbstractPathDataType.call(<span class="keyword">this</span>, <span class="string">'m'</span>, absolute);
+    <span class="keyword">this</span>.to(toP);
+};
+
+util.inherits(MoveTo, LineTo);
+
+<span class="keyword">var</span> Complete = <span class="keyword">function</span>() {
+    AbstractPathDataType.call(<span class="keyword">this</span>, <span class="string">'z'</span>);
+};
+
+util.inherits(Complete, AbstractPathDataType);
+
+Complete.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getType();
+}
+
+<span class="keyword">var</span> PathData = <span class="keyword">function</span>(def) {
+    <span class="keyword">if</span>(object.isString(def)) {
+        <span class="keyword">this</span>.dataArr = def.split(<span class="regexp">/(?=[MmLlHhVvCcSsQqTtAaZz]+)/</span>);
+
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(<span class="keyword">this</span>.dataArr, <span class="keyword">function</span>(index, value) {
+            that.dataArr[index] = that.fromString(value.trim());
+            value.trim();
+        });
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.data = <span class="keyword">new</span> Vector();
+    }
+};
+
+PathData.prototype.getCorners = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> xMin, xMax, yMin, yMax;
+    xMin = yMin = Number.POSITIVE_INFINITY;
+    xMax = yMax = Number.NEGATIVE_INFINITY;
+
+    <span class="keyword">this</span>.data.each(<span class="keyword">function</span>(index, pathPart) {
+        <span class="keyword">if</span>(pathPart.x &amp;&amp; pathPart.y) {
+            xMin = (xMin > pathPart.x()) ? pathPart.x() : xMin;
+            yMin = (yMin > pathPart.y()) ? pathPart.y() : yMin;
+
+            xMax = (xMax &lt; pathPart.x()) ? pathPart.x() : xMax;
+            yMax = (yMax &lt; pathPart.y()) ? pathPart.y() : yMax;
+        }
+    });
+
+    <span class="keyword">return</span> [
+        {x:xMin, y:yMin},
+        {x:xMax, y:yMin},
+        {x:xMax, y:yMax},
+        {x:xMin, y:yMax}
+    ];
+};
+
+PathData.prototype.getX = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getCorners()[<span class="number">0</span>].x;
+};
+
+PathData.prototype.polynoms = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+    object.each(<span class="keyword">this</span>.data.vectors, <span class="keyword">function</span>(index, value) {
+        <span class="keyword">if</span>(value.to) {
+            result.push(value.to());
+        }
+    });
+    <span class="keyword">return</span> result;
+};
+
+<span class="comment">/**
+ * Returns
+ * @returns {Array}
+ */</span>
+PathData.prototype.getPathParts = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+
+    <span class="comment">//We start at index 1 because the 0 index of the vector contains the pathpart type</span>
+    <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">1</span>; i &lt;= <span class="keyword">this</span>.length() - <span class="number">1</span>; i++) {
+        result.push(<span class="keyword">this</span>.getPathPart(i));
+    }
+
+    <span class="keyword">return</span> result;
+};
+
+PathData.prototype.getPathPart = <span class="keyword">function</span>(index) {
+    <span class="keyword">var</span> pathPart = <span class="keyword">this</span>.value(index);
+    <span class="keyword">return</span> {
+        start: <span class="keyword">this</span>.value(index - <span class="number">1</span>).to(),
+        end: pathPart.to(),
+        value: pathPart
+    };
+};
+
+PathData.prototype.moveAlong = <span class="keyword">function</span>(index, distance, direction) {
+    <span class="keyword">var</span> pathPart = <span class="keyword">this</span>.getPathPart(index);
+    <span class="keyword">if</span>(pathPart.value.moveAlong) {
+        <span class="keyword">return</span> pathPart.value.moveAlong(pathPart.start, distance, direction);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> math.Line.moveAlong(pathPart.start, pathPart.end, distance, direction);
+    }
+};
+
+<span class="comment">/**
+ * Calculates the rough center of the path by calculating the total length of the pathparts (as direct lines) and moving
+ * along those lines to the center (total length / 2). Note with this method we just get a exact result for simple
+ * line paths. If the calculated center position is within a cubic bezier path part, we return the nearest point on the curve
+ * to the calculated center.
+ * @returns {*}
+ */</span>
+PathData.prototype.getCenter = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> resultD = <span class="keyword">this</span>.getDistance() / <span class="number">2</span>;
+    <span class="keyword">var</span> currentD = <span class="number">0</span>;
+    <span class="keyword">var</span> center;
+    object.each(<span class="keyword">this</span>.getPathParts(), <span class="keyword">function</span>(index, part) {
+        <span class="keyword">var</span> lineD = math.Line.calcDistance(part.start, part.end);
+        <span class="keyword">var</span> nextD = currentD + lineD;
+        <span class="keyword">if</span>(nextD > resultD) {
+            <span class="keyword">var</span> diffD =  resultD - currentD;
+            center = math.Line.moveAlong(part.start, part.end, diffD);
+
+            <span class="comment">//If we have a cubic bezier path part we calculate the nearest point on the curve</span>
+            <span class="keyword">if</span>(part.value.is(<span class="string">'c'</span>)) {
+                center = part.value.getNearestPoint(part.start, center);
+            }
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+        currentD = nextD;
+    });
+    <span class="keyword">return</span> center;
+};
+
+PathData.prototype.getDistance = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> distance = <span class="number">0</span>;
+    object.each(<span class="keyword">this</span>.getPathParts(), <span class="keyword">function</span>(index, part) {
+        distance += math.Line.calcDistance(part.start, part.end);
+    });
+    <span class="keyword">return</span> distance;
+};
+
+<span class="comment">/**
+ * Assuming there are only! cubic bezier curved path parts this function recalculates all control points of the curves
+ * to smoothen the entire path.
+ *
+ * @param polynoms
+ */</span>
+PathData.prototype.smoothen = <span class="keyword">function</span>(polynoms) {
+    <span class="keyword">if</span>(!polynoms) {
+        polynoms = <span class="keyword">this</span>.polynoms();
+    }
+
+    <span class="keyword">var</span> x = [];
+    <span class="keyword">var</span> y = [];
+
+    object.each(polynoms, <span class="keyword">function</span>(index, value) {
+        x[index] = value.x;
+        y[index] = value.y;
+    });
+
+    <span class="keyword">var</span> px = math.bezier.calculateSmoothControlPoints(x);
+    <span class="keyword">var</span> py = math.bezier.calculateSmoothControlPoints(y);
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(px.p1, <span class="keyword">function</span>(index, value) {
+        that.value(index + <span class="number">1</span>).control1(px.p1[index], py.p1[index]);
+        that.value(index + <span class="number">1</span>).control2(px.p2[index], py.p2[index]);
+    });
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.getLineByPathIndex = <span class="keyword">function</span>(index, fromEnd) {
+    <span class="keyword">var</span> startIndex = (fromEnd)  ? (index + <span class="number">1</span>) * -<span class="number">1</span> : index;
+    <span class="keyword">var</span> endIndex =   (fromEnd)  ? (index + <span class="number">2</span>) * -<span class="number">1</span> : index + <span class="number">1</span>;
+    <span class="keyword">var</span> p1 = <span class="keyword">this</span>.value(startIndex).to();
+    <span class="keyword">var</span> p2 = <span class="keyword">this</span>.value(endIndex).to();
+    <span class="keyword">return</span> <span class="keyword">new</span> math.Line(p1, p2);
+};
+
+PathData.prototype.getPathIndexForPosition = <span class="keyword">function</span>(point) {
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.length() === <span class="number">2</span>) {
+        <span class="comment">//If there is just the start and end docking we know the new index</span>
+        <span class="keyword">return</span> <span class="number">1</span>;
+    }
+
+    <span class="keyword">var</span> dockingIndex = <span class="number">1</span>;
+    <span class="keyword">var</span> candidate = [<span class="number">1</span>,Number.POSITIVE_INFINITY ];
+
+    object.each(<span class="keyword">this</span>.getPathParts(), <span class="keyword">function</span>(index, part) {
+        <span class="comment">//Sort out pathparts which are not within the boundary of start/end points with a little tolerance of 10px</span>
+        <span class="keyword">var</span> p = <span class="keyword">new</span> util.math.Point(point);
+        <span class="keyword">if</span>(p.isWithinXInterval(part.start, part.end, <span class="number">10</span>)) {
+            <span class="keyword">var</span> d;
+            <span class="keyword">var</span> line = <span class="keyword">new</span> math.Line(part.start, part.end);
+
+            <span class="keyword">if</span>(!line.isVertical()) {
+                d = Math.abs(line.calcFX(point.x).y - point.y)
+            } <span class="keyword">else</span> <span class="keyword">if</span>(p.isWithinYInterval(part.start, part.end)) {
+                <span class="comment">//Since the point is within x (with tolerance) and y interval we calculate the x distance</span>
+                d = Math.abs(part.start.x - p.x);
+            }
+
+            <span class="keyword">if</span> (candidate === <span class="literal">undefined</span> || candidate[<span class="number">1</span>] > d) {
+                <span class="comment">//The pathPartindex is the arrayindex + 1 since we use the end index of the path as identity</span>
+                candidate[<span class="number">0</span>] = [index + <span class="number">1</span>];
+                candidate[<span class="number">1</span>] = d;
+            }
+        }
+    });
+
+    <span class="keyword">if</span> (candidate) {
+        <span class="keyword">return</span> candidate[<span class="number">0</span>];
+    }
+};
+
+<span class="keyword">var</span> _getDForVertical = <span class="keyword">function</span>(part, point) {
+    <span class="keyword">if</span>(util.math.checkRange())
+    <span class="keyword">var</span> min = Math.min(part.start.y, part.end.y);
+    <span class="keyword">var</span> max = Math.max(part.start.y, part.end.y);
+    <span class="keyword">if</span> (point.y &lt;= max &amp;&amp; point.y >= min) {
+
+    }
+};
+
+<span class="comment">/*
+ LinePathManager.prototype.getGradien = function(x,y) {
+ var position = util.math.getPoint(x,y);
+ var index = this.transition.getKnobIndexForPoint(position);
+ var p1 = this.data.getDockingByIndex(index).position();
+ var p2 = this.data.getDockingByIndex(index + 1).position();
+ return util.math.Line.calcGradient(p1, p2);
+ };
+
+ LinePathManager.prototype.getGradientByIndex = function(index) {
+ var p1 = this.data.getDockingByIndex(index).position();
+ var p2 = this.data.getDockingByIndex(index + 1).position();
+ return util.math.Line.calcGradient(p1, p2);
+ };
+
+
+ LinePathManager.prototype.getVectorByIndex = function(index, fromEnd) {
+ var p1, p2;
+ if(fromEnd) {
+ p1 = this.data.getDockingByEndIndex(index + 1).position();
+ p2 = this.data.getDockingByEndIndex(index).position();
+ } else {
+ p1 = this.data.getDockingByIndex(index).position();
+ p2 = this.data.getDockingByIndex(index + 1).position();
+ }
+ return util.math.Line.calcNormalizedLineVector(p1, p2);
+ };
+ */</span>
+
+PathData.prototype.getY = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getCorners()[<span class="number">0</span>].y;
+};
+
+PathData.prototype.getRightX = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getCorners()[<span class="number">1</span>].x;
+};
+
+PathData.prototype.getBottomY = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getCorners()[<span class="number">2</span>].y;
+};
+
+<span class="comment">// TODO: NEW IMPLEMENTATION</span>
+PathData.prototype.fromString = <span class="keyword">function</span>(value) {
+    <span class="keyword">var</span> type = value.charAt(<span class="number">0</span>);
+    <span class="keyword">var</span> values = value.substring(<span class="number">1</span>,value.length).split(<span class="string">','</span>);
+    <span class="keyword">return</span> {type : type, value:<span class="keyword">this</span>.toPoint(values[<span class="number">0</span>], values[<span class="number">1</span>]), absolute : (type === type.toUpperCase())};
+};
+
+PathData.prototype.setData = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(object.isArray(value)) {
+        <span class="keyword">this</span>.data = value;
+    }
+};
+
+PathData.prototype.clear = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.data.clear();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.length = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data.length();
+};
+
+PathData.prototype.value = <span class="keyword">function</span>(index) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.data.value(index);
+};
+
+PathData.prototype.valueByType = <span class="keyword">function</span>(index, type) {
+    <span class="keyword">var</span> count = <span class="number">0</span>;
+    <span class="keyword">var</span> result;
+
+    object.each(<span class="keyword">this</span>.data.vectors, <span class="keyword">function</span>(i, value) {
+       <span class="keyword">if</span>(value.is(type) &amp;&amp; count++ === index) {
+           result = value;
+           <span class="keyword">return</span> <span class="literal">false</span>;
+       }
+    });
+
+    <span class="keyword">return</span> result;
+}
+
+PathData.prototype.start = <span class="keyword">function</span>(p, absolute) {
+    <span class="keyword">if</span>(arguments.length === <span class="number">0</span>) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.value(<span class="number">0</span>).to();
+    }
+    <span class="keyword">this</span>.data.setValue(<span class="number">0</span>, <span class="keyword">new</span> MoveTo(p, absolute));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.end = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(value) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.data.last().to(value);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.data.last().to();
+    }
+};
+
+<span class="comment">/**
+ * TODO: refactor to setTo
+ * @param index
+ * @param value
+ * @returns {PathData}
+ */</span>
+PathData.prototype.setTo = <span class="keyword">function</span>(index, value) {
+    <span class="keyword">this</span>.data.value(index).to(value);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.removePath = <span class="keyword">function</span>(index) {
+    <span class="keyword">this</span>.data.remove(index);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.complete = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.data.add(<span class="keyword">new</span> Complete());
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.line = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">var</span> p = math.getPoint(x,y);
+    <span class="keyword">this</span>.data.add(<span class="keyword">new</span> LineTo(p, <span class="literal">true</span>));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.cBezier = <span class="keyword">function</span>(c1, c2, to) {
+    <span class="keyword">this</span>.data.add(<span class="keyword">new</span> CBezier(c1,c2, to, <span class="literal">true</span>));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+<span class="comment">/**
+ * TODO: Line to
+ * @param index
+ * @param value
+ * @param absolute
+ * @returns {PathData}
+ */</span>
+PathData.prototype.insertLine = <span class="keyword">function</span>(index, to, absolute) {
+    <span class="keyword">this</span>.data.insert(index, <span class="keyword">new</span> LineTo(to,absolute));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.qBezier = <span class="keyword">function</span>(controlP,toP) {
+    <span class="keyword">this</span>.data.add(<span class="keyword">new</span> QBezier(controlP,toP, <span class="literal">true</span>));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.insertQBezier = <span class="keyword">function</span>(index,c, to, absolute) {
+    <span class="keyword">this</span>.data.insert(index, <span class="keyword">new</span> QBezier(to,absolute));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.insertCBezier = <span class="keyword">function</span>(index, c1, c2, to, absolute) {
+    <span class="keyword">this</span>.data.insert(index, <span class="keyword">new</span> CBezier(c1,c2, to,absolute));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+PathData.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.data.each(<span class="keyword">function</span>(index, pathPart) {
+       result += pathPart.toString();
+    });
+    <span class="keyword">return</span> result.trim();
+};
+
+module.exports = PathData;</code></pre>

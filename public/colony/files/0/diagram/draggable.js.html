@@ -1,0 +1,141 @@
+<h1>draggable.js</h1>
+<pre><code class="lang-js">require(<span class="string">'../svg/draggable'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> DragAlignment = require(<span class="string">'./dragAlignment'</span>);
+<span class="keyword">var</span> Node = require(<span class="string">'./node'</span>);
+
+<span class="keyword">var</span> dom = util.dom;
+<span class="keyword">var</span> object = util.object;
+
+<span class="keyword">var</span> lastDrag;
+
+<span class="keyword">var</span> DragContext = <span class="keyword">function</span>(node, cfg) {
+    <span class="keyword">this</span>.cfg = cfg || {};
+    <span class="keyword">this</span>.node = node;
+};
+
+DragContext.prototype.dragStart = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.dxSum = <span class="number">0</span>;
+    <span class="keyword">this</span>.dySum = <span class="number">0</span>;
+    <span class="keyword">this</span>.from = <span class="keyword">this</span>.node.position();
+    <span class="keyword">delete</span> <span class="keyword">this</span>.to;
+    <span class="keyword">if</span>(<span class="keyword">this</span>.cfg.dragStart) {
+        <span class="keyword">this</span>.cfg.dragStart(evt);
+    }
+};
+
+DragContext.prototype.dragMove = <span class="keyword">function</span>(evt, dx, dy) {
+    <span class="keyword">this</span>.dxSum += dx;
+    <span class="keyword">this</span>.dySum += dy;
+    <span class="keyword">if</span>(<span class="keyword">this</span>.cfg.dragMove) {
+        <span class="keyword">this</span>.cfg.dragMove(evt, dx,dy);
+    }
+};
+
+DragContext.prototype.dragEnd = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.dxSum > <span class="number">0</span> || <span class="keyword">this</span>.dySum > <span class="number">0</span>) {
+        <span class="keyword">this</span>.to = <span class="keyword">this</span>.node.position();
+        <span class="keyword">if</span> (<span class="keyword">this</span>.cfg.dragEnd) {
+            <span class="keyword">this</span>.cfg.dragEnd(evt);
+        }
+    }
+};
+
+DragContext.prototype.clone = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        dxSum : <span class="keyword">this</span>.dxSum,
+        dySum : <span class="keyword">this</span>.dySum,
+        from : <span class="keyword">this</span>.from,
+        to : <span class="keyword">this</span>.to
+    }
+};
+
+<span class="comment">//TODO: dragBeforeMove delegation</span>
+
+Node.prototype.draggable = <span class="keyword">function</span>(cfg) {
+    cfg = cfg || {};
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.dragContext = <span class="keyword">new</span> DragContext(<span class="keyword">this</span>, cfg);
+
+    <span class="keyword">var</span> dragConfig = {
+        cursor: <span class="string">'all-scroll'</span>,
+        dragStart: <span class="keyword">function</span>(evt) {
+            that.dragContext.dragStart(evt);
+            lastDrag = that.dragContext;
+            that.exec(<span class="string">'dragStart'</span>, [evt]);
+        },
+        dragMove : <span class="keyword">function</span>(evt, dx , dy) {
+            that.dragContext.dragMove(evt, dx, dy);
+            <span class="comment">//that.exec('dragMove', [dx,dy, evt]);</span>
+            <span class="comment">//We skip the the domEvent dragMove here cause of performance...</span>
+            that.exec(<span class="string">'dragMove'</span>, [dx,dy, evt], <span class="literal">true</span>);
+
+        },
+        dragEnd : <span class="keyword">function</span>(evt) {
+            that.dragContext.dragEnd(evt);
+            that.exec(<span class="string">'dragEnd'</span>, [evt]);
+        },
+        getScale: <span class="keyword">function</span>() {
+            <span class="keyword">return</span> that.diagram.scale;
+        },
+        restrictionX : cfg.restrictionX,
+        restrictionY : cfg.restrictionY,
+        cursor : cfg.cursor
+    };
+
+    <span class="keyword">if</span>(!cfg.preventAlignment) {
+        <span class="keyword">var</span> dragAlignment;
+        <span class="keyword">if</span>(cfg.dragAlignment) {
+            dragAlignment = (cfg.dragAlignment <span class="keyword">instanceof</span> DragAlignment)
+                ? cfg.dragAlignment : <span class="keyword">new</span> DragAlignment(<span class="keyword">this</span>.diagram, cfg.dragAlignment);
+        } <span class="keyword">else</span> {
+            dragAlignment = <span class="keyword">new</span> DragAlignment(that.diagram,
+                <span class="keyword">function</span>() {
+                    <span class="keyword">var</span> alignments = that.getTransitionAlignmentTargets();
+                    alignments.push({source:[that.getCenter()], target:that.getNodeAlignmentTargets()});
+                    <span class="keyword">return</span> alignments;
+                });
+        }
+        dragConfig.dragAlignment = dragAlignment;
+    }
+
+
+    <span class="keyword">this</span>.root.draggable(dragConfig, <span class="keyword">this</span>.getDragElement());
+
+    <span class="comment">//Simulates an drag start event</span>
+    <span class="keyword">this</span>.initDrag = <span class="keyword">this</span>.root.initDrag;
+
+    <span class="comment">//For manual dragging a svg element the triggerEvent is used to identify this event was triggered manually</span>
+    <span class="keyword">this</span>.triggerDrag = <span class="keyword">this</span>.root.triggerDrag;
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Node.prototype.getTransitionAlignmentTargets = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.additions.transition.getTransitionAlignmentTargets();
+};
+
+Node.prototype.getNodeAlignmentTargets = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    object.each(<span class="keyword">this</span>.diagram.getNodes(), <span class="keyword">function</span>(key, node) {
+        <span class="keyword">if</span>(node.id !== that.id &amp;&amp; !node.knob) {
+            result.push(node.getCenter());
+        }
+    });
+
+    <span class="keyword">return</span> result;
+};
+
+Node.prototype.getDragElement = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> dom.findIncludeSelf(<span class="keyword">this</span>.getRootSVG().instance(), <span class="keyword">this</span>.getNodeSelector(<span class="string">'.dragRoute_'</span>));
+};
+
+module.exports = {
+    getLastDrag : <span class="keyword">function</span>() {
+        <span class="keyword">return</span> lastDrag;
+    }
+}
+
+</code></pre>

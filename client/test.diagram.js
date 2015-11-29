@@ -111,12 +111,6 @@ describe('node', function() {
         diagram.undoCommand();
         assert.equal(oldVal, n3.additions.edit.getValue('mainColor'));
     });
-
-    it('node edit', function () {
-        //TODO: node edit
-    });
-
-
 });
 
 describe('transition', function() {
@@ -137,21 +131,57 @@ describe('transition', function() {
         assert.deepEqual({x : n2.getCenter().x, y : n2.y()}, t1.end(), 'end of transition');
     });
 
-    it('transition knobs', function () {
-        //TODO: node edit
+    it('transition command create', function () {
+        var t2 = diagram.api.createTransition(n2,n3);
+        var id = t2.id;
+        assert.equal(1, $('#'+id).length);
+        assert.ok(diagram.api.getTransitionById(id));
+        diagram.undoCommand();
+        assert.ok(t2.removed);
+        assert.equal(0, $('#'+id).length);
+        assert.isUndefined(diagram.api.getTransitionById(id));
+        diagram.redoCommand();
+        assert.equal(1, $('#'+id).length);
+        assert.ok(diagram.api.getTransitionById(id));
+        diagram.api.getTransitionById(id).remove();
     });
 
-    it('transition text', function () {
-        //TODO: node edit
+    it('transition command add knob', function () {
+        var t2 = diagram.api.createTransition(n2,n3);
+        var knobPosition = {x:n3.getCenter().x, y:n2.getCenter().y};
+        var knob = t2.addKnob(knobPosition);
+        assert.ok(knob);
+        assert.equal(3, t2.knobManager.size());
+        assert.deepEqual(knobPosition, t2.knobManager.getKnob(1).position());
+        diagram.undoCommand();
+        assert.equal(2, t2.knobManager.size());
+        diagram.redoCommand();
+        assert.equal(3, t2.knobManager.size());
+        assert.deepEqual(knobPosition, t2.knobManager.getKnob(1).position());
+        diagram.api.getTransitionById(t2.id).remove();
     });
 
+    it('transition command add knob', function () {
+        var t2 = diagram.api.createTransition(n2,n3);
+        var knobPosition = {x:n3.getCenter().x, y:n2.getCenter().y};
+        var knob = t2.addKnob(knobPosition);
+        t2.knobManager.moveKnob(knob, 10, 10);
+        assert.deepEqual({x: knobPosition.x + 10, y : knobPosition.y + 10}, knob.position());
+        t2.knobManager.moveKnob(1, 10, 10);
+        assert.deepEqual({x: knobPosition.x + 20, y : knobPosition.y + 20}, knob.position());
+        diagram.undoCommand();
+        diagram.undoCommand();
+        assert.deepEqual(knobPosition, knob.position());
+    });
+
+    /*
     it('transition edit', function () {
         //TODO: node edit
     });
 
     it('transition commands', function () {
         //TODO: node commands
-    });
+    });*/
 });
 
 mocha.run();

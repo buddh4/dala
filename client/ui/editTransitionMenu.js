@@ -104,9 +104,10 @@ var fillForm = function(transition) {
     $('#edit_ET').val(textAddition.getText(4));
     $('#edit_EB').val(textAddition.getText(5));
 
-
     //Focus first input
     $('#startMarker-button').focus();
+    //We should not prefocus a jquery ui selectmenu item because it causes two keydown event triggers when focused.
+    //$('#edit_ST').focus();
     initState = false;
 }
 

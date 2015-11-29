@@ -1,0 +1,17 @@
+<h1>fileMenu.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+
+exports.init = <span class="keyword">function</span>() {
+    $(<span class="string">'#file_new'</span>).on(<span class="string">'click'</span>, <span class="keyword">function</span>() {
+        event.trigger(<span class="string">'tab_new'</span>);
+    });
+
+    $(<span class="string">'#saveButton'</span>).on(<span class="string">'click'</span>, <span class="keyword">function</span>() {
+        event.trigger(<span class="string">'key_save_press'</span>);
+    });
+
+    event.on(<span class="string">'#downloadDiagram'</span>, <span class="string">'click'</span>, <span class="keyword">function</span>(evt) {
+        event.trigger(<span class="string">'diagram_download'</span>);
+    });
+};</code></pre>

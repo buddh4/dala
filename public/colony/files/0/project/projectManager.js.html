@@ -1,0 +1,33 @@
+<h1>projectManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> client = require(<span class="string">'../core/client'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> projects = {};
+<span class="keyword">var</span> projectManager
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    <span class="comment">//event.listen('user_loggedin', userLoginListener);</span>
+    event.listen(<span class="string">'project_create'</span>, newProjectListener);
+};
+
+<span class="keyword">var</span> newProjectListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> projectSettings = evt.data;
+
+    <span class="keyword">if</span>(projectSettings &amp;&amp; projectSettings.title) {
+        client.post(<span class="string">'/project/createProject'</span>, projectSettings, {
+            success : <span class="keyword">function</span>(response) {
+                <span class="keyword">var</span> newProject = response.data.result;
+                projects[newProject._id] = newProject;
+                event.trigger(<span class="string">'project_created'</span>, newProject);
+            },
+            errorMessage : <span class="string">'Could not create project !'</span>,
+            successMessage : <span class="string">'Project created !'</span>
+        })
+    }
+};
+
+module.exports = {
+    init : initListener
+};
+
+</code></pre>

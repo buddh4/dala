@@ -1,0 +1,462 @@
+<h1>bezier.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * most Bezier helpter functions are taken from jsBezier library https://github.com/jsplumb/jsBezier/blob/master/js/0.6/jsBezier-0.6.js
+ * check /libs/jsBezier.js for more functions if required.
+ *
+ *
+ */</span>
+
+<span class="keyword">if</span> (<span class="keyword">typeof</span> Math.sgn == <span class="string">"undefined"</span>) {
+    Math.sgn = <span class="function"><span class="keyword">function</span> <span class="params">(x)</span> {</span>
+        <span class="keyword">return</span> x == <span class="number">0</span> ? <span class="number">0</span> : x > <span class="number">0</span> ? <span class="number">1</span> : -<span class="number">1</span>;
+    };
+}
+
+<span class="keyword">var</span> Vectors = {
+        subtract: <span class="function"><span class="keyword">function</span> <span class="params">(v1, v2)</span> {</span>
+            <span class="keyword">return</span> {x: v1.x - v2.x, y: v1.y - v2.y};
+        },
+        dotProduct: <span class="function"><span class="keyword">function</span> <span class="params">(v1, v2)</span> {</span>
+            <span class="keyword">return</span> (v1.x * v2.x) + (v1.y * v2.y);
+        },
+        square: <span class="function"><span class="keyword">function</span> <span class="params">(v)</span> {</span>
+            <span class="keyword">return</span> Math.sqrt((v.x * v.x) + (v.y * v.y));
+        },
+        scale: <span class="function"><span class="keyword">function</span> <span class="params">(v, s)</span> {</span>
+            <span class="keyword">return</span> {x: v.x * s, y: v.y * s};
+        }
+    },
+
+    maxRecursion = <span class="number">64</span>,
+    flatnessTolerance = Math.pow(<span class="number">2.0</span>, -maxRecursion - <span class="number">1</span>);
+
+<span class="comment">/**
+ * finds the nearest point on the curve to the given point.
+ */</span>
+<span class="keyword">var</span> _nearestPointOnCurve = <span class="function"><span class="keyword">function</span> <span class="params">(point, curve)</span> {</span>
+    <span class="keyword">var</span> td = _distanceFromCurve(point, curve);
+    <span class="keyword">return</span> {point: _bezier(curve, curve.length - <span class="number">1</span>, td.location, <span class="literal">null</span>, <span class="literal">null</span>), location: td.location};
+};
+
+<span class="comment">/**
+ * Calculates the distance that the point lies from the curve.
+ *
+ * @param point a point in the form {x:567, y:3342}
+ * @param curve a Bezier curve in the form [{x:..., y:...}, {x:..., y:...}, {x:..., y:...}, {x:..., y:...}].  note that this is currently
+ * hardcoded to assume cubiz beziers, but would be better off supporting any degree.
+ * @return a JS object literal containing location and distance, for example: {location:0.35, distance:10}.  Location is analogous to the location
+ * argument you pass to the pointOnPath function: it is a ratio of distance travelled along the curve.  Distance is the distance in pixels from
+ * the point to the curve.
+ */</span>
+<span class="keyword">var</span> _distanceFromCurve = <span class="function"><span class="keyword">function</span> <span class="params">(point, curve)</span> {</span>
+    <span class="keyword">var</span> candidates = [],
+        w = _convertToBezier(point, curve),
+        degree = curve.length - <span class="number">1</span>, higherDegree = (<span class="number">2</span> * degree) - <span class="number">1</span>,
+        numSolutions = _findRoots(w, higherDegree, candidates, <span class="number">0</span>),
+        v = Vectors.subtract(point, curve[<span class="number">0</span>]), dist = Vectors.square(v), t = <span class="number">0.0</span>;
+
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; numSolutions; i++) {
+        v = Vectors.subtract(point, _bezier(curve, degree, candidates[i], <span class="literal">null</span>, <span class="literal">null</span>));
+        <span class="keyword">var</span> newDist = Vectors.square(v);
+        <span class="keyword">if</span> (newDist &lt; dist) {
+            dist = newDist;
+            t = candidates[i];
+        }
+    }
+    v = Vectors.subtract(point, curve[degree]);
+    newDist = Vectors.square(v);
+    <span class="keyword">if</span> (newDist &lt; dist) {
+        dist = newDist;
+        t = <span class="number">1.0</span>;
+    }
+    <span class="keyword">return</span> {location: t, distance: dist};
+};
+
+<span class="keyword">var</span> _convertToBezier = <span class="function"><span class="keyword">function</span> <span class="params">(point, curve)</span> {</span>
+    <span class="keyword">var</span> degree = curve.length - <span class="number">1</span>, higherDegree = (<span class="number">2</span> * degree) - <span class="number">1</span>,
+        c = [], d = [], cdTable = [], w = [],
+        z = [[<span class="number">1.0</span>, <span class="number">0.6</span>, <span class="number">0.3</span>, <span class="number">0.1</span>], [<span class="number">0.4</span>, <span class="number">0.6</span>, <span class="number">0.6</span>, <span class="number">0.4</span>], [<span class="number">0.1</span>, <span class="number">0.3</span>, <span class="number">0.6</span>, <span class="number">1.0</span>]];
+
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt;= degree; i++) c[i] = Vectors.subtract(curve[i], point);
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt;= degree - <span class="number">1</span>; i++) {
+        d[i] = Vectors.subtract(curve[i + <span class="number">1</span>], curve[i]);
+        d[i] = Vectors.scale(d[i], <span class="number">3.0</span>);
+    }
+    <span class="keyword">for</span> (<span class="keyword">var</span> row = <span class="number">0</span>; row &lt;= degree - <span class="number">1</span>; row++) {
+        <span class="keyword">for</span> (<span class="keyword">var</span> column = <span class="number">0</span>; column &lt;= degree; column++) {
+            <span class="keyword">if</span> (!cdTable[row]) cdTable[row] = [];
+            cdTable[row][column] = Vectors.dotProduct(d[row], c[column]);
+        }
+    }
+    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt;= higherDegree; i++) {
+        <span class="keyword">if</span> (!w[i]) w[i] = [];
+        w[i].y = <span class="number">0.0</span>;
+        w[i].x = parseFloat(i) / higherDegree;
+    }
+    <span class="keyword">var</span> n = degree, m = degree - <span class="number">1</span>;
+    <span class="keyword">for</span> (<span class="keyword">var</span> k = <span class="number">0</span>; k &lt;= n + m; k++) {
+        <span class="keyword">var</span> lb = Math.max(<span class="number">0</span>, k - m),
+            ub = Math.min(k, n);
+        <span class="keyword">for</span> (i = lb; i &lt;= ub; i++) {
+            j = k - i;
+            w[i + j].y += cdTable[j][i] * z[j][i];
+        }
+    }
+    <span class="keyword">return</span> w;
+};
+<span class="comment">/**
+ * counts how many roots there are.
+ */</span>
+<span class="keyword">var</span> _findRoots = <span class="function"><span class="keyword">function</span> <span class="params">(w, degree, t, depth)</span> {</span>
+    <span class="keyword">var</span> left = [], right = [],
+        left_count, right_count,
+        left_t = [], right_t = [];
+
+    <span class="keyword">switch</span> (_getCrossingCount(w, degree)) {
+        <span class="keyword">case</span> <span class="number">0</span> :
+        {
+            <span class="keyword">return</span> <span class="number">0</span>;
+        }
+        <span class="keyword">case</span> <span class="number">1</span> :
+        {
+            <span class="keyword">if</span> (depth >= maxRecursion) {
+                t[<span class="number">0</span>] = (w[<span class="number">0</span>].x + w[degree].x) / <span class="number">2.0</span>;
+                <span class="keyword">return</span> <span class="number">1</span>;
+            }
+            <span class="keyword">if</span> (_isFlatEnough(w, degree)) {
+                t[<span class="number">0</span>] = _computeXIntercept(w, degree);
+                <span class="keyword">return</span> <span class="number">1</span>;
+            }
+            <span class="keyword">break</span>;
+        }
+    }
+    _bezier(w, degree, <span class="number">0.5</span>, left, right);
+    left_count = _findRoots(left, degree, left_t, depth + <span class="number">1</span>);
+    right_count = _findRoots(right, degree, right_t, depth + <span class="number">1</span>);
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; left_count; i++) t[i] = left_t[i];
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; right_count; i++) t[i + left_count] = right_t[i];
+    <span class="keyword">return</span> (left_count + right_count);
+};
+<span class="keyword">var</span> _getCrossingCount = <span class="function"><span class="keyword">function</span> <span class="params">(curve, degree)</span> {</span>
+    <span class="keyword">var</span> n_crossings = <span class="number">0</span>, sign, old_sign;
+    sign = old_sign = Math.sgn(curve[<span class="number">0</span>].y);
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">1</span>; i &lt;= degree; i++) {
+        sign = Math.sgn(curve[i].y);
+        <span class="keyword">if</span> (sign != old_sign) n_crossings++;
+        old_sign = sign;
+    }
+    <span class="keyword">return</span> n_crossings;
+};
+<span class="keyword">var</span> _isFlatEnough = <span class="function"><span class="keyword">function</span> <span class="params">(curve, degree)</span> {</span>
+    <span class="keyword">var</span> error,
+        intercept_1, intercept_2, left_intercept, right_intercept,
+        a, b, c, det, dInv, a1, b1, c1, a2, b2, c2;
+    a = curve[<span class="number">0</span>].y - curve[degree].y;
+    b = curve[degree].x - curve[<span class="number">0</span>].x;
+    c = curve[<span class="number">0</span>].x * curve[degree].y - curve[degree].x * curve[<span class="number">0</span>].y;
+
+    <span class="keyword">var</span> max_distance_above = max_distance_below = <span class="number">0.0</span>;
+
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">1</span>; i &lt; degree; i++) {
+        <span class="keyword">var</span> value = a * curve[i].x + b * curve[i].y + c;
+        <span class="keyword">if</span> (value > max_distance_above)
+            max_distance_above = value;
+        <span class="keyword">else</span> <span class="keyword">if</span> (value &lt; max_distance_below)
+            max_distance_below = value;
+    }
+
+    a1 = <span class="number">0.0</span>;
+    b1 = <span class="number">1.0</span>;
+    c1 = <span class="number">0.0</span>;
+    a2 = a;
+    b2 = b;
+    c2 = c - max_distance_above;
+    det = a1 * b2 - a2 * b1;
+    dInv = <span class="number">1.0</span> / det;
+    intercept_1 = (b1 * c2 - b2 * c1) * dInv;
+    a2 = a;
+    b2 = b;
+    c2 = c - max_distance_below;
+    det = a1 * b2 - a2 * b1;
+    dInv = <span class="number">1.0</span> / det;
+    intercept_2 = (b1 * c2 - b2 * c1) * dInv;
+    left_intercept = Math.min(intercept_1, intercept_2);
+    right_intercept = Math.max(intercept_1, intercept_2);
+    error = right_intercept - left_intercept;
+    <span class="keyword">return</span> (error &lt; flatnessTolerance) ? <span class="number">1</span> : <span class="number">0</span>;
+};
+<span class="keyword">var</span> _computeXIntercept = <span class="function"><span class="keyword">function</span> <span class="params">(curve, degree)</span> {</span>
+    <span class="keyword">var</span> XLK = <span class="number">1.0</span>, YLK = <span class="number">0.0</span>,
+        XNM = curve[degree].x - curve[<span class="number">0</span>].x, YNM = curve[degree].y - curve[<span class="number">0</span>].y,
+        XMK = curve[<span class="number">0</span>].x - <span class="number">0.0</span>, YMK = curve[<span class="number">0</span>].y - <span class="number">0.0</span>,
+        det = XNM * YLK - YNM * XLK, detInv = <span class="number">1.0</span> / det,
+        S = (XNM * YMK - YNM * XMK) * detInv;
+    <span class="keyword">return</span> <span class="number">0.0</span> + XLK * S;
+};
+
+<span class="keyword">var</span> _bezier = <span class="function"><span class="keyword">function</span> <span class="params">(curve, degree, t, left, right)</span> {</span>
+    <span class="keyword">var</span> temp = [[]];
+    <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt;= degree; j++) temp[<span class="number">0</span>][j] = curve[j];
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">1</span>; i &lt;= degree; i++) {
+        <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt;= degree - i; j++) {
+            <span class="keyword">if</span> (!temp[i]) temp[i] = [];
+            <span class="keyword">if</span> (!temp[i][j]) temp[i][j] = {};
+            temp[i][j].x = (<span class="number">1.0</span> - t) * temp[i - <span class="number">1</span>][j].x + t * temp[i - <span class="number">1</span>][j + <span class="number">1</span>].x;
+            temp[i][j].y = (<span class="number">1.0</span> - t) * temp[i - <span class="number">1</span>][j].y + t * temp[i - <span class="number">1</span>][j + <span class="number">1</span>].y;
+        }
+    }
+    <span class="keyword">if</span> (left != <span class="literal">null</span>)
+        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt;= degree; j++) left[j] = temp[j][<span class="number">0</span>];
+    <span class="keyword">if</span> (right != <span class="literal">null</span>)
+        <span class="keyword">for</span> (j = <span class="number">0</span>; j &lt;= degree; j++) right[j] = temp[degree - j][j];
+
+    <span class="keyword">return</span> (temp[degree][<span class="number">0</span>]);
+};
+
+<span class="keyword">var</span> _curveFunctionCache = {};
+<span class="keyword">var</span> _getCurveFunctions = <span class="function"><span class="keyword">function</span> <span class="params">(order)</span> {</span>
+    <span class="keyword">var</span> fns = _curveFunctionCache[order];
+    <span class="keyword">if</span> (!fns) {
+        fns = [];
+        <span class="keyword">var</span> f_term = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">return</span> Math.pow(t, order);
+                };
+            },
+            l_term = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">return</span> Math.pow((<span class="number">1</span> - t), order);
+                };
+            },
+            c_term = <span class="function"><span class="keyword">function</span> <span class="params">(c)</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">return</span> c;
+                };
+            },
+            t_term = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">return</span> t;
+                };
+            },
+            one_minus_t_term = <span class="function"><span class="keyword">function</span> <span class="params">()</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">return</span> <span class="number">1</span> - t;
+                };
+            },
+            _termFunc = <span class="function"><span class="keyword">function</span> <span class="params">(terms)</span> {</span>
+                <span class="keyword">return</span> <span class="function"><span class="keyword">function</span> <span class="params">(t)</span> {</span>
+                    <span class="keyword">var</span> p = <span class="number">1</span>;
+                    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; terms.length; i++) p = p * terms[i](t);
+                    <span class="keyword">return</span> p;
+                };
+            };
+
+        fns.push(<span class="keyword">new</span> f_term());  <span class="comment">// first is t to the power of the curve order</span>
+        <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">1</span>; i &lt; order; i++) {
+            <span class="keyword">var</span> terms = [<span class="keyword">new</span> c_term(order)];
+            <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; (order - i); j++) terms.push(<span class="keyword">new</span> t_term());
+            <span class="keyword">for</span> (<span class="keyword">var</span> j = <span class="number">0</span>; j &lt; i; j++) terms.push(<span class="keyword">new</span> one_minus_t_term());
+            fns.push(<span class="keyword">new</span> _termFunc(terms));
+        }
+        fns.push(<span class="keyword">new</span> l_term());  <span class="comment">// last is (1-t) to the power of the curve order</span>
+
+        _curveFunctionCache[order] = fns;
+    }
+
+    <span class="keyword">return</span> fns;
+};
+
+
+<span class="comment">/**
+ * calculates a point on the curve, for a Bezier of arbitrary order.
+ * @param curve an array of control points, eg [{x:10,y:20}, {x:50,y:50}, {x:100,y:100}, {x:120,y:100}].  For a cubic bezier this should have four points.
+ * @param location a decimal indicating the distance along the curve the point should be located at.  this is the distance along the curve as it travels, taking the way it bends into account.  should be a number from 0 to 1, inclusive.
+ */</span>
+<span class="keyword">var</span> _pointOnPath = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location)</span> {</span>
+    <span class="keyword">var</span> cc = _getCurveFunctions(curve.length - <span class="number">1</span>),
+        _x = <span class="number">0</span>, _y = <span class="number">0</span>;
+    <span class="keyword">for</span> (<span class="keyword">var</span> i = <span class="number">0</span>; i &lt; curve.length; i++) {
+        _x = _x + (curve[i].x * cc[i](location));
+        _y = _y + (curve[i].y * cc[i](location));
+    }
+
+    <span class="keyword">return</span> {x: _x, y: _y};
+};
+
+<span class="keyword">var</span> _dist = <span class="function"><span class="keyword">function</span> <span class="params">(p1, p2)</span> {</span>
+    <span class="keyword">return</span> Math.sqrt(Math.pow(p1.x - p2.x, <span class="number">2</span>) + Math.pow(p1.y - p2.y, <span class="number">2</span>));
+};
+
+<span class="keyword">var</span> _isPoint = <span class="function"><span class="keyword">function</span> <span class="params">(curve)</span> {</span>
+    <span class="keyword">return</span> curve[<span class="number">0</span>].x == curve[<span class="number">1</span>].x &amp;&amp; curve[<span class="number">0</span>].y == curve[<span class="number">1</span>].y;
+};
+
+<span class="comment">/**
+ * finds the point that is 'distance' along the path from 'location'.  this method returns both the x,y location of the point and also
+ * its 'location' (proportion of travel along the path); the method below - _pointAlongPathFrom - calls this method and just returns the
+ * point.
+ */</span>
+<span class="keyword">var</span> _pointAlongPath = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location, distance)</span> {</span>
+
+    <span class="keyword">if</span> (_isPoint(curve)) {
+        <span class="keyword">return</span> {
+            point: curve[<span class="number">0</span>],
+            location: location
+        };
+    }
+
+    <span class="keyword">var</span> prev = _pointOnPath(curve, location),
+        tally = <span class="number">0</span>,
+        curLoc = location,
+        direction = distance > <span class="number">0</span> ? <span class="number">1</span> : -<span class="number">1</span>,
+        cur = <span class="literal">null</span>;
+
+    <span class="keyword">while</span> (tally &lt; Math.abs(distance)) {
+        curLoc += (<span class="number">0.005</span> * direction);
+        cur = _pointOnPath(curve, curLoc);
+        tally += _dist(cur, prev);
+        prev = cur;
+    }
+    <span class="keyword">return</span> {point: cur, location: curLoc};
+};
+
+<span class="keyword">var</span> _length = <span class="function"><span class="keyword">function</span> <span class="params">(curve)</span> {</span>
+    <span class="keyword">if</span> (_isPoint(curve)) <span class="keyword">return</span> <span class="number">0</span>;
+
+    <span class="keyword">var</span> prev = _pointOnPath(curve, <span class="number">0</span>),
+        tally = <span class="number">0</span>,
+        curLoc = <span class="number">0</span>,
+        direction = <span class="number">1</span>,
+        cur = <span class="literal">null</span>;
+
+    <span class="keyword">while</span> (curLoc &lt; <span class="number">1</span>) {
+        curLoc += (<span class="number">0.005</span> * direction);
+        cur = _pointOnPath(curve, curLoc);
+        tally += _dist(cur, prev);
+        prev = cur;
+    }
+    <span class="keyword">return</span> tally;
+};
+
+<span class="comment">/**
+ * finds the point that is 'distance' along the path from 'location'.
+ */</span>
+<span class="keyword">var</span> _pointAlongPathFrom = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location, distance)</span> {</span>
+    <span class="keyword">return</span> _pointAlongPath(curve, location, distance).point;
+};
+
+<span class="comment">/**
+ * finds the location that is 'distance' along the path from 'location'.
+ */</span>
+<span class="keyword">var</span> _locationAlongPathFrom = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location, distance)</span> {</span>
+    <span class="keyword">return</span> _pointAlongPath(curve, location, distance).location;
+};
+
+<span class="comment">/**
+ * returns the gradient of the curve at the given location, which is a decimal between 0 and 1 inclusive.
+ *
+ * thanks // http://bimixual.org/AnimationLibrary/beziertangents.html
+ */</span>
+<span class="keyword">var</span> _gradientAtPoint = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location)</span> {</span>
+    <span class="keyword">var</span> p1 = _pointOnPath(curve, location),
+        p2 = _pointOnPath(curve.slice(<span class="number">0</span>, curve.length - <span class="number">1</span>), location),
+        dy = p2.y - p1.y, dx = p2.x - p1.x;
+    <span class="keyword">return</span> dy == <span class="number">0</span> ? <span class="literal">Infinity</span> : Math.atan(dy / dx);
+};
+
+<span class="comment">/**
+ returns the gradient of the curve at the point which is 'distance' from the given location.
+ if this point is greater than location 1, the gradient at location 1 is returned.
+ if this point is less than location 0, the gradient at location 0 is returned.
+ */</span>
+<span class="keyword">var</span> _gradientAtPointAlongPathFrom = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location, distance)</span> {</span>
+    <span class="keyword">var</span> p = _pointAlongPath(curve, location, distance);
+    <span class="keyword">if</span> (p.location > <span class="number">1</span>) p.location = <span class="number">1</span>;
+    <span class="keyword">if</span> (p.location &lt; <span class="number">0</span>) p.location = <span class="number">0</span>;
+    <span class="keyword">return</span> _gradientAtPoint(curve, p.location);
+};
+
+<span class="comment">/**
+ * calculates a line that is 'length' pixels long, perpendicular to, and centered on, the path at 'distance' pixels from the given location.
+ * if distance is not supplied, the perpendicular for the given location is computed (ie. we set distance to zero).
+ */</span>
+<span class="keyword">var</span> _perpendicularToPathAt = <span class="function"><span class="keyword">function</span> <span class="params">(curve, location, length, distance)</span> {</span>
+    distance = distance == <span class="literal">null</span> ? <span class="number">0</span> : distance;
+    <span class="keyword">var</span> p = _pointAlongPath(curve, location, distance),
+        m = _gradientAtPoint(curve, p.location),
+        _theta2 = Math.atan(-<span class="number">1</span> / m),
+        y = length / <span class="number">2</span> * Math.sin(_theta2),
+        x = length / <span class="number">2</span> * Math.cos(_theta2);
+    <span class="keyword">return</span> [{x: p.point.x + x, y: p.point.y + y}, {x: p.point.x - x, y: p.point.y - y}];
+};
+
+<span class="keyword">var</span> _calculateSmoothControlPoints = <span class="keyword">function</span>(K) {
+    <span class="keyword">var</span> resultP1 = [];
+    <span class="keyword">var</span> resultP2 = [];
+    <span class="keyword">var</span> n = K.length-<span class="number">1</span>;
+
+    <span class="comment">/*rhs vector init left most segment*/</span>
+    <span class="keyword">var</span> a = [<span class="number">0</span>];
+    <span class="keyword">var</span> b = [<span class="number">2</span>];
+    <span class="keyword">var</span> c = [<span class="number">1</span>];
+    <span class="keyword">var</span> r = [K[<span class="number">0</span>] + <span class="number">2</span> * K[<span class="number">1</span>]];
+
+    <span class="comment">/*internal segments*/</span>
+    <span class="keyword">for</span>(i = <span class="number">1</span>; i &lt; n - <span class="number">1</span>; i++) {
+        a[i] = <span class="number">1</span>;
+        b[i] = <span class="number">4</span>;
+        c[i] = <span class="number">1</span>;
+        r[i] = <span class="number">4</span> * K[i] + <span class="number">2</span> * K[i+<span class="number">1</span>];
+    }
+
+    <span class="comment">/*right segment*/</span>
+    a[n-<span class="number">1</span>] = <span class="number">2</span>;
+    b[n-<span class="number">1</span>] = <span class="number">7</span>;
+    c[n-<span class="number">1</span>] = <span class="number">0</span>;
+    r[n-<span class="number">1</span>] = <span class="number">8</span> * K[n-<span class="number">1</span>] + K[n];
+
+    <span class="comment">/*solves Ax=b with the Thomas algorithm*/</span>
+    <span class="keyword">for</span>(i = <span class="number">1</span>; i &lt; n; i++) {
+        m = a[i] / b[i-<span class="number">1</span>];
+        b[i] = b[i] - m * c[i - <span class="number">1</span>];
+        r[i] = r[i] - m * r[i-<span class="number">1</span>];
+    }
+
+    resultP1[n-<span class="number">1</span>] = r[n-<span class="number">1</span>] / b[n-<span class="number">1</span>];
+    <span class="keyword">for</span> (i = n - <span class="number">2</span>; i >= <span class="number">0</span>; --i) {
+        resultP1[i] = (r[i] - c[i] * resultP1[i + <span class="number">1</span>]) / b[i];
+    }
+
+    <span class="comment">/*we have p1, now compute p2*/</span>
+    <span class="keyword">for</span> (i = <span class="number">0</span>; i &lt; n - <span class="number">1</span>; i++) {
+        resultP2[i] = <span class="number">2</span> * K[i + <span class="number">1</span>] - resultP1[i + <span class="number">1</span>];
+    }
+
+    resultP2[n-<span class="number">1</span>] = <span class="number">0.5</span> * (K[n] + resultP1[n-<span class="number">1</span>]);
+
+    <span class="keyword">return</span> {p1:resultP1, p2:resultP2};
+};
+
+<span class="comment">/**
+ * Moves a point along the given curve
+ * @param curve
+ * @param distance
+ * @returns {*|{x, y}}
+ */</span>
+<span class="keyword">var</span> moveAlong = <span class="keyword">function</span>(curve, distance) {
+    <span class="comment">// Somehow the pointAlongPath calculates in the wrong direction so we switch the bahaviour by setting</span>
+    <span class="comment">// the location to 1 (end) for positive distances.</span>
+    <span class="comment">// and negotiate the distance value.</span>
+    <span class="keyword">var</span> location = distance > <span class="number">0</span> ? <span class="number">1</span> : <span class="number">0</span>;
+    <span class="keyword">var</span> distance = distance * -<span class="number">1</span>;
+    <span class="keyword">return</span> _pointAlongPath(curve,location, distance).point;
+};
+
+module.exports = {
+    nearestPointOnCurve : _nearestPointOnCurve,
+    calculateSmoothControlPoints : _calculateSmoothControlPoints,
+    moveAlong : moveAlong,
+    length : _length
+}
+
+</code></pre>

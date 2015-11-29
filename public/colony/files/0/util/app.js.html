@@ -1,0 +1,94 @@
+<h1>app.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * This module serves as an wrapper for dom manipulation functionality. It is
+ * highly prefered to use this module instead of jquery directly within other
+ * modules.
+ */</span>
+<span class="keyword">var</span> object = require(<span class="string">'./object'</span>);
+
+<span class="keyword">var</span> parseFeatureStrings = <span class="keyword">function</span>(value, defaultVal) {
+    <span class="keyword">var</span> result = [];
+    value = value.split(<span class="string">' '</span>);
+    object.each(value, <span class="keyword">function</span>(index, feature) {
+        result[index] = parseFeatureString(feature, defaultVal);
+    });
+    <span class="keyword">return</span> result;
+};
+
+<span class="comment">/**
+ * parse a featurestinrg in the form of
+ *  'featurename(30,30)' or 'featurename(30.4) or featurename
+ *
+ * The result is would be
+ *      { type : 'featurename', value : [30,30] }
+ *      { type : 'featurename', value : 30.4 }
+ *      { type : 'featurename', value : undefined }
+ * @param {type} feature
+ * @returns {App_L6.parseFeatureString.result}
+ */</span>
+<span class="keyword">var</span> parseFeatureString = <span class="keyword">function</span>(feature, defaultVal) {
+    <span class="keyword">var</span> result = {};
+    <span class="keyword">if</span>(feature.indexOf(<span class="string">'('</span>) > -<span class="number">1</span>) {
+        <span class="keyword">var</span> splitted = feature.split(<span class="string">'('</span>);
+        <span class="keyword">var</span> value = splitted[<span class="number">1</span>].substring(<span class="number">0</span>, splitted[<span class="number">1</span>].indexOf(<span class="string">')'</span>));
+
+        <span class="keyword">if</span>(value.indexOf(<span class="string">','</span>) > -<span class="number">1</span>) { <span class="comment">// multiple args</span>
+            value = value.split(<span class="string">','</span>);
+            object.each(value, <span class="keyword">function</span>(index, v) {
+                value[index] = parseNumberString(v);
+            });
+        } <span class="keyword">else</span> { <span class="comment">// single arg</span>
+            value = parseNumberString(value);
+        }
+        result.type = splitted[<span class="number">0</span>];
+        result.value = value;
+    } <span class="keyword">else</span> {
+        result.type = feature;
+        result.value = defaultVal;
+    }
+    <span class="keyword">return</span> result;
+};
+
+<span class="keyword">var</span> parseNumberString = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(!object.isString(value)) {
+        <span class="keyword">return</span> value;
+    }
+    <span class="keyword">if</span>(!isNaN(value)) {
+        <span class="keyword">if</span>(value.indexOf(<span class="string">'.'</span>) > -<span class="number">1</span>) { <span class="comment">//float</span>
+            value = parseFloat(value);
+        } <span class="keyword">else</span> { <span class="comment">//int</span>
+            value = parseInt(value);
+        }
+    }
+    <span class="keyword">return</span> value;
+};
+
+<span class="keyword">var</span> createFeatureString = <span class="keyword">function</span>(feature, value) {
+    <span class="keyword">var</span> result = feature;
+
+    <span class="keyword">if</span>(object.isDefined(value)) {
+        result += <span class="string">'('</span>;
+        <span class="keyword">if</span>(object.isArray(value)) {
+            object.each(value, <span class="keyword">function</span>(index, value) {
+                result += (index !== <span class="number">0</span>) ? <span class="string">','</span>+value : value;
+            });
+        } <span class="keyword">else</span> {
+            result += value;
+        }
+        result += <span class="string">')'</span>;
+    }
+    <span class="keyword">return</span> result;
+};
+
+<span class="keyword">var</span> isMinDist = <span class="keyword">function</span>(from, to, minDist) {
+    <span class="keyword">return</span> Math.abs(to.x - from.x) > minDist || Math.abs(to.y - from.y) > minDist;
+};
+
+module.exports = {
+    parseFeatureString:parseFeatureString,
+    createFeatureString:createFeatureString,
+    parseFeatureStrings:parseFeatureStrings,
+    parseNumberString : parseNumberString,
+    isMinDist : isMinDist
+};
+</code></pre>

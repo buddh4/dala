@@ -1,0 +1,60 @@
+<h1>clientSettingDialog.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Dialog = require(<span class="string">'./dialog'</span>);
+<span class="keyword">var</span> client = require(<span class="string">'../core/client'</span>);
+
+<span class="keyword">var</span> ClientSettingDialog = <span class="keyword">function</span>() {
+    resetBackendConnection();
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.dialog = <span class="keyword">new</span> Dialog({
+        dialogId : <span class="string">"#setting-dialog"</span>,
+        triggerId : <span class="string">"#settingButton"</span>,
+        buttons : {
+            <span class="string">"Save"</span>: saveBackendConnection,
+            <span class="string">"Test"</span>: runBackendConnectionTest,
+            Cancel: <span class="keyword">function</span>() {
+                resetBackendConnection();
+                that.close();
+            }
+        },
+        close : resetBackendConnection,
+        submit : <span class="keyword">function</span>(evt) {
+            evt.preventDefault();
+            saveBackendConnection();
+        }
+    });
+};
+
+ClientSettingDialog.prototype.close = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.dialog.close();
+};
+
+<span class="keyword">var</span> saveBackendConnection = <span class="keyword">function</span>() {
+    client.set(getDialogBackendSettings());
+};
+
+<span class="keyword">var</span> runBackendConnectionTest = <span class="keyword">function</span>() {
+    $(<span class="string">'#backendConnectionTest'</span>).text(<span class="string">''</span>);
+    <span class="keyword">var</span> result = client.ping(getDialogBackendSettings());
+    <span class="keyword">if</span>(result) {
+        $(<span class="string">'#backendConnectionTest'</span>).css(<span class="string">'color'</span>,<span class="string">'green'</span>);
+        $(<span class="string">'#backendConnectionTest'</span>).text(<span class="string">'Connection succeed !'</span>);
+    } <span class="keyword">else</span> {
+        $(<span class="string">'#backendConnectionTest'</span>).css(<span class="string">'color'</span>,<span class="string">'red'</span>);
+        $(<span class="string">'#backendConnectionTest'</span>).text(<span class="string">'Could not connect !'</span>);
+    }
+};
+
+<span class="keyword">var</span> resetBackendConnection = <span class="keyword">function</span>() {
+    $(<span class="string">'#backendhost'</span>).val(client.getSettings().host);
+    $(<span class="string">'#backendport'</span>).val(client.getSettings().port);
+    $(<span class="string">'#backendConnectionTest'</span>).text(<span class="string">''</span>);
+};
+
+<span class="keyword">var</span> getDialogBackendSettings = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        host : $(<span class="string">'#backendhost'</span>).val(),
+        port : $(<span class="string">'#backendport'</span>).val()
+    };
+};
+
+module.exports = ClientSettingDialog;</code></pre>

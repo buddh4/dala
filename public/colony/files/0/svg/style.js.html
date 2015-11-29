@@ -1,0 +1,60 @@
+<h1>style.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> string = require(<span class="string">'../util/string'</span>);
+
+<span class="keyword">var</span> REGEXP_PROPERTY_SUFFIX = <span class="string">':[a-zA-Z0-9#,\.]*(;|$)'</span>;
+
+<span class="keyword">var</span> Style = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">if</span>(object.isString(key) &amp;&amp; !object.isDefined(value)) {
+        <span class="keyword">this</span>.value = key;
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.set(key,value);
+    }
+};
+
+Style.prototype.set = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">if</span>(object.isObject(key)) {
+        object.each(key, <span class="keyword">function</span>(objKey, val) {
+            <span class="keyword">if</span>(key.hasOwnProperty(objKey)) {
+                <span class="keyword">this</span>.set(objKey,val);
+            }
+        });
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isString(key) &amp;&amp; object.isDefined(value)) {
+        <span class="keyword">if</span>(!object.isDefined(<span class="keyword">this</span>.value)) {
+            <span class="keyword">this</span>.value = <span class="string">""</span>;
+        }
+
+        <span class="keyword">if</span>(<span class="keyword">this</span>.value.indexOf(key+<span class="string">':'</span>) >= <span class="number">0</span>) {
+            <span class="keyword">var</span> regExp = <span class="keyword">new</span> RegExp(key+REGEXP_PROPERTY_SUFFIX, <span class="string">'gi'</span>);
+            <span class="keyword">this</span>.value = <span class="keyword">this</span>.value.replace(regExp, <span class="keyword">this</span>.createValueString(key,value));
+        } <span class="keyword">else</span> {
+            <span class="keyword">this</span>.value += (string.endsWith(<span class="keyword">this</span>.value,<span class="string">';'</span>)) ? <span class="keyword">this</span>.createValueString(key,value) : <span class="string">';'</span> + <span class="keyword">this</span>.createValueString(key,value);
+        }
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isString(key)) {
+        <span class="keyword">this</span>.value = key;
+    }
+};
+
+Style.prototype.get = <span class="keyword">function</span>(key) {
+    <span class="keyword">var</span> regExp = <span class="keyword">new</span> RegExp(key+REGEXP_PROPERTY_SUFFIX, <span class="string">'gi'</span>);
+    <span class="keyword">var</span> result = <span class="keyword">this</span>.value.match(regExp);
+    <span class="keyword">if</span>(object.isArray(result)) {
+        <span class="keyword">var</span> value = result[<span class="number">0</span>];
+        <span class="keyword">var</span> splitted = value.split(<span class="string">':'</span>);
+        <span class="keyword">if</span>(splitted.length > <span class="number">1</span>) {
+            <span class="keyword">var</span> result = splitted[<span class="number">1</span>];
+            <span class="keyword">return</span> (string.endsWith(result, <span class="string">';'</span>))? result.substring(<span class="number">0</span>,result.length -<span class="number">1</span>) : result;
+        }
+    }
+};
+
+Style.prototype.createValueString = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">return</span> key+<span class="string">':'</span>+value+<span class="string">';'</span>;
+};
+
+Style.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.value;
+};
+
+module.exports = Style;
+</code></pre>

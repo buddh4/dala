@@ -1,0 +1,149 @@
+<h1>editNodeMenu.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> toolTip = require(<span class="string">'./toolTip'</span>);
+<span class="keyword">var</span> dom = require(<span class="string">'../dom/dom'</span>);
+
+<span class="keyword">var</span> ID_SECTION = <span class="string">'editNodeSection'</span>;
+<span class="keyword">var</span> ID_PANEL = <span class="string">'editNodePanel'</span>;
+<span class="keyword">var</span> ID_FORM = <span class="string">'editNodeForm'</span>;
+
+<span class="keyword">var</span> TEXT_SIZE_MIN = <span class="number">1</span>;
+<span class="keyword">var</span> TEXT_SIZE_MAX = <span class="number">40</span>;
+
+<span class="keyword">var</span> STROKE_WIDTH_MIN = <span class="number">0</span>;
+<span class="keyword">var</span> STROKE_WIDTH_MAX = <span class="number">20</span>;
+
+<span class="comment">//TODO: More Settings with perhaps with dropdown images</span>
+<span class="keyword">var</span> DASH_SETTING_MIN = <span class="number">0</span>;
+<span class="keyword">var</span> DASH_SETTING_MAX = <span class="number">3</span>;
+
+<span class="keyword">var</span> section, panel, editNode, $form;
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    section = toolTip.getSection(ID_SECTION);
+    panel = toolTip.getPanel(ID_PANEL);
+    initForm();
+    clear();
+};
+
+<span class="keyword">var</span> initForm = <span class="keyword">function</span>() {
+    $form = dom.create(<span class="string">'form'</span>, {id : ID_FORM, action :  <span class="string">'javascript:void(0);'</span>});
+    section.$content.append($form);
+}
+
+<span class="keyword">var</span> clear = <span class="keyword">function</span>() {
+    <span class="keyword">delete</span> editNode;
+    panel.hide();
+    $form.empty();
+};
+
+<span class="keyword">var</span> show = <span class="keyword">function</span>() {
+    panel.show();
+};
+
+<span class="keyword">var</span> update = <span class="keyword">function</span>() {
+    panel.update();
+};
+
+<span class="keyword">var</span> createForm = <span class="keyword">function</span>(node) {
+    editNode = node;
+    <span class="keyword">var</span> editAddition = node.additions.edit;
+
+    <span class="keyword">if</span>(!node.additions.edit) {
+        <span class="keyword">return</span>;
+    }
+
+    <span class="comment">// Create a dynamic table by means of the edit addition config fields of the current node which is taken from the tmpl.</span>
+    object.each(editAddition.config, <span class="keyword">function</span>(key, value) {
+        <span class="keyword">var</span> editConfigItem = editAddition.getEditItem(key);
+
+        <span class="comment">//TODO: implement way to register new edit panels register(function(editNodeMenu) {...})</span>
+        <span class="keyword">switch</span>(editConfigItem.type) {
+            <span class="keyword">case</span> <span class="string">'stroke'</span>:
+                appendStrokeFieldSet(key, editConfigItem);
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'text'</span>:
+                appendTextFieldSet(key, editConfigItem);
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'textarea'</span>:
+                appendTextareaFieldSet(key, editConfigItem);
+                <span class="keyword">break</span>;
+        }
+    });
+};
+
+<span class="keyword">var</span> focus = <span class="keyword">function</span>() {
+    $form.find(<span class="string">':input:visible:enabled:first'</span>).focus();
+};
+
+<span class="keyword">var</span> appendTextFieldSet = <span class="keyword">function</span>(editKey, editConfigItem) {
+    <span class="keyword">var</span> $fieldSet = initFieldSet(editConfigItem);
+    appendInput($fieldSet, editConfigItem, <span class="string">'Text'</span>, editKey+<span class="string">'_text'</span>, {type : <span class="string">'text'</span>});
+    appendInput($fieldSet, editConfigItem, <span class="string">'Color'</span>, editKey+<span class="string">'_color'</span>, {type : <span class="string">'color'</span>});
+    appendInput($fieldSet, editConfigItem, <span class="string">'Size'</span>, editKey+<span class="string">'_text-size'</span>, {type : <span class="string">'range'</span>, min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, <span class="literal">undefined</span>, <span class="literal">true</span>, <span class="string">'px'</span>);
+    $form.append($fieldSet);
+};
+
+<span class="keyword">var</span> appendTextareaFieldSet = <span class="keyword">function</span>(editKey, editConfigItem) {
+    <span class="keyword">var</span> $fieldSet = initFieldSet(editConfigItem);
+    appendInput($fieldSet, editConfigItem, <span class="string">'Text'</span>, editKey+<span class="string">'_textarea'</span>, {rows: <span class="number">5</span>}, <span class="string">'textarea'</span>);
+    appendInput($fieldSet, editConfigItem, <span class="string">'Color'</span>, editKey+<span class="string">'_color'</span>, {type : <span class="string">'color'</span>});
+    appendInput($fieldSet, editConfigItem, <span class="string">'Size'</span>, editKey+<span class="string">'_text-size'</span>, {type : <span class="string">'range'</span>, min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, <span class="literal">undefined</span>, <span class="literal">true</span>, <span class="string">'px'</span>);
+    $form.append($fieldSet);
+};
+
+<span class="keyword">var</span> appendStrokeFieldSet = <span class="keyword">function</span>(editKey, editConfigItem) {
+    <span class="keyword">var</span> $fieldSet = initFieldSet(editConfigItem);
+    appendInput($fieldSet, editConfigItem, <span class="string">'Color'</span>, editKey+<span class="string">'_stroke'</span>, {type : <span class="string">'color'</span>});
+    appendInput($fieldSet, editConfigItem, <span class="string">'Width'</span>, editKey+<span class="string">'_stroke-width'</span>, {type : <span class="string">'range'</span>, min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, <span class="literal">undefined</span>, <span class="literal">true</span>, <span class="string">'px'</span>);
+    appendInput($fieldSet, editConfigItem, <span class="string">'Dash'</span>, editKey+<span class="string">'_stroke-dash'</span>, {type : <span class="string">'range'</span>, min : DASH_SETTING_MIN, max : DASH_SETTING_MAX}, <span class="literal">undefined</span>, <span class="literal">true</span>);
+    $form.append($fieldSet);
+};
+
+<span class="keyword">var</span> appendInput = <span class="keyword">function</span>($fieldSet, editConfigItem, label, key, attributes, overwriteElementName, output, outputUnit) {
+    <span class="keyword">var</span> name = overwriteElementName || <span class="string">'input'</span>;
+    <span class="keyword">var</span> $label = dom.create(<span class="string">'label'</span>, <span class="literal">undefined</span>, label+<span class="string">':'</span>);
+    <span class="keyword">var</span> $input = dom.create(name, attributes);
+    <span class="keyword">var</span> currentVal = editNode.additions.edit.getValue(key);
+    currentVal = (object.isString(currentVal)) ? currentVal.trim() : currentVal;
+    $input.val(currentVal);
+    $input.on(<span class="string">'change'</span>, <span class="keyword">function</span>() {
+        <span class="comment">//We set the value trough the diagram/nodeMgr since we need to fire command events</span>
+        editNode.diagram.setEditValue(editNode, key, $(<span class="keyword">this</span>).val());
+    });
+
+    <span class="keyword">if</span>(output) {
+        outputUnit = outputUnit || <span class="string">''</span>;
+        outputUnit = <span class="string">' '</span>+outputUnit;
+        <span class="keyword">var</span> outputInitValue = (currentVal) ? currentVal+outputUnit : <span class="string">'none'</span>;
+        <span class="keyword">var</span> $output = dom.create(<span class="string">'output'</span>, <span class="literal">undefined</span>, outputInitValue);
+        $input.on(<span class="string">"change paste keyup input"</span>, <span class="keyword">function</span>() {
+            <span class="keyword">var</span> $<span class="keyword">this</span> = $(<span class="keyword">this</span>);
+            $<span class="keyword">this</span>.prev(<span class="string">'output'</span>).text($<span class="keyword">this</span>.val()+outputUnit);
+        });
+        $fieldSet.append($label, $output, $input);
+    } <span class="keyword">else</span> {
+        $fieldSet.append($label, $input);
+    }
+    <span class="keyword">return</span> $input;
+};
+
+<span class="keyword">var</span> initFieldSet = <span class="keyword">function</span>(editConfigItem) {
+    <span class="keyword">var</span> $fieldSet = dom.create(<span class="string">'fieldSet'</span>);
+    <span class="keyword">var</span> $legend = dom.create(<span class="string">'legend'</span>, <span class="literal">undefined</span>, editConfigItem.label);
+    <span class="keyword">return</span> $fieldSet.append($legend);
+};
+
+<span class="keyword">var</span> getEditNode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> editNode;
+}
+
+module.exports = {
+    init : init,
+    getEditNode : getEditNode,
+    clear : clear,
+    show : show,
+    focus : focus,
+    update : update,
+    createForm : createForm
+}</code></pre>

@@ -1,0 +1,68 @@
+<h1>cache.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> dom = require(<span class="string">'../dom/dom'</span>);
+
+<span class="keyword">var</span> Cache = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.queryCache = {};
+    <span class="keyword">this</span>.svgCache = {};
+};
+
+Cache.prototype.$ = <span class="keyword">function</span>(obj, preventCache) {
+    <span class="keyword">if</span>(!obj) {
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">var</span> settings = <span class="keyword">this</span>.getCacheSettings(obj);
+    <span class="keyword">return</span> <span class="keyword">this</span>.cacheCheck(settings.key, settings.$node, <span class="keyword">this</span>.queryCache, preventCache);
+};
+
+Cache.prototype.svg = <span class="keyword">function</span>(obj, preventCache) {
+    <span class="keyword">if</span>(!obj) {
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">var</span> settings = <span class="keyword">this</span>.getCacheSettings(obj);
+    <span class="keyword">return</span> <span class="keyword">this</span>.cacheCheck(settings.key, $.svg(settings.$node), <span class="keyword">this</span>.svgCache, preventCache);
+};
+
+Cache.prototype.getCacheSettings = <span class="keyword">function</span>(obj) {
+    <span class="keyword">var</span> settings = {};
+
+    <span class="keyword">if</span>(object.isString(obj)){
+        settings.$node = <span class="keyword">this</span>.queryCache[obj] || $(obj);
+        settings.key = obj;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(obj.jQuery) {
+        settings.$node = obj;
+        settings.key = dom.getIdSelector(obj.attr(<span class="string">'id'</span>));
+    } <span class="keyword">else</span> {
+            settings.$node = $(obj);
+            settings.key = dom.getIdSelector(settings.$node.attr(<span class="string">'id'</span>));
+    }
+
+    <span class="keyword">return</span> settings;
+}
+
+Cache.prototype.cacheCheck = <span class="keyword">function</span>(key, obj, cache, preventCache) {
+    preventCache = preventCache || <span class="literal">false</span>;
+    <span class="keyword">if</span>(key &amp;&amp; obj) {
+        <span class="keyword">return</span> (!preventCache) ? cache[key] = obj : obj;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> obj;
+    }
+}
+
+Cache.prototype.remove = <span class="keyword">function</span>(obj) {
+    <span class="keyword">if</span>(object.isString(obj)) {
+        <span class="keyword">delete</span> <span class="keyword">this</span>.queryCache[obj];
+    }
+};
+
+Cache.prototype.exists = <span class="keyword">function</span>(selector) {
+    <span class="keyword">return</span> object.isDefined(queryCach[selector]);
+};
+
+Cache.prototype.sub = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">new</span> Cache();
+};
+
+module.exports = <span class="keyword">new</span> Cache();</code></pre>

@@ -1,0 +1,36 @@
+<h1>config.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> values = {};
+
+module.exports = {
+    val : <span class="keyword">function</span>(key, defaultVal) {
+        <span class="keyword">if</span>(object.isDefined(key)) {
+            <span class="keyword">var</span> result = values[key];
+            <span class="keyword">return</span> (object.isDefined(result)) ? result : defaultVal;
+        }
+    },
+
+    debug : <span class="keyword">function</span>(val) {
+        <span class="keyword">if</span>(object.isBoolean(val)) {
+            <span class="keyword">this</span>.setVal(<span class="string">'debug'</span>, val);
+        }
+        <span class="keyword">return</span> <span class="keyword">this</span>.val(<span class="string">'debug'</span>, <span class="literal">false</span>);
+    },
+
+    setVal : <span class="keyword">function</span>(key, value) {
+        <span class="keyword">if</span>(object.isDefined(key) &amp;&amp; object.isDefined(value)) {
+            values[key] = value;
+            <span class="keyword">var</span> val = <span class="keyword">this</span>.val(key);
+        }
+    },
+
+    replaceConfigValues : <span class="keyword">function</span>(text, config) {
+        <span class="keyword">var</span> result = text;
+        object.each(config, <span class="keyword">function</span>(key, value) {
+            <span class="keyword">var</span> regExp = <span class="keyword">new</span> RegExp(<span class="string">"{"</span> + key + <span class="string">"}"</span>, <span class="string">"g"</span>);
+            result = result.replace(regExp, value);
+        });
+        <span class="keyword">return</span> result;
+    }
+};</code></pre>

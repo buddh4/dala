@@ -1,0 +1,163 @@
+<h1>Knob.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> app = require(<span class="string">'../util/app'</span>);
+<span class="keyword">var</span> dom = require(<span class="string">'../dom/dom'</span>);
+<span class="keyword">var</span> Transform = require(<span class="string">'../svg/transform'</span>);
+
+<span class="keyword">var</span> DEFAULT_OPACITY = <span class="number">0.5</span>;
+<span class="keyword">var</span> DEFAULT_KNOB_RADIUS = <span class="number">5</span>;
+
+<span class="keyword">var</span> Knob = <span class="keyword">function</span>(diagram, p, cfg, group) {
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.event = diagram.event;
+    <span class="keyword">this</span>.group = group;
+    <span class="keyword">this</span>.init(p, cfg);
+};
+
+Knob.prototype.clearRelativeOrientation = <span class="keyword">function</span>() {
+    <span class="keyword">delete</span> <span class="keyword">this</span>.relativePosition;
+};
+
+Knob.prototype.isSelected = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.node.selected;
+};
+
+Knob.prototype.relativeOrientation = <span class="keyword">function</span>(position) {
+    <span class="keyword">if</span>(position) {
+        <span class="keyword">this</span>.relativePosition = {
+            x : position.x,
+            y : position.y
+        };
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.relativePosition;
+};
+
+Knob.prototype.init = <span class="keyword">function</span>(position, cfg) {
+    <span class="keyword">this</span>.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
+    <span class="keyword">this</span>.node = <span class="keyword">this</span>.diagram.createKnob(position, <span class="keyword">this</span>.group, <span class="keyword">this</span>.config);
+    <span class="keyword">this</span>.root = <span class="keyword">this</span>.node.root;
+    <span class="keyword">this</span>.node.knob = <span class="keyword">this</span>;
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">var</span> select = cfg.select || <span class="keyword">function</span>() {
+            that.activeStyle();
+        };
+
+    <span class="keyword">var</span> deselect = cfg.select || <span class="keyword">function</span>() {
+            <span class="keyword">if</span> (!that.selected) {
+                that.inactiveStyle();
+            }
+        }
+
+
+    <span class="keyword">this</span>.on(<span class="string">'select'</span>, deselect).on(<span class="string">'deselect'</span>, select);
+    <span class="keyword">this</span>.event.trigger(<span class="string">'knob_created'</span>, <span class="keyword">this</span>);
+};
+
+Knob.prototype.x = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.node.x();
+};
+
+Knob.prototype.y = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.node.y();
+};
+
+Knob.prototype.position = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        x : <span class="keyword">this</span>.x(),
+        y : <span class="keyword">this</span>.y()
+    };
+};
+
+Knob.prototype.draggable = <span class="keyword">function</span>(handler) {
+    <span class="keyword">this</span>.node.draggable(handler);
+    <span class="keyword">this</span>.triggerDrag = <span class="keyword">function</span>(dx,dy) {
+        <span class="keyword">this</span>.node.triggerDrag(dx,dy);
+    };
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.initDrag = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.node.initDrag(evt);
+};
+
+Knob.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.node.selected) {
+        <span class="keyword">this</span>.node.root.hide();
+        <span class="keyword">this</span>.node.root.attr(<span class="string">'r'</span>, <span class="number">0</span>);
+    }
+};
+
+Knob.prototype.show = <span class="keyword">function</span>(opacity) {
+    opacity = opacity || <span class="keyword">this</span>.config[<span class="string">'fill-opcaity'</span>] || <span class="number">1</span>;
+    <span class="keyword">this</span>.node.root.show(DEFAULT_OPACITY);
+    <span class="keyword">this</span>.node.root.attr(<span class="string">'r'</span>, <span class="keyword">this</span>.config[<span class="string">'radius'</span>]);
+};
+
+Knob.prototype.select = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.selected = <span class="literal">true</span>;
+    <span class="keyword">this</span>.node.trigger(<span class="string">'select'</span>);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.selected = <span class="literal">false</span>;
+    <span class="keyword">this</span>.node.trigger(<span class="string">'deselect'</span>);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.fill = <span class="keyword">function</span>(color) {
+    <span class="keyword">this</span>.node.root.fill(color);
+};
+
+Knob.prototype.stroke = <span class="keyword">function</span>(color) {
+    <span class="keyword">this</span>.node.root.stroke(color);
+    <span class="keyword">this</span>.node.root.strokeWidth(<span class="number">1</span>);
+};
+
+Knob.prototype.activeStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.fill(<span class="keyword">this</span>.config[<span class="string">'fill-active'</span>]);
+    <span class="keyword">this</span>.show();
+};
+
+Knob.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.inactiveStyle();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.inactiveStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.fill(<span class="keyword">this</span>.config[<span class="string">'fill'</span>]);
+    <span class="keyword">this</span>.show();
+};
+
+Knob.prototype.hoverable = <span class="keyword">function</span>(handler) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    handler = handler || {};
+    <span class="keyword">this</span>.node.root.hoverable();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.on = <span class="keyword">function</span>(handler, args) {
+    <span class="keyword">this</span>.node.on(handler, args);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Knob.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.node.trigger(<span class="string">'remove'</span>);
+};
+
+Knob.prototype.move = <span class="keyword">function</span>(dx,dy) {
+    <span class="keyword">this</span>.node.root.move(dx,dy);
+    <span class="keyword">this</span>.node.trigger(<span class="string">'move'</span> [dx,dy]);
+};
+
+Knob.prototype.moveTo = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">this</span>.node.root.moveTo(x,y);
+    <span class="keyword">this</span>.node.trigger(<span class="string">'moveTo'</span>, [x,y]);
+};
+
+Knob.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="string">'('</span>+<span class="keyword">this</span>.x()+<span class="string">'/'</span>+<span class="keyword">this</span>.y()+<span class="string">')'</span>;
+};
+
+module.exports = Knob;</code></pre>

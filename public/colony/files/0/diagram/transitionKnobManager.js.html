@@ -1,0 +1,308 @@
+<h1>transitionKnobManager.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * This module manages the transition data like knobs and pathdata.
+ *
+ */</span>
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> Knob = require(<span class="string">'./knob'</span>);
+<span class="keyword">var</span> DragAlignment = require(<span class="string">'./dragAlignment'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> dom = util.dom;
+<span class="keyword">var</span> object = util.object;
+
+<span class="keyword">var</span> TransitionKnobManager = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.transition = transition;
+    <span class="keyword">this</span>.event = transition.event;
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.transition.additions[<span class="string">'knobManager'</span>] = {
+        select : <span class="keyword">function</span>() {
+            that.inactiveStyle();
+        },
+        deselect : <span class="keyword">function</span>() {
+            that.hide();
+        },
+        hover : <span class="keyword">function</span>() {
+            that.inactiveStyle();
+        },
+        hoverOut : <span class="keyword">function</span>() {
+            <span class="keyword">if</span>(!that.transition.selected) {
+                that.knobManager.hide();
+            }
+        }
+
+    };
+};
+
+TransitionKnobManager.prototype.init = <span class="keyword">function</span>(start) {
+    <span class="keyword">this</span>.knobs = [];
+    <span class="keyword">return</span> <span class="keyword">this</span>.addKnob(start, <span class="number">0</span>);
+};
+
+TransitionKnobManager.prototype.addKnob = <span class="keyword">function</span>(position, index) {
+    <span class="keyword">var</span> index = index || <span class="keyword">this</span>.size();
+    <span class="keyword">var</span> knob = <span class="keyword">this</span>.initKnob(index, position);
+    <span class="keyword">this</span>.knobs.splice(index, <span class="number">0</span>, knob);
+
+    <span class="keyword">if</span>(index === <span class="number">0</span>) {
+        <span class="keyword">this</span>.startKnob = knob;
+        <span class="keyword">this</span>.getPathManager().addPathPart(index, position);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        <span class="comment">//we don't need to add an additionalpathpart for the endknob</span>
+        <span class="keyword">this</span>.endKnob = knob;
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.getPathManager().addPathPart(index, position);
+    }
+
+    <span class="keyword">this</span>.transition.redraw();
+    <span class="keyword">return</span> knob;
+};
+
+TransitionKnobManager.prototype.initKnob = <span class="keyword">function</span>(knobIndex, position) {
+    <span class="keyword">var</span> knob = <span class="keyword">new</span> Knob(<span class="keyword">this</span>.transition.diagram, position, {radius:<span class="number">5</span>}, <span class="keyword">this</span>.transition.group);
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">var</span> initialDrag = <span class="literal">true</span>;
+    knob.draggable({
+        dragAlignment : <span class="keyword">new</span> DragAlignment(that.transition.diagram,
+            <span class="keyword">function</span>() { <span class="keyword">return</span> [{source: [knob.position()], target: that.getJoiningOrientation(knob)}];}),
+        dragStart : <span class="keyword">function</span>() {
+            that.transition.activeStyle();
+        },
+        dragMove : <span class="keyword">function</span>() {
+            <span class="comment">//We just update boundary knobs if they are not in within multiselection</span>
+            <span class="keyword">if</span>(!(that.transition.diagram.isMultiSelection() &amp;&amp; that.isBoundaryIndex(knobIndex))) {
+                that.updateKnob(that.getIndexForKnob(knob), knob.position());
+                that.transition.update();
+            }
+        },
+        dragEnd : <span class="keyword">function</span>() {
+            <span class="keyword">if</span>(!that.isBoundaryIndex(knobIndex) &amp;&amp; initialDrag) {
+                that.event.trigger(<span class="string">'transition_docking_created'</span>, {<span class="string">'transition'</span>:that.transition.id, <span class="string">'dockingIndex'</span>:knobIndex});
+                initialDrag = <span class="literal">false</span>;
+            } <span class="keyword">else</span> <span class="keyword">if</span>(!that.isBoundaryIndex(knobIndex)) {
+                that.event.trigger(<span class="string">'transition_docking_dropped'</span>, {<span class="string">'transition'</span>:that.transition.id, <span class="string">'dockingIndex'</span>:knobIndex});
+            }
+        }
+    });
+
+    knob.on(<span class="string">'remove'</span>, <span class="keyword">function</span>() {
+        that.transition.removeKnobListener(knob);
+    });
+
+    knob.on(<span class="string">'deselect'</span>, <span class="keyword">function</span>() {
+        that.transition.deselect();
+    });
+
+    <span class="comment">//To prevent hiding the hoverknobs we adobt the transition hovering</span>
+    knob.hoverable({
+        <span class="keyword">in</span> : <span class="keyword">function</span>() {
+            that.transition.hover();
+            <span class="keyword">if</span>(!knob.isSelected()) {
+                knob.fill(<span class="string">'#9E9E9E'</span>);
+            }
+        },
+        out : <span class="keyword">function</span>() {
+            that.transition.hoverOut();
+        }
+    });
+    <span class="keyword">return</span> knob;
+};
+
+TransitionKnobManager.prototype.updateStartKnob = <span class="keyword">function</span>(position) {
+    <span class="keyword">this</span>.updateKnob(<span class="number">0</span>, position);
+};
+
+TransitionKnobManager.prototype.updateEndKnob = <span class="keyword">function</span>(position) {
+    <span class="keyword">this</span>.updateKnob(-<span class="number">1</span>, position);
+};
+
+TransitionKnobManager.prototype.updateKnob = <span class="keyword">function</span>(knobIndex, position) {
+    knobIndex = object.getIndex(<span class="keyword">this</span>.knobs, knobIndex);
+
+    <span class="comment">// move the corresponding docking</span>
+    <span class="keyword">this</span>.knobs[knobIndex].moveTo(position.x, position.y);
+    <span class="comment">// update path</span>
+    <span class="keyword">this</span>.getPathManager().updatePart(knobIndex, position);
+
+
+    <span class="comment">// special handling for start and end dockings</span>
+    <span class="comment">// Todo: implement this in transitionDockingManager add context dragMove listener</span>
+    <span class="keyword">if</span>(knobIndex === <span class="number">0</span>) {
+        <span class="keyword">this</span>.event.trigger(<span class="string">'transition_drag_startdocking'</span>, <span class="keyword">this</span>.transition);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(knobIndex === <span class="keyword">this</span>.lastIndex()) {
+        <span class="keyword">this</span>.event.trigger(<span class="string">'transition_drag_enddocking'</span>, <span class="keyword">this</span>.transition);
+    }
+};
+
+TransitionKnobManager.prototype.removeKnobListener = <span class="keyword">function</span>(knob) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.transition.removed) {
+        <span class="keyword">var</span> index = <span class="keyword">this</span>.getIndexForKnob(knob);
+        <span class="keyword">this</span>.knobs.splice(index, <span class="number">1</span>);
+        <span class="keyword">this</span>.getPathManager().removePathPart(index);
+        <span class="keyword">this</span>.transition.update();
+    }
+};
+
+TransitionKnobManager.prototype.size = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobs.length;
+};
+
+TransitionKnobManager.prototype.lastIndex = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.size() - <span class="number">1</span>;
+};
+
+TransitionKnobManager.prototype.hasInnerKnobs = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobs.length > <span class="number">2</span>;
+};
+
+TransitionKnobManager.prototype.remove = <span class="keyword">function</span>() {
+    object.each(<span class="keyword">this</span>.knobs, <span class="keyword">function</span>(index, value) {
+        <span class="keyword">if</span>(object.isDefined(value)) {
+            value.remove();
+        }
+    });
+};
+
+TransitionKnobManager.prototype.removeDockingMarker = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.transition.group.$().children(<span class="string">'.docking'</span>).remove();
+};
+
+TransitionKnobManager.prototype.isBoundaryKnob = <span class="keyword">function</span>(knob) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.isBoundaryIndex(<span class="keyword">this</span>.getIndexForKnob(knob));
+};
+
+TransitionKnobManager.prototype.isBoundaryIndex = <span class="keyword">function</span>(knobIndex) {
+    <span class="keyword">return</span> knobIndex === <span class="number">0</span> || knobIndex === <span class="keyword">this</span>.lastIndex();
+};
+
+TransitionKnobManager.prototype.getJoiningDockings = <span class="keyword">function</span>(docking) {
+    <span class="keyword">var</span> index = <span class="keyword">this</span>.getIndexForKnob(docking);
+    <span class="keyword">return</span> [<span class="keyword">this</span>.knobs[index - <span class="number">1</span>], <span class="keyword">this</span>.knobs[index + <span class="number">1</span>]];
+};
+
+TransitionKnobManager.prototype.getJoiningOrientation = <span class="keyword">function</span>(knob) {
+    <span class="keyword">var</span> index = <span class="keyword">this</span>.getIndexForKnob(knob);
+    <span class="keyword">var</span> result = [];
+    <span class="keyword">if</span>(index &lt;= <span class="number">1</span>) { <span class="comment">//start or second docking</span>
+        result.push(<span class="keyword">this</span>.transition.dockingManager.startDocking.position());
+    } <span class="keyword">else</span> <span class="keyword">if</span>(index !== <span class="number">0</span>){
+        <span class="keyword">var</span> orientation = <span class="keyword">this</span>.knobs[index - <span class="number">1</span>];
+        result.push({x : orientation.x(), y : orientation.y()});
+    }
+
+    <span class="keyword">if</span>(index >= <span class="keyword">this</span>.knobs.length -<span class="number">2</span>) { <span class="comment">//end or one before end docking</span>
+        result.push(<span class="keyword">this</span>.transition.dockingManager.endDocking.position());
+    } <span class="keyword">else</span> {
+        <span class="keyword">var</span> orientation = <span class="keyword">this</span>.knobs[index + <span class="number">1</span>];
+        result.push({x : orientation.x(), y : orientation.y()});
+    }
+
+    <span class="keyword">return</span> result;
+};
+
+TransitionKnobManager.prototype.getIndexForKnob = <span class="keyword">function</span>(knob) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.knobs.indexOf(knob);
+};
+
+TransitionKnobManager.prototype.getKnobPositions = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = [];
+    object.each(<span class="keyword">this</span>.knobs, <span class="keyword">function</span>(index, value) {
+        result.push(value.position());
+    });
+    <span class="keyword">return</span> result;
+};
+
+TransitionKnobManager.prototype.start = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getKnob(<span class="number">0</span>).position();
+};
+
+TransitionKnobManager.prototype.end = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getKnob(-<span class="number">1</span>).position();
+};
+
+TransitionKnobManager.prototype.getKnob = <span class="keyword">function</span>(index) {
+    <span class="keyword">return</span> object.valueByIndex(<span class="keyword">this</span>.knobs, index);
+};
+
+TransitionKnobManager.prototype.calcEndDockingPosition = <span class="keyword">function</span>() {
+    <span class="comment">// if we have inner dockings we use the last inner docking as</span>
+    <span class="comment">// outer orientation for the end docking else we use the startdocking</span>
+    <span class="keyword">var</span> outerOrientation = (<span class="keyword">this</span>.pathData.length() > <span class="number">2</span>)
+        ? <span class="keyword">this</span>.pathData.value(-<span class="number">2</span>).to()
+        : <span class="keyword">this</span>.startKnob.position();
+
+    <span class="keyword">var</span> relativeInnerOrientation = (object.isDefined(<span class="keyword">this</span>.endKnob))
+        ? <span class="keyword">this</span>.endKnob.relativeOrientation()
+        : <span class="literal">undefined</span>;
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.transition.endNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
+};
+
+TransitionKnobManager.prototype.calculateStartDockingPosition = <span class="keyword">function</span>(mouse) {
+    <span class="keyword">var</span> outerOrientation = mouse;
+    <span class="keyword">if</span>(<span class="keyword">this</span>.transition.line) {
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.pathData.length()) {
+            <span class="keyword">case</span> <span class="number">2</span>: <span class="comment">// just the end node</span>
+                <span class="keyword">if</span>(<span class="keyword">this</span>.endKnob) {
+                    outerOrientation = <span class="keyword">this</span>.endKnob.position();
+                } <span class="keyword">else</span> {
+                    <span class="comment">//for init per drag we use mouse init per activation we use endNode</span>
+                    outerOrientation = (<span class="keyword">this</span>.endNode) ? <span class="keyword">this</span>.endNode.getCenter() : mouse;
+                }
+                <span class="keyword">break</span>;
+            <span class="keyword">default</span>: <span class="comment">// additonal dockings</span>
+                outerOrientation = <span class="keyword">this</span>.pathData.value(<span class="number">1</span>).to();
+                <span class="keyword">break</span>;
+        }
+    }
+
+    <span class="keyword">var</span> relativeInnerOrientation = (object.isDefined(<span class="keyword">this</span>.startKnob))
+        ? <span class="keyword">this</span>.startKnob.relativeOrientation()
+        : <span class="literal">undefined</span>;
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.transition.startNode.getDockingPosition(outerOrientation, relativeInnerOrientation);
+};
+
+TransitionKnobManager.prototype.hide = <span class="keyword">function</span>() {
+    object.each(<span class="keyword">this</span>.knobs, <span class="keyword">function</span>(index, knob) {
+        <span class="keyword">if</span>(!knob.isSelected()) {
+            knob.hide();
+        }
+    });
+};
+
+TransitionKnobManager.prototype.inactiveStyle = <span class="keyword">function</span>() {
+    object.each(<span class="keyword">this</span>.knobs, <span class="keyword">function</span>(index, knob) {
+        <span class="keyword">if</span>(!knob.isSelected()) {
+            knob.inactiveStyle();
+        }
+    });
+};
+
+TransitionKnobManager.prototype.ownsKnobNode = <span class="keyword">function</span>(node) {
+    <span class="keyword">var</span> result = <span class="literal">false</span>;
+    object.each(<span class="keyword">this</span>.knobs, <span class="keyword">function</span>(index, knob) {
+        <span class="keyword">if</span>(knob.node.id === node.id) {
+            result = <span class="literal">true</span>;
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+    });
+    <span class="keyword">return</span> result;
+};
+
+TransitionKnobManager.prototype.getPosition = <span class="keyword">function</span>(index) {
+    <span class="keyword">if</span>(index &lt; <span class="keyword">this</span>.size()) {
+        <span class="keyword">return</span> object.valueByIndex(<span class="keyword">this</span>.knobs, index).position();
+    }
+};
+
+TransitionKnobManager.prototype.getPathManager = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.transition.pathManager;
+}
+
+TransitionKnobManager.prototype.isInitState = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> !<span class="keyword">this</span>.endKnob;
+}
+
+module.exports = TransitionKnobManager;</code></pre>

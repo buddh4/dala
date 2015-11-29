@@ -13,8 +13,8 @@ var EVT_TRANSITION_REMOVED = 'transition_removed';
 
 var CMD_ADD = "transition_add";
 var CMD_DEL = "transition_delete";
-var CMD_DOC_CREATED = "transition_doc_created";
-var CMD_DOC_DROPPED = "transition_doc_dropped";
+var CMD_KNOB_ADD = "transition_knob_added";
+var CMD_KNOB_DROP = "transition_knob_dropped";
 var CMD_EDIT = "transition_edit";
 
 var TransitionManager = function(diagram) {
@@ -26,14 +26,12 @@ var TransitionManager = function(diagram) {
     event.listen('transition_delete', this.deleteTransitionListener, this);
     event.listen('transition_docking_created', this.transitionDockingCreatedListener, this);
     event.listen('transition_docking_dropped', this.transitionDockingDropListener, this);
-
     event.listen('transition_edit', this.editTransitionListener, this);
 
     this.command(CMD_ADD, this.importTransition, this.deleteTransition);
     this.command(CMD_DEL, this.deleteTransition, this.importTransition);
-    this.command(CMD_DOC_CREATED, this.importTransition, this.deleteKnob);
-    this.command(CMD_DOC_DROPPED, this.dropDocking, this.dropDocking);
-    this.command(CMD_DOC_DROPPED, this.dropDocking, this.dropDocking);
+    this.command(CMD_KNOB_ADD, this.addKnob, this.deleteKnob);
+    this.command(CMD_KNOB_DROP, this.dropDocking, this.dropDocking);
     this.command(CMD_EDIT, this.editTransition, this.undoEdit);
 };
 
@@ -56,41 +54,6 @@ TransitionManager.prototype.undoEdit = function(transition, key, value) {
     transition = this.getTransition(transition);
     transition.additions.edit.setValue(key, value);
     event.trigger('transition_edit_undo', transition);
-};
-
-TransitionManager.prototype.transitionDockingDropListener = function(evt) {
-    if (evt.data) {
-        var transition = evt.data.transition;
-        var dockingIndex = evt.data.dockingIndex;
-        var docking = this.getTransition(transition).knobManager.getKnob(dockingIndex);
-
-        this.addCmd(CMD_DOC_DROPPED,
-            [transition, dockingIndex, docking.node.root.dxSum, docking.node.root.dySum],
-            [transition, dockingIndex, (-1 * docking.node.root.dxSum), (-1 * docking.node.root.dySum)]);
-    }
-};
-
-TransitionManager.prototype.dropDocking = function(transition, dockingIndex, dxSum, dySum) {
-    transition = this.getTransition(transition);
-    if(transition) {
-        var docking = transition.knobManager.getKnob(dockingIndex);
-        docking.triggerDrag(dxSum, dySum);
-    }
-};
-
-TransitionManager.prototype.transitionDockingCreatedListener = function(evt) {
-    if (evt.data) {
-        var transition = evt.data.transition;
-        var dockingIndex = evt.data.dockingIndex;
-        this.addCmd(CMD_DOC_CREATED, [this.getTransitionString(transition), transition], [transition, dockingIndex]);
-    }
-};
-
-TransitionManager.prototype.deleteKnob = function(transition, dockingIndex) {
-    transition = this.getTransition(transition);
-    if(transition) {
-        transition.knobManager.getKnob(dockingIndex).remove();
-    }
 };
 
 TransitionManager.prototype.importTransition = function(transitionStr, transition) {
@@ -132,6 +95,7 @@ TransitionManager.prototype.getDragTransition = function() {
 };
 
 TransitionManager.prototype.endDragTransition = function() {
+    var that = this;
     this.addTransition(this.dragTransition);
     delete this.dragTransition;
 };
@@ -139,15 +103,46 @@ TransitionManager.prototype.endDragTransition = function() {
 TransitionManager.prototype.addTransition = function(transition) {
     var that = this;
     this.event.trigger(EVT_TRANSITION_ADDED, transition);
+
     transition.on('select', function() {
         that.event.trigger(EVT_TRANSITION_SELECTED, transition);
     }).on('deselect', function() {
         that.event.trigger(EVT_TRANSITION_DESELECTED, transition);
     }).on('remove', function() {
         that.event.trigger(EVT_TRANSITION_REMOVED, transition);
+    }).on('knob_add', function(evt , knobIndex, position) {
+        that.addCmd(CMD_KNOB_ADD, [transition.id, knobIndex, position], [transition, knobIndex]);
+    }).on('knob_drop', function(evt , knobIndex) {
+        var knob = transition.knobManager.getKnob(knobIndex);
+        that.addCmd(CMD_KNOB_DROP,
+            [transition.id, knobIndex, knob.node.root.dxSum, knob.node.root.dySum],
+            [transition.id, knobIndex, (-1 * knob.node.root.dxSum), (-1 * knob.node.root.dySum)]);
     });
+
     this.addCmd(CMD_ADD, [this.getTransitionString(transition)], [transition.id]);
     return this.transitions[transition.id] = transition;
+};
+
+TransitionManager.prototype.addKnob = function(transition, knobIndex, position) {
+    this.getTransition(transition).addKnob(position,knobIndex);
+};
+
+TransitionManager.prototype.deleteKnob = function(transition, dockingIndex) {
+    this.getTransition(transition).knobManager.getKnob(dockingIndex).remove();
+};
+
+TransitionManager.prototype.dropDocking = function(transition, dockingIndex, dxSum, dySum) {
+    transition = this.getTransition(transition);
+    if(transition) {
+        var docking = transition.knobManager.getKnob(dockingIndex);
+        docking.triggerDrag(dxSum, dySum);
+    }
+};
+
+TransitionManager.prototype.transitionDockingCreated = function(transition, dockingIndex) {
+    var transition = evt.data.transition;
+    var dockingIndex = evt.data.dockingIndex;
+
 };
 
 TransitionManager.prototype.getTransitionString = function(transition) {

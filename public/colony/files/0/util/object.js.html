@@ -1,0 +1,123 @@
+<h1>object.js</h1>
+<pre><code class="lang-js">module.exports = {
+    each: <span class="keyword">function</span>() {
+        <span class="keyword">return</span> $.each(arguments[<span class="number">0</span>], arguments[<span class="number">1</span>], arguments[<span class="number">2</span>]);
+    },
+
+    grep: <span class="keyword">function</span>(arr, filter, invert) {
+        <span class="keyword">return</span> $.grep(arr, filter, invert);
+    },
+
+    isArray: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> $.isArray(obj);
+    },
+
+    toArray : <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> $.map(obj, <span class="keyword">function</span>(value, index) {
+            <span class="keyword">return</span> [value];
+        });
+    },
+
+    removeFromArray: <span class="keyword">function</span>(arr, item) {
+        <span class="keyword">var</span> index = arr.indexOf(item);
+        <span class="keyword">if</span>(index >= <span class="number">0</span>) {
+            arr.splice(index, <span class="number">1</span>);
+            <span class="keyword">return</span> <span class="literal">true</span>;
+        }
+        <span class="keyword">return</span> <span class="literal">false</span>;
+    },
+
+    sort: <span class="keyword">function</span>(obj, sort) {
+        <span class="keyword">var</span> arr;
+        <span class="keyword">if</span>(!obj) {
+            <span class="keyword">return</span>;
+        } <span class="keyword">else</span> <span class="keyword">if</span>(<span class="keyword">this</span>.isArray(obj)) {
+            arr = obj;
+        } <span class="keyword">else</span> <span class="keyword">if</span>(<span class="keyword">this</span>.isObject(obj)) {
+            arr = $.map(obj, <span class="function"><span class="keyword">function</span> <span class="params">(index, val)</span> {</span>
+                <span class="keyword">return</span> obj[val];
+            });
+        }
+
+        <span class="keyword">return</span> arr.sort(sort);
+    },
+
+    valueByIndex: <span class="keyword">function</span>(arr, index) {
+        <span class="keyword">var</span> index = <span class="keyword">this</span>.getIndex(arr,index);
+        <span class="keyword">return</span> arr[index];
+    },
+
+    getIndex: <span class="keyword">function</span>(arr, index) {
+        <span class="keyword">var</span> result = index;
+        <span class="comment">// for negative indexes we return values counted from the other side so -1 is the last index</span>
+        <span class="comment">// if the negative index is out of range we return the last index.</span>
+        <span class="keyword">if</span>(index &lt; <span class="number">0</span>) {
+            result = arr.length + index;
+            result = (result > arr.length -<span class="number">1</span> || result &lt; <span class="number">0</span>) ? arr.length -<span class="number">1</span> : result;
+        }
+        <span class="keyword">return</span> result;
+    },
+
+    isFunction: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> Object.prototype.toString.call(obj) === <span class="string">'[object Function]'</span>;
+    },
+
+    isObject: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> $.isPlainObject(obj);
+    },
+
+    isJQuery: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> obj.jquery;
+    },
+
+    isString: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> <span class="keyword">typeof</span> obj === <span class="string">'string'</span>;
+    },
+
+    isBoolean: <span class="keyword">function</span>(obj) {
+        <span class="keyword">return</span> <span class="keyword">typeof</span> obj === <span class="string">'boolean'</span>;
+    },
+
+    isDefined: <span class="keyword">function</span>(obj) {
+        <span class="keyword">if</span>(arguments.length > <span class="number">1</span>) {
+            <span class="keyword">var</span> result = <span class="literal">true</span>;
+            <span class="keyword">var</span> that = <span class="keyword">this</span>;
+            <span class="keyword">this</span>.each(arguments, <span class="keyword">function</span>(index, value) {
+                <span class="keyword">if</span>(!that.isDefined(value)) {
+                    result = <span class="literal">false</span>;
+                    <span class="keyword">return</span> <span class="literal">false</span>;
+                }
+            });
+
+            <span class="keyword">return</span> result;
+        }
+        <span class="keyword">return</span> <span class="keyword">typeof</span> obj !== <span class="string">'undefined'</span>;
+    },
+
+    merge: <span class="keyword">function</span>(target, toMerge) {
+        <span class="keyword">return</span> $.merge(target, toMerge);
+    },
+
+
+    addValue: <span class="keyword">function</span>(target, newVal) {
+        <span class="keyword">if</span>(isArray(newVal)) {
+            merge(target);
+        } <span class="keyword">else</span> {
+            target.push(newVal);
+        }
+    },
+
+    extend: <span class="keyword">function</span>(target, obj1, obj2) {
+        <span class="keyword">return</span> $.extend(target,obj1,obj2);
+    },
+
+    cloneArray: <span class="keyword">function</span>(arr) {
+        <span class="keyword">return</span> arr.slice(<span class="number">0</span>);
+    },
+
+    cloneObject: <span class="keyword">function</span>(oldObject, deep) {
+        deep = deep || <span class="literal">false</span>;
+        <span class="keyword">return</span> $.extend(deep, {}, oldObject);
+    }
+    
+}</code></pre>

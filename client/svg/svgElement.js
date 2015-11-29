@@ -145,11 +145,6 @@ SVGElement.prototype.off = function(evt) {
     return this;
 };
 
-SVGElement.prototype.trigger = function(evt) {
-    this.$().trigger(evt);
-    return this;
-};
-
 SVGElement.prototype.toString = function() {
     return util.xml.serializeToString(this.instance());
 };

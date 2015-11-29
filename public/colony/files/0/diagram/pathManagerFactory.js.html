@@ -1,0 +1,22 @@
+<h1>pathManagerFactory.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> config = require(<span class="string">'../core/config'</span>);
+<span class="keyword">var</span> CurvePathManager = require(<span class="string">'./curvedPathManager'</span>);
+<span class="keyword">var</span> StraightPathManager = require(<span class="string">'./straightPathManager'</span>);
+<span class="keyword">var</span> pathManager = {};
+
+<span class="keyword">var</span> register =   <span class="keyword">function</span>(constructor) {
+    pathManager[constructor.type] = constructor;
+};
+
+register(CurvePathManager);
+register(StraightPathManager);
+
+module.exports =  {
+    register : register,
+    get : <span class="keyword">function</span>(transition, id) {
+        id = id || config.val(<span class="string">'transition_type'</span>, StraightPathManager.type);
+        <span class="keyword">if</span>(pathManager[id]) {
+            <span class="keyword">return</span> <span class="keyword">new</span> pathManager[id](transition);
+        }
+    }
+};</code></pre>

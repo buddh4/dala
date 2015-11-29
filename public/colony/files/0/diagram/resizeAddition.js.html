@@ -1,0 +1,49 @@
+<h1>resizeAddition.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> Resize = require(<span class="string">'./resize'</span>);
+
+<span class="keyword">var</span> ResizeAddition = <span class="keyword">function</span>(node) {
+    <span class="keyword">this</span>.node = node;
+    <span class="keyword">this</span>.resize = <span class="keyword">new</span> Resize(<span class="keyword">this</span>.node, <span class="keyword">this</span>.node.diagram);
+};
+
+ResizeAddition.prototype.select = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.activateKnobs();
+};
+
+ResizeAddition.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.removeKnobs();
+};
+
+ResizeAddition.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.deselect();
+};
+
+ResizeAddition.prototype.dragMove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.updateKnobs();
+};
+
+ResizeAddition.prototype.edit = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.update();
+};
+
+ResizeAddition.prototype.update = <span class="keyword">function</span>() {
+    <span class="comment">//TODO: Through EVENTS !</span>
+    <span class="keyword">this</span>.resize.updateKnobs();
+};
+
+ResizeAddition.prototype.activate = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.updateNodes();
+};
+
+ResizeAddition.prototype.contentChanged = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.resize.update();
+};
+
+ResizeAddition.prototype.get = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.resize;
+};
+
+ResizeAddition.requireConfig = <span class="literal">true</span>;
+
+module.exports = ResizeAddition;</code></pre>

@@ -1,0 +1,581 @@
+<h1>svgElement.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> DomElement = require(<span class="string">'../dom/domElement'</span>);
+<span class="keyword">var</span> Transform = require(<span class="string">'./transform'</span>);
+<span class="keyword">var</span> Style = require(<span class="string">'./style'</span>);
+<span class="keyword">var</span> PathData = require(<span class="string">'./pathData'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> dom = util.dom;
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="comment">/*
+ * Constructor for SVG Elements
+ *
+ * @param {type} name the element Name e.g. rect, circle, path...
+ * @param {type} cfg attributes and additional configurations
+ * @param {type} attributeSetter you can add additional attribute setter
+ * for special attributes default attribute setter given by this impelementation
+ * are transform and style setter
+ */</span>
+<span class="keyword">var</span> SVGElement = <span class="keyword">function</span>(name, svgRoot, cfg, attributeSetter) {
+    <span class="keyword">this</span>.attributeSetter = attributeSetter || {};
+    <span class="keyword">this</span>.attributeSetter.transform = <span class="keyword">this</span>.transformationAttributeSetter;
+    <span class="keyword">this</span>.attributeSetter.style = <span class="keyword">this</span>.styleAttributeSetter;
+    <span class="keyword">this</span>.attributeSetter.d = <span class="keyword">this</span>.pathDataAttributeSetter;
+    <span class="keyword">this</span>.SVGElement = <span class="literal">true</span>;
+
+    <span class="comment">// If first attribute is not a string we assume a svg node constructor call.</span>
+    <span class="keyword">if</span>(!object.isString(name)) {
+        <span class="keyword">this</span>.instance(name);
+        cfg = dom.getAttributes(name);
+        name = name.tagName;
+    }
+
+    <span class="keyword">this</span>.root = svgRoot || <span class="keyword">this</span>;
+    DomElement.call(<span class="keyword">this</span>, name, cfg, <span class="keyword">this</span>.attributeSetter);
+};
+
+util.inherits(SVGElement, DomElement);
+
+SVGElement.prototype.transformationAttributeSetter = <span class="keyword">function</span>(trnasformationString) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Transform(trnasformationString);
+};
+
+SVGElement.prototype.pathDataAttributeSetter = <span class="keyword">function</span>(pathDataString) {
+    <span class="keyword">return</span> <span class="keyword">new</span> PathData(pathDataString);
+};
+
+SVGElement.prototype.data = <span class="keyword">function</span>(pathData) {
+    <span class="keyword">if</span>(object.isDefined(pathData)) {
+        <span class="keyword">this</span>.attributes.d = <span class="keyword">new</span> PathData(pathData);
+        <span class="keyword">this</span>.update();
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!object.isDefined(<span class="keyword">this</span>.attributes.d)) {
+        <span class="keyword">this</span>.attributes.d = <span class="keyword">new</span> PathData(pathData);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.attributes.d;
+
+};
+
+SVGElement.prototype.getRootNode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.instance();
+};
+
+SVGElement.prototype.append = <span class="keyword">function</span>(element) {
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(arguments.length > <span class="number">1</span>) {
+        result = [];
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(arguments, <span class="keyword">function</span>(index, val) {
+            result.push(that.append(val));
+        })
+    } <span class="keyword">else</span> <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        result =  util.dom.appendSVGElement(<span class="keyword">this</span>.instance(), arguments[<span class="number">0</span>]);
+    }
+    <span class="keyword">return</span> result;
+};
+
+SVGElement.prototype.prepend = <span class="keyword">function</span>(element) {
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(arguments.length > <span class="number">1</span>) {
+        result = [];
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(arguments, <span class="keyword">function</span>(index, val) {
+            result.push(that.prepend(val));
+        })
+    } <span class="keyword">else</span> <span class="keyword">if</span>(arguments.length === <span class="number">1</span>) {
+        result =  util.dom.prependSVGElement(<span class="keyword">this</span>.instance(), arguments[<span class="number">0</span>]);
+    }
+    <span class="keyword">return</span> result;
+};
+
+SVGElement.prototype.styleAttributeSetter = <span class="keyword">function</span>(trnasformationString) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Style(trnasformationString);
+};
+
+SVGElement.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$().remove();
+};
+
+SVGElement.prototype.firstChild = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> $.qCache().svg(<span class="keyword">this</span>.$().children().first());
+};
+
+SVGElement.prototype.back = <span class="keyword">function</span>() {
+    dom.prependToRoot(<span class="keyword">this</span>);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.scale = <span class="keyword">function</span>(scale) {
+    <span class="keyword">var</span> result = <span class="keyword">this</span>.getTransformation().scale(scale);
+
+    <span class="keyword">if</span>(result <span class="keyword">instanceof</span> Transform) {
+        <span class="comment">// The trnaslate setter returns the Transform object so we reset the</span>
+        <span class="comment">// transform attribute in dom (setter was called)</span>
+        <span class="keyword">this</span>.update();
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="comment">// The getter just returns the x,y values of the translate transformation</span>
+        <span class="keyword">return</span> result;
+    }
+};
+
+SVGElement.prototype.translate = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">var</span> result = <span class="keyword">this</span>.getTransformation().translate(x,y);
+
+    <span class="keyword">if</span>(result <span class="keyword">instanceof</span> Transform) {
+        <span class="comment">// The trnaslate setter returns the Transform object so we reset the</span>
+        <span class="comment">// transform attribute in dom (setter was called)</span>
+        <span class="keyword">this</span>.update();
+        <span class="keyword">return</span> <span class="keyword">this</span>;
+    } <span class="keyword">else</span> {
+        <span class="comment">// The getter just returns the x,y values of the translate transformation</span>
+        <span class="keyword">return</span> result;
+    }
+};
+
+SVGElement.prototype.fill = <span class="keyword">function</span>(color) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.style(<span class="string">'fill'</span>, color);
+};
+
+SVGElement.prototype.fillOpacity = <span class="keyword">function</span>(opacity) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.style(<span class="string">'fill-opacity'</span>, opacity);
+};
+
+SVGElement.prototype.strokeOpacity = <span class="keyword">function</span>(opacity) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.style(<span class="string">'stroke-opacity'</span>, opacity);
+};
+
+SVGElement.prototype.isVisible = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> (!<span class="keyword">this</span>.fillOpacity() || <span class="keyword">this</span>.fillOpacity() > <span class="number">0</span>)
+        &amp;&amp; (!<span class="keyword">this</span>.strokeOpacity() || <span class="keyword">this</span>.strokeOpacity() > <span class="number">0</span>);
+};
+
+SVGElement.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.fillOpacity(<span class="number">0</span>);
+    <span class="keyword">this</span>.strokeOpacity(<span class="number">0</span>);
+};
+
+SVGElement.prototype.show = <span class="keyword">function</span>(opacity) {
+    opacity = opacity || <span class="number">1</span>;
+    <span class="keyword">this</span>.fillOpacity(opacity);
+    <span class="keyword">this</span>.strokeOpacity(opacity);
+};
+
+SVGElement.prototype.stroke = <span class="keyword">function</span>(color) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.style(<span class="string">'stroke'</span>, color);
+};
+
+SVGElement.prototype.strokeDasharray = <span class="keyword">function</span>(type) {
+    <span class="keyword">if</span>(!type) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.style(<span class="string">'stroke-dasharray'</span>);
+    }
+    <span class="keyword">if</span>(object.isString(type)) {
+        <span class="keyword">this</span>.style(<span class="string">'stroke-dasharray'</span>, type);
+    } <span class="keyword">else</span> {
+
+    }
+};
+
+SVGElement.prototype.toString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> util.xml.serializeToString(<span class="keyword">this</span>.instance());
+};
+
+SVGElement.prototype.strokeDashType = <span class="keyword">function</span>(type) {
+    <span class="keyword">if</span>(!type) {
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.strokeDasharray()) {
+            <span class="keyword">case</span> <span class="string">"5,5"</span>:
+                <span class="keyword">return</span> <span class="number">1</span>;
+            <span class="keyword">case</span> <span class="string">"10,10"</span>:
+                <span class="keyword">return</span> <span class="number">2</span>;
+            <span class="keyword">case</span> <span class="string">"20,10,5,5,5,10"</span>:
+                <span class="keyword">return</span> <span class="number">3</span>;
+            <span class="keyword">default</span>:
+                <span class="keyword">return</span> <span class="number">0</span>;
+        }
+    } <span class="keyword">else</span> {
+        <span class="keyword">switch</span>(type) {
+            <span class="keyword">case</span> <span class="string">'1'</span>:
+            <span class="keyword">case</span> <span class="number">1</span>:
+                <span class="keyword">this</span>.strokeDasharray(<span class="string">"5,5"</span>);
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'2'</span>:
+            <span class="keyword">case</span> <span class="number">2</span>:
+                <span class="keyword">this</span>.strokeDasharray(<span class="string">"10,10"</span>);
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'3'</span>:
+            <span class="keyword">case</span> <span class="number">3</span>:
+                <span class="keyword">this</span>.strokeDasharray(<span class="string">"20,10,5,5,5,10"</span>);
+                <span class="keyword">break</span>;
+            <span class="keyword">default</span>:
+                <span class="keyword">this</span>.strokeDasharray(<span class="string">"none"</span>);
+                <span class="keyword">break</span>;
+
+        }
+    }
+
+};
+
+SVGElement.prototype.strokeWidth = <span class="keyword">function</span>(width) {
+    <span class="keyword">return</span> util.app.parseNumberString(<span class="keyword">this</span>.style(<span class="string">'stroke-width'</span>, width));
+};
+
+SVGElement.prototype.style = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">if</span>(!object.isDefined(value) &amp;&amp; object.isString(key) &amp;&amp; key.indexOf(<span class="string">':'</span>) &lt;= <span class="number">0</span>
+        &amp;&amp; object.isDefined(<span class="keyword">this</span>.attributes.style)) {
+        <span class="comment">//GETTER CALL</span>
+        <span class="keyword">return</span> <span class="keyword">this</span>.attributes.style.get(key);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!object.isDefined(<span class="keyword">this</span>.attributes.style) &amp;&amp; object.isDefined(value)) {
+        <span class="keyword">this</span>.attributes.style = <span class="keyword">new</span> Style(key, value);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isDefined(value)) {
+        <span class="keyword">this</span>.attributes.style.set(key, value);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span>;
+    }
+    <span class="keyword">this</span>.update();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.bBoxPosition = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        x : <span class="keyword">this</span>.xBBox(),
+        y : <span class="keyword">this</span>.yBBox()
+    }
+}
+
+SVGElement.prototype.xBBox = <span class="keyword">function</span>() {
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+        <span class="keyword">case</span> <span class="string">'circle'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x() -  <span class="keyword">this</span>.r();
+        <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x() -  <span class="keyword">this</span>.rx();
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x();
+    }
+};
+
+SVGElement.prototype.yBBox = <span class="keyword">function</span>() {
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+        <span class="keyword">case</span> <span class="string">'circle'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y() -  <span class="keyword">this</span>.r();
+        <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y() -  <span class="keyword">this</span>.ry();
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y();
+    }
+};
+
+SVGElement.prototype.x = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.name === <span class="string">'path'</span>) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.data().getX();
+    }
+
+    <span class="keyword">var</span> x = <span class="keyword">this</span>.attr(<span class="string">'x'</span>);
+    <span class="keyword">if</span>(object.isDefined(x)) {
+        <span class="keyword">return</span> x + <span class="keyword">this</span>.getTransformation().translate().x;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.getTransformation().translate().x;
+    }
+};
+
+SVGElement.prototype.getLeftX = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.name === <span class="string">'text'</span>) {
+        <span class="keyword">var</span> anchor = <span class="keyword">this</span>.attr(<span class="string">'text-anchor'</span>);
+        <span class="keyword">switch</span>(anchor) {
+            <span class="keyword">case</span> <span class="string">'end'</span>:
+                <span class="keyword">return</span> <span class="keyword">this</span>.x() - <span class="keyword">this</span>.width();
+            <span class="keyword">case</span> <span class="string">'middle'</span>:
+                <span class="keyword">return</span> <span class="keyword">this</span>.x() - (<span class="keyword">this</span>.width() / <span class="number">2</span>);
+        }
+    }
+
+    <span class="keyword">return</span> <span class="keyword">this</span>.x();
+};
+
+SVGElement.prototype.y = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.name === <span class="string">'path'</span>) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.data().getY();
+    }
+
+    <span class="comment">//TODO: SETTER</span>
+    <span class="keyword">var</span> y = <span class="keyword">this</span>.attr(<span class="string">'y'</span>);
+    <span class="keyword">if</span>(object.isDefined(y)) {
+        <span class="keyword">return</span> y + <span class="keyword">this</span>.getTransformation().translate().y;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> <span class="keyword">this</span>.getTransformation().translate().y;
+    }
+};
+
+SVGElement.prototype.position = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">return</span> {
+        x : that.x(),
+        y : that.y()
+    };
+};
+
+SVGElement.prototype.getRightX = <span class="keyword">function</span>() {
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+        <span class="keyword">case</span> <span class="string">'path'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.data().getRightX();
+        <span class="keyword">case</span> <span class="string">'circle'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x() +  <span class="keyword">this</span>.r();
+        <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x() +  <span class="keyword">this</span>.rx();
+        <span class="keyword">case</span> <span class="string">'text'</span>:
+            <span class="keyword">var</span> anchor = <span class="keyword">this</span>.attr(<span class="string">'text-anchor'</span>);
+            <span class="keyword">switch</span>(anchor) {
+                <span class="keyword">case</span> <span class="string">'middle'</span>:
+                    <span class="keyword">return</span> <span class="keyword">this</span>.x() + (<span class="keyword">this</span>.width() / <span class="number">2</span>);
+                <span class="keyword">case</span> <span class="string">'end'</span>:
+                <span class="keyword">default</span>:
+                    <span class="keyword">return</span> <span class="keyword">this</span>.x();
+            }
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.x() + <span class="keyword">this</span>.width();
+    }
+};
+
+SVGElement.prototype.getBottomY = <span class="keyword">function</span>() {
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+        <span class="keyword">case</span> <span class="string">'path'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.data().getBottomY();
+        <span class="keyword">case</span> <span class="string">'circle'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y() +  <span class="keyword">this</span>.r();
+        <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y() +  <span class="keyword">this</span>.ry();
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span> <span class="keyword">this</span>.y() + <span class="keyword">this</span>.height();
+    }
+};
+
+SVGElement.prototype.overlays = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> result = <span class="literal">false</span>;
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    object.each(arguments, <span class="keyword">function</span>(index, position) {
+        <span class="keyword">if</span>(that.overlayCheck(position)) {
+            result = <span class="literal">true</span>;
+            <span class="keyword">return</span> <span class="literal">false</span>; <span class="comment">//TO break the each loop</span>
+        }
+    });
+    <span class="comment">//console.log('result:'+result);</span>
+    <span class="keyword">return</span> result;
+};
+
+
+SVGElement.prototype.overlayCheck = <span class="keyword">function</span>(position) {
+    <span class="keyword">return</span> position.x >= <span class="keyword">this</span>.xBBox() &amp;&amp; position.x &lt;= <span class="keyword">this</span>.getRightX()
+        &amp;&amp; position.y >= <span class="keyword">this</span>.yBBox() &amp;&amp; position.y &lt;= <span class="keyword">this</span>.getBottomY();
+};
+
+SVGElement.prototype.dala = <span class="keyword">function</span>(key, value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'dala:'</span>+key, value);
+};
+
+<span class="comment">/**
+ * Determines the location of a given position relative to the svg element.
+ *
+ * @param node
+ * @param position
+ * @returns {*}
+ */</span>
+SVGElement.prototype.getRelativeLocation = <span class="keyword">function</span>(position) {
+    <span class="keyword">if</span>(position.x === <span class="keyword">this</span>.x()) {
+        <span class="keyword">return</span> <span class="string">'left'</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(position.y === <span class="keyword">this</span>.y()) {
+        <span class="keyword">return</span> <span class="string">'top'</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(position.x === <span class="keyword">this</span>.getRightX()) {
+        <span class="keyword">return</span> <span class="string">'right'</span>;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(position.y === <span class="keyword">this</span>.getBottomY()) {
+        <span class="keyword">return</span> <span class="string">'bottom'</span>;
+    }
+
+    <span class="keyword">var</span> center = <span class="keyword">this</span>.getCenter();
+    <span class="keyword">var</span> g = util.math.Line.calcGradient(center, position);
+    <span class="keyword">if</span>(position.y &lt; center.y) { <span class="comment">//TOP</span>
+        <span class="keyword">if</span> (position.x >= center.x) { <span class="comment">//RIGHT</span>
+            <span class="keyword">if</span> (g > -<span class="number">1</span>) {
+                <span class="keyword">return</span> <span class="string">'right'</span>;
+            } <span class="keyword">else</span> {
+                <span class="keyword">return</span> <span class="string">'top'</span>;
+            }
+        } <span class="keyword">else</span> <span class="keyword">if</span> (g &lt; <span class="number">1</span>) {<span class="comment">//TOP/LEFT</span>
+            <span class="keyword">return</span> <span class="string">'left'</span>;
+        } <span class="keyword">else</span> {
+            <span class="keyword">return</span> <span class="string">'top'</span> ;
+        }
+    } <span class="keyword">else</span> { <span class="comment">//BOTTOM</span>
+        <span class="keyword">if</span>(position.x >= center.x) { <span class="comment">//RIGHT</span>
+            <span class="keyword">if</span>(g &lt; <span class="number">1</span>) {
+                <span class="keyword">return</span> <span class="string">'right'</span>;
+            } <span class="keyword">else</span> {
+                <span class="keyword">return</span> <span class="string">'bottom'</span>;
+            }
+        } <span class="keyword">else</span> { <span class="comment">//BOTTOM/LEFT</span>
+            <span class="keyword">if</span>(g &lt; -<span class="number">1</span>) {
+                <span class="keyword">return</span> <span class="string">'bottom'</span>;
+            } <span class="keyword">else</span> {
+                <span class="keyword">return</span> <span class="string">'left'</span>;
+            }
+        }
+    }
+};
+
+SVGElement.prototype.getCenter = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        x: <span class="keyword">this</span>.x() + Math.floor(<span class="keyword">this</span>.width() / <span class="number">2</span>),
+        y: <span class="keyword">this</span>.y() + Math.floor(<span class="keyword">this</span>.height() / <span class="number">2</span>)
+    };
+};
+
+<span class="comment">/**
+ * element.offsetWidth, element.offsetHeight: overall size of the containing box in pixels
+ * element.clientHeight, element.clientWidth: content dimensions
+ * @returns {_L1.SVGElement.instance.offsetHeight}
+ */</span>
+SVGElement.prototype.height = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(!object.isDefined(value) &amp;&amp; object.isDefined(<span class="keyword">this</span>.instance())) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.instance().getBBox().height;
+    } <span class="keyword">else</span> {
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+            <span class="keyword">case</span> <span class="string">'circle'</span>:
+                <span class="keyword">var</span> v = value / <span class="number">2</span>;
+                <span class="keyword">this</span>.attr({cy:v,cx:v, r:v});
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+                <span class="keyword">var</span> v = value / <span class="number">2</span>;
+                <span class="keyword">this</span>.attr({cy: v,ry:v});
+                <span class="keyword">break</span>;
+            <span class="keyword">default</span>:
+                <span class="keyword">this</span>.attr({height:value});
+                <span class="keyword">break</span>;
+        }
+    }
+};
+
+SVGElement.prototype.width = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(!object.isDefined(value) &amp;&amp; object.isDefined(<span class="keyword">this</span>.instance())) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.instance().getBBox().width;
+    } <span class="keyword">else</span> {
+        <span class="keyword">switch</span>(<span class="keyword">this</span>.getType()) {
+            <span class="keyword">case</span> <span class="string">'circle'</span>:
+                <span class="keyword">var</span> v = value / <span class="number">2</span>;
+                <span class="keyword">this</span>.attr({cy:v,cx:v, r:v});
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'ellipse'</span>:
+                <span class="keyword">var</span> v = value / <span class="number">2</span>;
+                <span class="keyword">this</span>.attr({cx: v,rx:v});
+                <span class="keyword">break</span>;
+            <span class="keyword">default</span>:
+                <span class="keyword">this</span>.attr({width:value});
+                <span class="keyword">break</span>;
+        }
+    }
+};
+
+SVGElement.prototype.move = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">var</span> translate = <span class="keyword">this</span>.translate();
+    <span class="keyword">this</span>.translate(translate.x + dx, translate.y + dy);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.moveTo = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">var</span> p = util.math.getPoint(x,y);
+
+    <span class="keyword">var</span> translate = <span class="keyword">this</span>.translate();
+    <span class="keyword">if</span>(!(translate.x === p.x &amp;&amp; translate.y === p.y)) {
+        <span class="keyword">this</span>.translate(p);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.totalRadiusX = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> strokeWith = <span class="keyword">this</span>.strokeWidth();
+    <span class="keyword">var</span> radius = <span class="keyword">this</span>.rx();
+    <span class="keyword">if</span>(radius) {
+        radius += (strokeWith) ? strokeWith : <span class="number">0</span>;
+    }
+
+    <span class="keyword">return</span> radius;
+};
+
+
+SVGElement.prototype.totalRadiusY = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> strokeWith = <span class="keyword">this</span>.strokeWidth();
+    <span class="keyword">var</span> radius = <span class="keyword">this</span>.ry();
+    <span class="keyword">if</span>(radius) {
+        radius += (strokeWith) ? strokeWith : <span class="number">0</span>;
+    }
+
+    <span class="keyword">return</span> radius;
+};
+
+SVGElement.prototype.r = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> util.app.parseNumberString(<span class="keyword">this</span>.attr(<span class="string">'r'</span>, value));
+};
+
+SVGElement.prototype.rx = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> util.app.parseNumberString(<span class="keyword">this</span>.attr(<span class="string">'rx'</span>, value));
+};
+
+SVGElement.prototype.ry = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> util.app.parseNumberString(<span class="keyword">this</span>.attr(<span class="string">'ry'</span>, value));
+};
+
+SVGElement.prototype.totalRadius = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> strokeWith = <span class="keyword">this</span>.strokeWidth();
+    <span class="keyword">var</span> radius = <span class="keyword">this</span>.r();
+    <span class="keyword">if</span>(radius) {
+        radius += (strokeWith) ? strokeWith : <span class="number">0</span>;
+    }
+
+    <span class="keyword">return</span> radius;
+};
+
+SVGElement.prototype.moveX = <span class="keyword">function</span>(x) {
+    <span class="keyword">var</span> translate = <span class="keyword">this</span>.translate();
+    <span class="keyword">if</span>(translate.x !== x) {
+        <span class="keyword">this</span>.translate(x, translate.y);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.moveY = <span class="keyword">function</span>(y) {
+    <span class="keyword">var</span> translate = <span class="keyword">this</span>.translate();
+    <span class="keyword">if</span>(translate.y !== y) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.translate(translate.x, y);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.hasTransformation = <span class="keyword">function</span>(transformation) {
+    <span class="keyword">if</span>(object.isDefined(<span class="keyword">this</span>.attributes.transform)) {
+        <span class="keyword">return</span> (object.isDefined(<span class="keyword">this</span>.attributes.transform[transformation]));
+    }
+};
+
+SVGElement.prototype.getTransformation = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.attributes.transform) {
+        <span class="keyword">this</span>.attributes.transform = <span class="keyword">new</span> Transform();
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.attributes.transform;
+};
+
+SVGElement.prototype.on = <span class="keyword">function</span>(evt, handler) {
+    <span class="keyword">this</span>.$().on(evt, handler);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.off = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.$().off(evt);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+SVGElement.prototype.trigger = <span class="keyword">function</span>(evt) {
+    <span class="keyword">this</span>.$().trigger(evt);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+module.exports = SVGElement;
+</code></pre>

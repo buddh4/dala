@@ -1,0 +1,141 @@
+<h1>client.all.js</h1>
+<pre><code class="lang-js"><span class="comment">// Init initial browser dependencies</span>
+<span class="comment">// Global jQuery</span>
+$ = jQuery = require(<span class="string">'jquery'</span>);
+require(<span class="string">'jquery-ui'</span>);
+
+require(<span class="string">'./ui/jqueryPlugins'</span>);
+
+<span class="comment">//jquery-ui / bootstrap conflicts</span>
+$.widget.bridge(<span class="string">'uibutton'</span>, $.ui.button);
+$.widget.bridge(<span class="string">'uitooltip'</span>, $.ui.tooltip);
+
+require(<span class="string">'jstree'</span>);
+
+require(<span class="string">'bootstrap'</span>);
+
+$.fn.bootstrapBtn = $.fn.button.noConflict();
+
+<span class="comment">//INIT GLOBAL DALA</span>
+dala = {};
+
+<span class="keyword">var</span> globalModules =  {
+    <span class="string">'templateManager'</span>: require(<span class="string">'./diagram/templateManager'</span>)
+};
+
+dala.require = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> globalModules[id];
+}
+
+<span class="comment">// Init core modules</span>
+<span class="keyword">var</span> config = require(<span class="string">'./core/config'</span>);
+<span class="keyword">var</span> Diagram = require(<span class="string">'./diagram/diagram'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'./core/event'</span>);
+
+require(<span class="string">'./user/userManager'</span>).init();
+require(<span class="string">'./project/projectManager'</span>).init();
+
+<span class="comment">// Init UI modules</span>
+require(<span class="string">'./ui/gui'</span>);
+
+
+config.debug(<span class="literal">true</span>);
+
+
+require(<span class="string">'./diagram/diagramManager'</span>);
+
+<span class="comment">//TODO: move this to a controller !</span>
+$(window).bind(<span class="string">'mousewheel DOMMouseScroll'</span>, <span class="keyword">function</span>(evt){
+    <span class="keyword">if</span>(!evt.ctrlKey) {
+        <span class="keyword">return</span>;
+    }
+
+    evt.preventDefault();
+
+    <span class="keyword">if</span> (evt.originalEvent.wheelDelta > <span class="number">0</span> || evt.originalEvent.detail &lt; <span class="number">0</span>) {
+        event.trigger(<span class="string">'view_zoomIn'</span>);
+    }
+    <span class="keyword">else</span> {
+        event.trigger(<span class="string">'view_zoomOut'</span>);
+    }
+});
+
+<span class="keyword">var</span> stageFocus = <span class="literal">false</span>;
+
+$(<span class="string">'html'</span>).on(<span class="string">'mousedown'</span>, <span class="keyword">function</span>() {
+    stageFocus = <span class="literal">false</span>;
+});
+
+<span class="comment">//TODO: check other key events for stageFocus</span>
+$(document).on(<span class="string">'click'</span>, <span class="string">'.svgStage'</span>, <span class="keyword">function</span>(evt) {
+    stageFocus = <span class="literal">true</span>;
+    evt.stopPropagation();
+});
+
+event.on(document, <span class="string">'keydown'</span>, <span class="keyword">function</span>(e) {
+    e.mouse = event.mouse();
+    <span class="comment">//console.log('keypress: '+e.keyCode);</span>
+    <span class="keyword">switch</span>(e.keyCode) {
+        <span class="keyword">case</span> <span class="number">13</span>: <span class="comment">//ENTER</span>
+            event.trigger(<span class="string">'key_enter_press'</span>, {}, e);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">38</span>: <span class="comment">//UP</span>
+            event.trigger(<span class="string">'key_up_press'</span>, {}, e);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">40</span>: <span class="comment">//DOWN</span>
+            event.trigger(<span class="string">'key_down_press'</span>, {}, e);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">46</span>: <span class="comment">//DELETE</span>
+            event.trigger(<span class="string">'key_del_press'</span>, {}, e);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">67</span>: <span class="comment">//c</span>
+            <span class="keyword">if</span>(e.ctrlKey &amp;&amp; !isTextSelected()) {
+                event.trigger(<span class="string">'key_copy_press'</span>, {}, e);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">83</span>: <span class="comment">//s</span>
+            <span class="keyword">if</span>(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger(<span class="string">'key_save_press'</span>, {}, e);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">86</span>: <span class="comment">//v</span>
+            <span class="keyword">if</span>(e.ctrlKey &amp;&amp; stageFocus) {
+                event.trigger(<span class="string">'key_paste_press'</span>, {}, e);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">89</span>: <span class="comment">//y</span>
+            <span class="keyword">if</span>(e.ctrlKey) {
+                event.trigger(<span class="string">'key_redo_press'</span>, {}, e);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">90</span>: <span class="comment">//z</span>
+            <span class="keyword">if</span>(e.ctrlKey) {
+                event.trigger(<span class="string">'key_undo_press'</span>, {}, e);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">187</span>:
+            <span class="keyword">if</span>(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger(<span class="string">'view_zoomIn'</span>);
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="number">189</span>:
+            <span class="keyword">if</span>(e.ctrlKey) {
+                e.preventDefault();
+                event.trigger(<span class="string">'view_zoomOut'</span>);
+            }
+            <span class="keyword">break</span>;
+    }
+});
+
+<span class="keyword">var</span> isTextSelected = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> selection =  window.getSelection();
+    <span class="keyword">return</span> selection &amp;&amp; selection.toString().length > <span class="number">0</span>;
+}
+
+<span class="comment">//TODO: move this in gui with diagram handler...</span>
+
+event.trigger(<span class="string">'tab_new'</span>);
+event.trigger(<span class="string">'app_start'</span>);
+event.trigger(<span class="string">'info'</span>, <span class="string">'Application started successfully!'</span>);</code></pre>

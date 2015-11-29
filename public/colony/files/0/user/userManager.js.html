@@ -1,0 +1,93 @@
+<h1>userManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> client = require(<span class="string">'../core/client'</span>);
+<span class="keyword">var</span> Promise = require(<span class="string">'bluebird'</span>);
+<span class="keyword">var</span> DalaError = require(<span class="string">'../../common/error'</span>);
+
+<span class="keyword">var</span> PATH_LOGIN = <span class="string">'/user/login'</span>;
+<span class="keyword">var</span> SEL_LOGGED_OUT = <span class="string">'.loggedOut'</span>;
+<span class="keyword">var</span> SEL_LOGGED_IN = <span class="string">'.loggedIn'</span>;
+<span class="keyword">var</span> SEL_USER_LINK_TXT = <span class="string">'#user-link-text'</span>;
+
+<span class="keyword">var</span> user;
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'user_loggedin'</span>, userLogin);
+    event.listen(<span class="string">'user_loggedout'</span>, userLogout);
+    logoutHandler(<span class="literal">true</span>);
+};
+
+<span class="keyword">var</span> login = <span class="keyword">function</span>(email, password) {
+    <span class="keyword">return</span> <span class="keyword">new</span> Promise(<span class="keyword">function</span>(resolve, reject) {
+        <span class="keyword">var</span> values = {
+            email : email,
+            password : password
+        };
+
+        client.post(PATH_LOGIN, values, {
+            success : <span class="keyword">function</span>(response) {
+                loggedInHandler(response.data.result);
+                resolve(response.data.result);
+            },
+            error : <span class="keyword">function</span>(error, errorCode) {
+                <span class="keyword">switch</span>(errorCode) {
+                    <span class="keyword">case</span> DalaError.CODES.USER_LOGIN_INCORRECT_PASSWORD:
+                        event.trigger(<span class="string">'error'</span>, <span class="string">'Login failed: Invalid password!'</span>);
+                        <span class="keyword">break</span>;
+                    <span class="keyword">case</span> DalaError.CODES.USER_LOGIN_INVALID_EMAIL:
+                        event.trigger(<span class="string">'error'</span>, <span class="string">'Login failed: Invalid email address.'</span>);
+                        <span class="keyword">break</span>;
+                    <span class="keyword">default</span>:
+                        event.trigger(<span class="string">'error'</span>, <span class="string">'Login failed: Something went wrong, please try again later.'</span>);
+                        <span class="keyword">break</span>;
+
+                }
+                reject(error);
+            },
+            successMessage : <span class="string">'Login was successful!'</span>
+        });
+    });
+};
+
+<span class="keyword">var</span> loggedInHandler = <span class="keyword">function</span>(result) {
+    $(SEL_LOGGED_OUT).hide();
+    $(SEL_LOGGED_IN).show();
+    $(SEL_USER_LINK_TXT).text(result.user.email);
+    event.trigger(<span class="string">'user_loggedin'</span>, result);
+};
+
+<span class="keyword">var</span> logoutHandler = <span class="keyword">function</span>(prevTrigger) {
+    $(SEL_LOGGED_IN).hide();
+    $(SEL_LOGGED_OUT).show();
+    $(SEL_USER_LINK_TXT).text(<span class="string">''</span>);
+    <span class="keyword">if</span>(!prevTrigger) {
+        event.trigger(<span class="string">'user_loggedout'</span>);
+    }
+};
+
+<span class="keyword">var</span> userLogin = <span class="keyword">function</span>(evt) {
+    user = evt.data.user;
+}
+
+<span class="keyword">var</span> isLoggedIn = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> object.isDefined(user);
+}
+
+<span class="keyword">var</span> userLogout = <span class="keyword">function</span>(evt) {
+    <span class="keyword">delete</span> user;
+}
+
+<span class="keyword">var</span> getUserId = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(user) {
+        <span class="keyword">return</span> user.id;
+    }
+    <span class="keyword">return</span> <span class="string">''</span>;
+}
+
+module.exports = {
+    init: init,
+    login : login,
+    isLoggedIn : isLoggedIn,
+    getUserId : getUserId
+};</code></pre>

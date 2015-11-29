@@ -1,0 +1,90 @@
+<h1>toolTip.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> $toolTipContainer = $(<span class="string">'#diagramToolTip'</span>);
+
+<span class="keyword">var</span> panels = {};
+<span class="keyword">var</span> sections = {};
+
+<span class="keyword">var</span> Panel = <span class="keyword">function</span>($panel) {
+    <span class="keyword">this</span>.id = $panel.attr(<span class="string">'id'</span>);
+    <span class="keyword">this</span>.$panel = $panel;
+};
+
+Panel.prototype.init = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$panel.accordion({
+        collapsible: <span class="literal">true</span>
+    });
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Panel.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$panel.hide();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Panel.prototype.show = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$panel.show();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Panel.prototype.update = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$panel.accordion(<span class="string">'refresh'</span>);
+};
+
+Section = <span class="keyword">function</span>(id) {
+    <span class="keyword">this</span>.id = id;
+    <span class="keyword">this</span>.$content = $(<span class="string">'#'</span>+id);
+    <span class="keyword">this</span>.$head = <span class="keyword">this</span>.$content.prev();
+};
+
+Section.prototype.hide = <span class="keyword">function</span>(id) {
+    <span class="keyword">this</span>.$content.hide();
+    <span class="keyword">this</span>.$head.hide();
+};
+
+Section.prototype.show = <span class="keyword">function</span>(id) {
+    <span class="keyword">this</span>.$content.show();
+    <span class="keyword">this</span>.$head.show();
+};
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    scanForPanels();
+};
+
+<span class="keyword">var</span> hide = <span class="keyword">function</span>() {
+    $toolTipContainer.hide();
+};
+
+<span class="keyword">var</span> show = <span class="keyword">function</span>() {
+    $toolTipContainer.show();
+};
+
+<span class="keyword">var</span> scanForPanels = <span class="keyword">function</span>() {
+    $toolTipContainer.children(<span class="string">'div'</span>).each(<span class="keyword">function</span>(index, elem) {
+        <span class="keyword">var</span> panel = <span class="keyword">new</span> Panel($(elem));
+        <span class="keyword">if</span>(!panels[panel.id]) {
+            panels[panel.id] = panel.init();
+
+        }
+    });
+};
+
+<span class="keyword">var</span> getPanel = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> panels[id];
+};
+
+<span class="keyword">var</span> getSection = <span class="keyword">function</span>(id) {
+    <span class="keyword">var</span> section = sections[id];
+    <span class="keyword">if</span>(!section) {
+        sections[id] = section = <span class="keyword">new</span> Section(id);
+    }
+    <span class="keyword">return</span> section;
+};
+
+module.exports = {
+    init : init,
+    show : show,
+    hide : hide,
+    scanForPanels : scanForPanels,
+    getPanel : getPanel,
+    getSection : getSection
+};</code></pre>

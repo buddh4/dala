@@ -1,0 +1,362 @@
+<h1>node.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * This class represents the nodes of a diagram. Every note has a unique ID and
+ * a template defining the type of the node.
+ */</span>
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> dockingType = require(<span class="string">'./docking'</span>);
+<span class="keyword">var</span> SVG = require(<span class="string">'../svg/svg'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> nodeAdditions = require(<span class="string">'./nodeAdditions'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="comment">/**
+ * The constructor does not render a node to the stage. To render a node
+ * the init method has to be called.
+ */</span>
+<span class="keyword">var</span> Node = <span class="keyword">function</span>(tmpl, config, diagram) {
+    <span class="keyword">this</span>.config = config || {};
+    <span class="keyword">this</span>.diagram = diagram;
+    <span class="keyword">this</span>.event = diagram.event;
+    <span class="keyword">this</span>.id = config.node_id;
+    <span class="keyword">this</span>.template = tmpl;
+    <span class="keyword">this</span>.selectable = object.isDefined(<span class="keyword">this</span>.config.selectable) ? <span class="keyword">this</span>.config.selectable : <span class="literal">true</span>;
+    <span class="keyword">this</span>.visible = <span class="literal">true</span>;
+};
+
+<span class="comment">/**
+ * This method renders the node to the stage and initializes all event handlers
+ * With the part argument we can import the node to another svg part than the default which is the main stage.
+ * This is used for example for the defs (which is technically not a real node)
+ *
+ * @returns {Node_L7.Node.prototype}
+ */</span>
+Node.prototype.init = <span class="keyword">function</span>(part, prepend) {
+    <span class="comment">//ADD Element to stage</span>
+    <span class="keyword">this</span>.diagram.import(<span class="keyword">this</span>.template.getSVGString(<span class="keyword">this</span>.config), part, prepend);
+    <span class="keyword">return</span> <span class="keyword">this</span>.activate();
+};
+
+Node.prototype.getCorners = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> x = <span class="keyword">this</span>.x();
+    <span class="keyword">var</span> y = <span class="keyword">this</span>.y();
+    <span class="keyword">var</span> bottomy = <span class="keyword">this</span>.getBottomY();
+    <span class="keyword">var</span> rightx = <span class="keyword">this</span>.getRightX();
+    <span class="keyword">return</span> [
+        {x:x,y:y},
+        {x:rightx, y:y},
+        {x:rightx, y:bottomy},
+        {x:x,y:bottomy}
+    ];
+};
+
+<span class="comment">/**
+ * Activates the the node and handler functions by means of the given config
+ *
+ * @returns itself
+ */</span>
+Node.prototype.activate = <span class="keyword">function</span>(nodeID) {
+
+    <span class="keyword">if</span>(object.isDefined(nodeID)) {
+        <span class="keyword">this</span>.id = <span class="keyword">this</span>.config.node_id = nodeID;
+    }
+
+    <span class="comment">//Note: there are some special node types without an nodeId like defs.</span>
+    <span class="keyword">if</span>(<span class="keyword">this</span>.id) {
+        <span class="comment">//The root element of the node, its supposed to be a group node in most cases</span>
+        <span class="keyword">this</span>.root = $.svg(<span class="string">'#'</span>+<span class="keyword">this</span>.id);
+    }
+
+    nodeAdditions.init(<span class="keyword">this</span>);
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.root) {
+        <span class="keyword">this</span>.initEventFunctions(<span class="keyword">this</span>.config);
+        <span class="keyword">this</span>.root.attr({<span class="string">'dala:tmpl'</span> : <span class="keyword">this</span>.template.id});
+    }
+
+    <span class="keyword">this</span>.exec(<span class="string">'activate'</span>);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Node.prototype.initEventFunctions = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.root.hoverable) {
+        <span class="keyword">this</span>.root.hoverable();
+    }
+
+    <span class="keyword">this</span>.on(<span class="string">'dblclick'</span>, <span class="keyword">function</span>(evt) {
+        that.exec(<span class="string">'dbclick'</span>, [evt], <span class="literal">true</span>);
+    });
+
+    <span class="keyword">this</span>.on(<span class="string">'mousedown'</span>, <span class="keyword">function</span>(evt) {
+        <span class="keyword">if</span>(!evt.ctrlKey &amp;&amp; that.isVisible()) {
+            evt.stopPropagation();
+            that.exec(<span class="string">'mousedown'</span>, [evt], <span class="literal">true</span>);
+            that.event.trigger(<span class="string">'node_mousedown'</span>, that, evt);
+        }
+    });
+};
+
+Node.prototype.isVisible = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.isVisible();
+};
+
+Node.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.root.hide();
+};
+
+Node.prototype.show = <span class="keyword">function</span>(opacity) {
+    <span class="keyword">this</span>.root.show(opacity);
+};
+
+Node.prototype.index = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.$().index();
+};
+
+Node.prototype.firstChild = <span class="keyword">function</span>() {
+    <span class="comment">//TODO: this should be cached to reduce dom calls !</span>
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.firstChild();
+};
+
+Node.prototype.moveUp = <span class="keyword">function</span>() {
+    <span class="comment">//We switch UP/Down here because the first node in the dom tree is the</span>
+    <span class="comment">//last node (back) in the svg view.</span>
+
+    <span class="comment">//TODO: as command event !</span>
+    dom.moveDown(<span class="keyword">this</span>.root.instance());
+    <span class="keyword">this</span>.exec(<span class="string">'moveUp'</span>);
+};
+
+Node.prototype.moveDown = <span class="keyword">function</span>() {
+    <span class="comment">//We switch UP/Down here because the first node in the dom tree is the</span>
+    <span class="comment">//last node (back) in the svg view.</span>
+
+    <span class="comment">//TODO: as command event !</span>
+    dom.moveUp(<span class="keyword">this</span>.root.instance());
+    <span class="keyword">this</span>.exec(<span class="string">'moveDown'</span>);
+};
+
+Node.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.event.trigger(<span class="string">'node_removed'</span>, <span class="keyword">this</span>);
+    <span class="keyword">this</span>.exec(<span class="string">'remove'</span>);
+    <span class="keyword">this</span>.root.remove();
+};
+
+Node.prototype.moveTo = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">this</span>.root.moveTo(x, y);
+    <span class="keyword">this</span>.exec(<span class="string">'moveTo'</span>);
+};
+
+Node.prototype.position = <span class="keyword">function</span>(x,y) {
+    <span class="keyword">return</span> {
+        x : <span class="keyword">this</span>.x(),
+        y : <span class="keyword">this</span>.y()
+    };
+};
+
+Node.prototype.getInnerSVG = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">return</span> $.qCache().svg(<span class="keyword">this</span>.getNodeSelector(prefix));
+};
+
+Node.prototype.updateAdditions = <span class="keyword">function</span>(type) {
+    <span class="keyword">this</span>.exec(<span class="string">'update'</span>);
+};
+
+Node.prototype.getDockingPosition = <span class="keyword">function</span>(position, orientationIn) {
+    <span class="keyword">return</span> dockingType.getDocking(<span class="keyword">this</span>, position, orientationIn);
+};
+
+Node.prototype.addOutgoingTransition = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.additions.transition.addOutgoingTransition(value);
+};
+
+Node.prototype.removeOutgoingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.additions.transition.removeOutgoingTransition(transition);
+};
+
+Node.prototype.addIncomingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.additions.transition.addIncomingTransition(transition);
+};
+
+Node.prototype.removeIncomingTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.additions.transition.removeIncomingTransition(transition);
+};
+
+Node.prototype.getRootSVG = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root;
+};
+
+Node.prototype.instance = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(object.isDefined(<span class="keyword">this</span>.root)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.root.instance();
+    }
+};
+
+Node.prototype.selector = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">var</span> stringSelector;
+    <span class="keyword">if</span>(object.isArray(prefix)) {
+        stringSelector = [];
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(prefix, <span class="keyword">function</span>(index, val) {
+            stringSelector.push(that.selector(val));
+        });
+        stringSelector = stringSelector.join(<span class="string">', '</span>);
+    } <span class="keyword">else</span> {
+        stringSelector = prefix;
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.getNodeSelector(stringSelector);
+};
+
+Node.prototype.getNodeSelector = <span class="keyword">function</span>(prefix) {
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+
+    <span class="keyword">if</span>(!util.string.startsWith(prefix, <span class="string">'#'</span>) &amp;&amp; !util.string.startsWith(prefix, <span class="string">'.'</span>)) {
+        result = <span class="string">'#'</span>+prefix;
+    } <span class="keyword">else</span> {
+        result = prefix;
+    }
+
+    <span class="keyword">return</span> util.string.endsWith(prefix, <span class="string">'_'</span>)
+        ? result + <span class="keyword">this</span>.id
+        : result + <span class="string">'_'</span> + <span class="keyword">this</span>.id;
+};
+
+Node.prototype.getRootNode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.getRootNode();
+};
+
+Node.prototype.exec = <span class="keyword">function</span>(func, args, prevDomEvent) {
+    args = args || <span class="keyword">this</span>;
+    <span class="keyword">this</span>.executeAddition(func, args);
+    <span class="keyword">if</span>(<span class="keyword">this</span>.root &amp;&amp; !prevDomEvent) {
+        <span class="keyword">this</span>.trigger(func, args);
+    }
+};
+
+Node.prototype.executeAddition = <span class="keyword">function</span>(func, args) {
+    object.each(<span class="keyword">this</span>.additions, <span class="keyword">function</span>(key, addition) {
+        <span class="keyword">if</span>(object.isDefined(addition) &amp;&amp; object.isFunction(addition[func])) {
+            addition[func].apply(addition, args);
+        }
+    });
+};
+
+Node.prototype.select = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.selected = <span class="literal">true</span>;
+    <span class="keyword">this</span>.exec(<span class="string">'select'</span>);
+};
+
+Node.prototype.on = <span class="keyword">function</span>(evt, handler) {
+    <span class="keyword">this</span>.root.$().on(evt, handler);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Node.prototype.trigger = <span class="keyword">function</span>(evt, args) {
+    <span class="keyword">this</span>.root.$().trigger(evt, args);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+Node.prototype.off = <span class="keyword">function</span>(evt, handler) {
+    <span class="keyword">this</span>.root.$().off(evt, handler);
+};
+
+Node.prototype.deselect = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.selected = <span class="literal">false</span>;
+    <span class="keyword">this</span>.exec(<span class="string">'deselect'</span>);
+};
+
+Node.prototype.extractNodeId = <span class="keyword">function</span>(rawId) {
+    <span class="keyword">var</span> splitted = rawId.split(<span class="string">'_'</span>);
+    <span class="keyword">return</span> splitted[splitted.length - <span class="number">1</span>];
+};
+
+Node.prototype.x = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.x();
+};
+
+Node.prototype.y = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.y();
+};
+
+Node.prototype.height = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.height();
+};
+
+Node.prototype.width = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.width();
+};
+
+Node.prototype.getRightX = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.getRightX();
+};
+
+Node.prototype.getBottomY = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.getBottomY();
+};
+
+Node.prototype.isLeftOf = <span class="keyword">function</span>(mousePosition) {
+    <span class="keyword">return</span> mousePosition.x > (<span class="keyword">this</span>.getRightX());
+};
+
+Node.prototype.isRightOf = <span class="keyword">function</span>(mousePosition) {
+    <span class="keyword">return</span> mousePosition.x &lt; (<span class="keyword">this</span>.x());
+};
+
+Node.prototype.isOver = <span class="keyword">function</span>(mousePosition) {
+    <span class="keyword">return</span> mousePosition.y > (<span class="keyword">this</span>.getBottomY());
+};
+
+Node.prototype.overlays = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.overlays.apply(<span class="keyword">this</span>.root, arguments);
+    <span class="comment">//return this.root.overlayCheck(mousePosition);</span>
+};
+
+Node.prototype.isUnder = <span class="keyword">function</span>(mousePosition) {
+    <span class="keyword">return</span> mousePosition.y &lt; (<span class="keyword">this</span>.getBottomY());
+};
+
+Node.prototype.getCenter = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.getCenter();
+};
+
+Node.prototype.getRelativeCenter = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        x: <span class="keyword">this</span>.width() / <span class="number">2</span>,
+        y: <span class="keyword">this</span>.height() / <span class="number">2</span>
+    }
+};
+
+Node.prototype.getRelativePosition = <span class="keyword">function</span>(pageX,pageY) {
+    <span class="keyword">var</span> p = util.math.getPoint(pageX,pageY);
+    <span class="keyword">return</span> {
+        x: p.x - <span class="keyword">this</span>.x(),
+        y: p.y - <span class="keyword">this</span>.y()
+    };
+};
+
+<span class="comment">/**
+ * Determines the location of a given position relative to the node node.
+ *
+ * @param node
+ * @param position
+ * @returns {*}
+ */</span>
+Node.prototype.getRelativeLocation = <span class="keyword">function</span>(position) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.getRelativeLocation(position);
+};
+
+Node.prototype.getOrientation = <span class="keyword">function</span>(relative) {
+    <span class="keyword">if</span>(!object.isDefined(relative)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.getCenter();
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> {
+            x : <span class="keyword">this</span>.x() + relative.x,
+            y : <span class="keyword">this</span>.y() + relative.y
+        };
+    }
+};
+
+module.exports = Node;</code></pre>

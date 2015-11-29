@@ -1,0 +1,101 @@
+<h1>editPanel.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> dom = require(<span class="string">'../dom/dom'</span>);
+<span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+EditPanel = <span class="keyword">function</span>() {};
+
+EditPanel.prototype.init = <span class="keyword">function</span>(pageX, pageY, onclose) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.close();
+
+    <span class="comment">//Init Close Button</span>
+    <span class="keyword">var</span> $close = dom.create(<span class="string">'input'</span>, {type:<span class="string">'button'</span>, value : <span class="string">'x'</span>})
+        .on(<span class="string">'mouseup'</span>,<span class="keyword">function</span>() {
+            <span class="keyword">if</span>(object.isDefined(onclose)) {
+                onclose.apply();
+            }
+            <span class="comment">//that.node.executeAddition('contentChanged');</span>
+            that.close();
+        });
+
+    <span class="comment">//Init Form</span>
+    <span class="keyword">this</span>.$form = dom.create(<span class="string">'form'</span>, {action : <span class="string">'javascript:void(0);'</span>})
+        .on(<span class="string">'submit'</span>, <span class="keyword">function</span>() {
+            $close.trigger(<span class="string">'mouseup'</span>);
+        })
+        .append($close);
+
+    <span class="comment">//Init Container</span>
+    <span class="keyword">this</span>.$editDiv = dom.create(<span class="string">'div'</span>, {id:<span class="string">'editPanel'</span>})
+        .offset({top: pageY, left: (pageX+<span class="number">5</span>)})
+        .css(<span class="string">'position'</span>, <span class="string">'absolute'</span>)
+        .css(<span class="string">'background-color'</span>, <span class="string">'silver'</span>)
+        .append(<span class="keyword">this</span>.$form);
+
+    <span class="comment">//Append to body</span>
+    $(<span class="string">'body'</span>).append(<span class="keyword">this</span>.$editDiv);
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+EditPanel.prototype.close = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.$editDiv) {
+        <span class="keyword">this</span>.$editDiv.remove();
+    }
+}
+
+EditPanel.prototype.createTextEdit = <span class="keyword">function</span>(pageX ,pageY, getter, setter) {
+    <span class="keyword">var</span> $input = dom.create(<span class="string">'input'</span>, {type:<span class="string">'text'</span>, value : getter()})
+        .focus()
+        .on(<span class="string">'focus'</span>, <span class="keyword">function</span>() {
+            <span class="keyword">this</span>.select();
+        })
+        .on(<span class="string">'change'</span>, <span class="keyword">function</span>(evt) {
+            setter($input.val());
+        });
+
+    <span class="keyword">this</span>.init(pageX ,pageY);
+    <span class="keyword">this</span>.$form.append($input);
+    $input.focus();
+};
+
+EditPanel.prototype.createTextAreaEdit = <span class="keyword">function</span>(pageX ,pageY, getter, setter) {
+    <span class="keyword">var</span> $input = dom.create(<span class="string">'textarea'</span>)
+        .val(getter())
+        .on(<span class="string">'change'</span>, <span class="keyword">function</span>() {
+            setter($input.val());
+        })
+        .on(<span class="string">'focus'</span>, <span class="keyword">function</span>() {
+            <span class="keyword">this</span>.select();
+        });
+
+    <span class="keyword">this</span>.init(pageX ,pageY);
+    <span class="keyword">this</span>.$form.append($input);
+    $input.focus();
+};
+
+EditPanel.prototype.setTextAreaContent = <span class="keyword">function</span>($textAreaNode, txtAreaContent) {
+    $textAreaNode.empty();
+    <span class="comment">//TODO: we do not consider the text size for dy !</span>
+    <span class="keyword">var</span> dy = <span class="number">11</span>;
+    $.each(txtAreaContent.split(<span class="string">'\n'</span>), <span class="keyword">function</span>(index, value) {
+        <span class="keyword">if</span>(object.isDefined(value) &amp;&amp; value.trim().length > <span class="number">0</span>) {
+            dom.appendSVGElement($textAreaNode.get(<span class="number">0</span>), {
+                name : <span class="string">'tspan'</span>,
+                attributes : {
+                    dy : dy,
+                    x : <span class="number">2</span>
+                }
+            }, value);
+        }
+    });
+};
+
+EditPanel.prototype.getTextAreaContent = <span class="keyword">function</span>($textAreaNode) {
+    <span class="keyword">var</span> result = <span class="string">''</span>;
+    $textAreaNode.children().each(<span class="keyword">function</span>() {
+        result += $(<span class="keyword">this</span>).text()+<span class="string">'\n'</span>;
+    });
+    <span class="keyword">return</span> result;
+};
+
+module.exports = EditPanel;</code></pre>

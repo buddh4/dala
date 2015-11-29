@@ -1,0 +1,225 @@
+<h1>transitionManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> xml = require(<span class="string">'../util/xml'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> Transition = require(<span class="string">'./transition'</span>);
+
+<span class="keyword">var</span> AbstractManager = require(<span class="string">'./abstractManager'</span>);
+
+<span class="keyword">var</span> CMD_ADD = <span class="string">"transition_add"</span>;
+<span class="keyword">var</span> CMD_DEL = <span class="string">"transition_delete"</span>;
+<span class="keyword">var</span> CMD_DOC_CREATED = <span class="string">"transition_doc_created"</span>;
+<span class="keyword">var</span> CMD_DOC_DROPPED = <span class="string">"transition_doc_dropped"</span>;
+<span class="keyword">var</span> CMD_EDIT = <span class="string">"transition_edit"</span>;
+
+<span class="keyword">var</span> TransitionManager = <span class="keyword">function</span>(diagram) {
+    <span class="comment">// Contains all nodes added to the diagram</span>
+    AbstractManager.call(<span class="keyword">this</span>, diagram);
+
+    <span class="keyword">this</span>.transitions = {};
+    <span class="keyword">this</span>.diagram = diagram;
+    event.listen(<span class="string">'transition_delete'</span>, <span class="keyword">this</span>.deleteTransitionListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'transition_drag_startdocking'</span>, <span class="keyword">this</span>.startDockingDragListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'transition_drag_enddocking'</span>, <span class="keyword">this</span>.endDockingDragListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'transition_docking_created'</span>, <span class="keyword">this</span>.transitionDockingCreatedListener, <span class="keyword">this</span>);
+    event.listen(<span class="string">'transition_docking_dropped'</span>, <span class="keyword">this</span>.transitionDockingDropListener, <span class="keyword">this</span>);
+
+    event.listen(<span class="string">'transition_edit'</span>, <span class="keyword">this</span>.editTransitionListener, <span class="keyword">this</span>);
+
+    <span class="keyword">this</span>.command(CMD_ADD, <span class="keyword">this</span>.importTransitionAction, <span class="keyword">this</span>.deleteTransitionAction);
+    <span class="keyword">this</span>.command(CMD_DEL, <span class="keyword">this</span>.deleteTransitionAction, <span class="keyword">this</span>.importTransitionAction);
+    <span class="keyword">this</span>.command(CMD_DOC_CREATED, <span class="keyword">this</span>.importTransitionAction, <span class="keyword">this</span>.deleteKnobAction);
+    <span class="keyword">this</span>.command(CMD_DOC_DROPPED, <span class="keyword">this</span>.dropDockingAction, <span class="keyword">this</span>.dropDockingAction);
+    <span class="keyword">this</span>.command(CMD_DOC_DROPPED, <span class="keyword">this</span>.dropDockingAction, <span class="keyword">this</span>.dropDockingAction);
+    <span class="keyword">this</span>.command(CMD_EDIT, <span class="keyword">this</span>.editCmd, <span class="keyword">this</span>.undoEditCmd);
+};
+
+TransitionManager.prototype = Object.create(AbstractManager.prototype);
+<span class="keyword">var</span> _super = AbstractManager.prototype;
+
+TransitionManager.prototype.editTransitionListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">var</span> transition = <span class="keyword">this</span>.getTransition(evt.data.transition);
+    <span class="keyword">var</span> key = evt.data.key;
+    <span class="keyword">var</span> oldValue = transition.additions.edit.getValue(key);
+    <span class="keyword">this</span>.exec(CMD_EDIT, [transition.id, key, evt.data.value], [transition.id, key, oldValue]);
+};
+
+TransitionManager.prototype.editCmd = <span class="keyword">function</span>(transition, key, value) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+    transition.additions.edit.setValue(key, value);
+    event.trigger(<span class="string">'transition_edited'</span>, transition);
+};
+
+TransitionManager.prototype.undoEditCmd = <span class="keyword">function</span>(transition, key, value) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+    transition.additions.edit.setValue(key, value);
+    event.trigger(<span class="string">'transition_edit_undo'</span>, transition);
+};
+
+TransitionManager.prototype.editTransitionAction = <span class="keyword">function</span>(transition, type, value) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+};
+
+<span class="keyword">var</span> updateMarker = <span class="keyword">function</span>(markerId, markerValue) {
+    <span class="keyword">var</span> markerSelector = <span class="string">'#'</span>+markerId;
+
+    <span class="keyword">if</span>(editTransition[markerId]() !== markerValue) {
+        <span class="keyword">if</span>(markerValue) {
+            editTransition[markerId](markerValue);
+        } <span class="keyword">else</span> {
+            editTransition[markerId](<span class="string">''</span>);
+        }
+
+        updateButtonMarker(markerSelector,markerValue);
+    }
+};
+
+TransitionManager.prototype.transitionDockingDropListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span> (evt.data) {
+        <span class="keyword">var</span> transition = evt.data.transition;
+        <span class="keyword">var</span> dockingIndex = evt.data.dockingIndex;
+        <span class="keyword">var</span> docking = <span class="keyword">this</span>.getTransition(transition).knobManager.getKnob(dockingIndex);
+
+        <span class="keyword">this</span>.addCmd(CMD_DOC_DROPPED,
+            [transition, dockingIndex, docking.node.root.dxSum, docking.node.root.dySum],
+            [transition, dockingIndex, (-<span class="number">1</span> * docking.node.root.dxSum), (-<span class="number">1</span> * docking.node.root.dySum)]);
+    }
+};
+
+TransitionManager.prototype.dropDockingAction = <span class="keyword">function</span>(transition, dockingIndex, dxSum, dySum) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+    <span class="keyword">if</span>(transition) {
+        <span class="keyword">var</span> docking = transition.knobManager.getKnob(dockingIndex);
+        docking.triggerDrag(dxSum, dySum);
+    }
+};
+
+TransitionManager.prototype.transitionDockingCreatedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span> (evt.data) {
+        <span class="keyword">var</span> transition = evt.data.transition;
+        <span class="keyword">var</span> dockingIndex = evt.data.dockingIndex;
+        <span class="keyword">this</span>.addCmd(CMD_DOC_CREATED, [<span class="keyword">this</span>.getTransitionString(transition), transition], [transition, dockingIndex]);
+    }
+};
+
+TransitionManager.prototype.deleteKnobAction = <span class="keyword">function</span>(transition, dockingIndex) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+    <span class="keyword">if</span>(transition) {
+        transition.knobManager.getKnob(dockingIndex).remove();
+    }
+};
+
+TransitionManager.prototype.importTransitionAction = <span class="keyword">function</span>(transitionStr, transition) {
+    <span class="keyword">if</span>(transition) {
+        transition = <span class="keyword">this</span>.getTransition(transition)
+        <span class="keyword">if</span>(transition) {
+            <span class="keyword">this</span>.deleteTransitionAction(transition.id);
+        }
+    }
+
+    <span class="keyword">var</span> transitionElement = <span class="keyword">this</span>.diagram.import(transitionStr);
+    <span class="keyword">this</span>.activateTransition(transitionElement);
+};
+
+TransitionManager.prototype.activateTransition = <span class="keyword">function</span>(value) {
+    <span class="keyword">if</span>(object.isArray(value)) {
+        <span class="keyword">var</span> result = [];
+        <span class="keyword">var</span> that = <span class="keyword">this</span>;
+        object.each(value, <span class="keyword">function</span>() {
+            result.push(that.activateTransition($(<span class="keyword">this</span>)));
+        });
+        <span class="keyword">return</span> result;
+    } <span class="keyword">else</span>  {
+        <span class="keyword">return</span> <span class="keyword">this</span>.addTransition(<span class="keyword">new</span> Transition(value, <span class="keyword">this</span>.diagram));
+    }
+};
+
+TransitionManager.prototype.isDragTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">return</span> object.isDefined(<span class="keyword">this</span>.dragTransition);
+};
+
+TransitionManager.prototype.startDragTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.dragTransition = transition;
+};
+
+TransitionManager.prototype.getDragTransition = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.dragTransition;
+};
+
+TransitionManager.prototype.endDragTransition = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.addTransition(<span class="keyword">this</span>.dragTransition);
+    <span class="keyword">delete</span> <span class="keyword">this</span>.dragTransition;
+};
+
+TransitionManager.prototype.addTransition = <span class="keyword">function</span>(transition) {
+    <span class="keyword">this</span>.addCmd(CMD_ADD, [<span class="keyword">this</span>.getTransitionString(transition)], [transition.id]);
+    <span class="keyword">return</span> <span class="keyword">this</span>.transitions[transition.id] = transition;
+};
+
+TransitionManager.prototype.getTransitionString = <span class="keyword">function</span>(transition) {
+    transition = <span class="keyword">this</span>.getTransition(transition);
+    <span class="keyword">return</span> xml.serializeToString(transition.instance());
+};
+
+TransitionManager.prototype.deleteTransitionListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(evt.data) {
+        <span class="keyword">var</span> transition = evt.data;
+        <span class="keyword">this</span>.exec(CMD_DEL, [transition.id], [<span class="keyword">this</span>.getTransitionString(transition)]);
+    }
+};
+
+TransitionManager.prototype.deleteTransitionAction = <span class="keyword">function</span>(id) {
+    <span class="keyword">var</span> transition = <span class="keyword">this</span>.getTransition(id);
+    <span class="keyword">if</span>(transition) {
+        <span class="keyword">delete</span> <span class="keyword">this</span>.transitions[id];
+        transition.remove();
+    }
+};
+
+TransitionManager.prototype.getTransition = <span class="keyword">function</span>(id) {
+    <span class="keyword">if</span>(object.isString(id) &amp;&amp; !isNaN(id)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transitions[parseInt(id)];
+    } <span class="keyword">else</span> <span class="keyword">if</span>(!isNaN(id)) {
+        <span class="keyword">return</span> <span class="keyword">this</span>.transitions[id];
+    } <span class="keyword">else</span> <span class="keyword">if</span>(id <span class="keyword">instanceof</span> Transition) {
+        <span class="comment">//We assume a node instance</span>
+        <span class="keyword">return</span> id;
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'getTransition call with no result for :'</span>+id);
+    }
+};
+
+TransitionManager.prototype.startDockingDragListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.dragTransition) {
+       <span class="comment">// this.edgeDockingDragListener(evt, 'Start');</span>
+    }
+};
+
+TransitionManager.prototype.endDockingDragListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.dragTransition) {
+        <span class="comment">//this.edgeDockingDragListener(evt, 'End');</span>
+    }
+};
+
+TransitionManager.prototype.edgeDockingDragListener = <span class="keyword">function</span>(evt, dockingType) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">var</span> transition = evt.data;
+    <span class="comment">//We wait for the drag end event (mouseup)</span>
+    event.once(<span class="keyword">this</span>.diagram.svg.getRootNode(), <span class="string">"mouseup"</span>, <span class="keyword">function</span>(mouseUpEvent) {
+        <span class="keyword">var</span> mouse = that.diagram.getStagePosition(mouseUpEvent);
+        <span class="keyword">var</span> hoverNode = that.diagram.overlaysNode(mouse);
+        <span class="keyword">if</span>(hoverNode !== transition[<span class="string">'get'</span>+dockingType+<span class="string">'Node'</span>]()) {
+            <span class="comment">//We are hovering another note so we swap the start or end node</span>
+            transition[<span class="string">'set'</span>+dockingType+<span class="string">'Node'</span>](hoverNode);
+        } <span class="keyword">else</span> <span class="keyword">if</span>(hoverNode === transition[<span class="string">'get'</span>+dockingType+<span class="string">'Node'</span>]()){
+            <span class="comment">//We are hovering the curretn start/end node so we just set a relative docking position</span>
+            transition[<span class="string">'setRelative'</span>+dockingType+<span class="string">'Knob'</span>](mouse.x, mouse.y);
+            transition.update();
+        } <span class="keyword">else</span> {
+            <span class="comment">//We are hovering empty space so we just update the</span>
+            transition.update();
+        }
+    });
+};
+
+module.exports = TransitionManager;</code></pre>

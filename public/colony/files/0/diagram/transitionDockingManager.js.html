@@ -1,0 +1,177 @@
+<h1>transitionDockingManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> Knob = require(<span class="string">'./Knob'</span>);
+
+<span class="keyword">var</span> TransitionDocking = <span class="keyword">function</span>(dockingManager, node, mouse, type) {
+    <span class="keyword">this</span>.node = node;
+    <span class="keyword">this</span>.type = type;
+    <span class="keyword">this</span>.transition = dockingManager.transition;
+    <span class="keyword">this</span>.dockingManager = dockingManager;
+    <span class="keyword">this</span>.initOrientation(mouse);
+};
+
+TransitionDocking.prototype.initOrientation = <span class="keyword">function</span>(startPosition) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">var</span> orientationPosition = _getStartOrientationPosition(<span class="keyword">this</span>.node, startPosition);
+
+    <span class="keyword">this</span>.orientationKnob = <span class="keyword">new</span> Knob(<span class="keyword">this</span>.transition.diagram, orientationPosition, {r:<span class="number">3</span>, fill:<span class="string">'orange'</span>, selectable:<span class="literal">false</span>}, <span class="keyword">this</span>.transition.group);
+    <span class="keyword">this</span>.orientationKnob.draggable({
+            restrictionX : <span class="keyword">function</span>(evt, dx, dy) {
+                <span class="keyword">return</span> ((<span class="keyword">this</span>.xBBox() > that.node.x() || dx > <span class="number">0</span>)&amp;&amp; (<span class="keyword">this</span>.getRightX() &lt; that.node.getRightX() || dx &lt; <span class="number">0</span>))? dx : <span class="number">0</span>;
+            },
+            restrictionY : <span class="keyword">function</span>(evt, dx, dy) {
+                <span class="keyword">return</span> ((<span class="keyword">this</span>.yBBox() > that.node.y() || dy > <span class="number">0</span>) &amp;&amp; (<span class="keyword">this</span>.getBottomY() &lt; that.node.getBottomY() || dy &lt; <span class="number">0</span>))? dy : <span class="number">0</span>;
+            },
+            dragAlignment : <span class="keyword">function</span>() {
+                <span class="comment">//We align our knob center to the node center and also to our transition alignment point</span>
+                <span class="keyword">var</span> alignment = (that.type === <span class="string">'start'</span>)
+                    ? that.transition.getStartAlignment() : that.transition.getEndAlignment();
+                alignment.target.push(that.node.getCenter());
+                <span class="keyword">return</span> [alignment];
+            },
+            dragMove : <span class="keyword">function</span>(evt, dx ,dy) {
+                that.transition.update();
+            }
+        });
+};
+
+<span class="keyword">var</span> _getStartOrientationPosition = <span class="keyword">function</span>(node, mouse) {
+    <span class="keyword">var</span> orientationType = (node.config.docking &amp;&amp; node.config.docking.orientation)
+                          ? node.config.docking.orientation : <span class="string">'center'</span>;
+    <span class="keyword">switch</span>(orientationType.toUpperCase()) {
+        <span class="keyword">case</span> <span class="string">'FREE'</span>:
+            <span class="keyword">return</span> mouse;
+        <span class="keyword">case</span>  <span class="string">'CENTER'</span>:
+        <span class="keyword">default</span>:
+            <span class="keyword">return</span> node.getCenter();
+    }
+
+};
+
+TransitionDocking.prototype.position = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.orientationKnob.position();
+};
+
+TransitionDocking.prototype.triggerDrag = <span class="keyword">function</span>(dx, dy) {
+    <span class="keyword">this</span>.orientationKnob.triggerDrag(dx,dy);
+};
+
+TransitionDocking.prototype.calculateDockingPosition = <span class="keyword">function</span>(outerOrientation) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.node.getDockingPosition(outerOrientation, <span class="keyword">this</span>.position());
+};
+
+TransitionDocking.prototype.inactiveStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.orientationKnob.inactiveStyle();
+};
+
+TransitionDocking.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.orientationKnob.hide();
+};
+
+TransitionDocking.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.orientationKnob.remove();
+};
+
+<span class="comment">/**
+ *
+ */</span>
+<span class="keyword">var</span> TransitionDockingManager = <span class="keyword">function</span>(transition, startNode, mouse) {
+    <span class="keyword">this</span>.diagram = transition.diagram;
+    <span class="keyword">this</span>.transition = transition;
+    <span class="keyword">this</span>.setStartNode(startNode, mouse);
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.transition.additions[<span class="string">'dockingManager'</span>] = {
+        select : <span class="keyword">function</span>() {
+            that.inactiveStyle();
+        },
+        deselect : <span class="keyword">function</span>() {
+            that.hide();
+        },
+        hover : <span class="keyword">function</span>() {
+            that.inactiveStyle();
+        },
+        hoverOut : <span class="keyword">function</span>() {
+            <span class="keyword">if</span>(!that.transition.selected) {
+                that.knobManager.hide();
+            }
+        }
+
+    };
+};
+
+TransitionDockingManager.prototype.setStartNode = <span class="keyword">function</span>(node, mousePosition) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.startNode) {
+        <span class="keyword">this</span>.startNode.removeOutgoingTransition(<span class="keyword">this</span>.transition);
+    }
+
+    <span class="keyword">this</span>.startNode = node;
+    <span class="keyword">this</span>.startNode.addOutgoingTransition(<span class="keyword">this</span>.transition);
+    <span class="keyword">this</span>.startDocking = <span class="keyword">new</span> TransitionDocking(<span class="keyword">this</span>, node, mousePosition, <span class="string">'start'</span>);
+    <span class="keyword">this</span>.setStartNodeFeature();
+};
+
+TransitionDockingManager.prototype.setStartNodeFeature = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.transition.group.dala(<span class="string">'start'</span>, <span class="keyword">this</span>.startNode.id);
+};
+
+TransitionDockingManager.prototype.calculateStart = <span class="keyword">function</span>(outerOrientation) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.startDocking.calculateDockingPosition(outerOrientation);
+};
+
+TransitionDockingManager.prototype.dragStartOrientation = <span class="keyword">function</span>(dx,dy) {
+    <span class="keyword">this</span>.startDocking.triggerDrag(dx,dy);
+};
+
+TransitionDockingManager.prototype.setEndNode = <span class="keyword">function</span>(node, mousePosition) {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.endNode) {
+        <span class="keyword">this</span>.endNode.removeIncomingTransition(<span class="keyword">this</span>.transition);
+    }
+
+    <span class="keyword">this</span>.endNode = node;
+    <span class="keyword">this</span>.endNode.addIncomingTransition(<span class="keyword">this</span>.transition);
+    <span class="keyword">this</span>.endDocking = <span class="keyword">new</span> TransitionDocking(<span class="keyword">this</span>, node, mousePosition, <span class="string">'end'</span>);
+    <span class="keyword">this</span>.setEndNodeFeature();
+};
+
+TransitionDockingManager.prototype.dragEndOrientation = <span class="keyword">function</span>(dx,dy) {
+    <span class="keyword">this</span>.endDocking.triggerDrag(dx,dy);
+};
+
+TransitionDockingManager.prototype.calculateEnd = <span class="keyword">function</span>(outerOrientation) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.endDocking.calculateDockingPosition(outerOrientation);
+};
+
+TransitionDockingManager.prototype.setEndNodeFeature = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.endNode) {
+        <span class="keyword">this</span>.transition.group.dala(<span class="string">'end'</span>, <span class="keyword">this</span>.endNode.id);
+    }
+};
+
+TransitionDockingManager.prototype.inactiveStyle = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.startDocking.inactiveStyle();
+    <span class="keyword">if</span>(<span class="keyword">this</span>.endDocking) {
+        <span class="keyword">this</span>.endDocking.inactiveStyle();
+    }
+};
+
+TransitionDockingManager.prototype.hide = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.startDocking.hide();
+    <span class="keyword">if</span>(<span class="keyword">this</span>.endDocking) {
+        <span class="keyword">this</span>.endDocking.hide();
+    }
+};
+
+TransitionDockingManager.prototype.remove = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.startNode) {
+        <span class="keyword">this</span>.startNode.removeOutgoingTransition(<span class="keyword">this</span>.transition);
+        <span class="keyword">this</span>.startDocking.remove();
+    }
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.endNode) {
+        <span class="keyword">this</span>.endNode.removeIncomingTransition(<span class="keyword">this</span>.transition);
+        <span class="keyword">this</span>.endDocking.remove();
+    }
+};
+
+module.exports = TransitionDockingManager;</code></pre>

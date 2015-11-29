@@ -1,0 +1,15 @@
+<h1>nodeAdditions.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> additions = require(<span class="string">'./additions'</span>);
+
+<span class="comment">//Init default additions</span>
+additions.registerNodeAddition(<span class="string">'resize'</span>, require(<span class="string">'./resizeAddition'</span>));
+additions.registerNodeAddition(<span class="string">'edit'</span>, require(<span class="string">'./editNodeAddition'</span>));
+additions.registerNodeAddition(<span class="string">'transition'</span>, require(<span class="string">'./transitionAddition'</span>));
+
+module.exports = {
+    init : <span class="keyword">function</span>(node) {
+        additions.initNodeAddition(<span class="string">'transition'</span>, node);
+        additions.initNodeAddition(<span class="string">'edit'</span>, node);
+        additions.initNodeAddition(<span class="string">'resize'</span>, node);
+    }
+}</code></pre>

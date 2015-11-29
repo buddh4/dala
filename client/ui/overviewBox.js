@@ -24,8 +24,15 @@ var update = function() {
     $viewport.height(stHeight / scaledRate);
     $viewport.width(stWidth / scaledRate);
 
-    var left = diagram.mainPart.x() * -1 / scaledRate;
-    var top = diagram.mainPart.y() * -1 / scaledRate;
+    if(diagram.initialized) {
+        var left = diagram.mainPart.x() * -1 / scaledRate;
+        var top = diagram.mainPart.y() * -1 / scaledRate;
+    } else {
+        diagram.on('initialized', function() { //TODO: cleaner solution ;)
+            var left = diagram.mainPart.x() * -1 / scaledRate;
+            var top = diagram.mainPart.y() * -1 / scaledRate;
+        });
+    }
 
     $viewport.css('left', left);
     $viewport.css('top', top);

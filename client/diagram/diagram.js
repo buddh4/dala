@@ -90,6 +90,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     var that = this;
     this.initDefs()
         .then(function() {
+            that.initialized = true;
             that.mainPart = that.svg.createPart('main', true);
             that.helper = new Helper(this);
             that.trigger('initialized');

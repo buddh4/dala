@@ -1,0 +1,61 @@
+<h1>registerDialog.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> Dialog = require(<span class="string">'./../../ui/dialog'</span>);
+<span class="keyword">var</span> client = require(<span class="string">'../../core/client'</span>);
+
+<span class="keyword">var</span> dialog;
+
+<span class="keyword">var</span> RegisterDialog = <span class="keyword">function</span>() {
+    reset();
+    dialog = <span class="keyword">new</span> Dialog({
+        dialogId : <span class="string">"#register-dialog"</span>,
+        triggerId : <span class="string">"#registerButton"</span>,
+        buttons : {
+            <span class="string">"Register"</span>:register,
+            Cancel: <span class="keyword">function</span>() {
+                reset();
+                close();
+            }
+        },
+        close : reset,
+        submit : <span class="keyword">function</span>(evt) {
+            evt.preventDefault();
+        }
+    });
+};
+
+<span class="keyword">var</span> close = <span class="keyword">function</span>() {
+    dialog.close();
+};
+
+<span class="keyword">var</span> register = <span class="keyword">function</span>() {
+    client.post(<span class="string">'/user/register'</span>, getDialogValues(), {
+        async : <span class="literal">false</span>,
+        success : <span class="keyword">function</span>(response) {
+            close();
+        },
+        error : <span class="keyword">function</span>(status, error) {
+            close();
+        },
+        errorMessage : {
+            <span class="string">'default'</span>:<span class="string">'Registration Failed, please try again later or check your backend connection settings!'</span>,
+            <span class="string">'2'</span>:<span class="string">'Email already in use!'</span>
+        },
+        successMessage : <span class="string">'Registration was successful!'</span>
+    });
+};
+
+<span class="keyword">var</span> reset = <span class="keyword">function</span>() {
+    $(<span class="string">'#reg_userName'</span>).val(<span class="string">''</span>);
+    $(<span class="string">'#reg_email'</span>).val(<span class="string">''</span>);
+    $(<span class="string">'#reg_password'</span>).val(<span class="string">''</span>);
+};
+
+<span class="keyword">var</span> getDialogValues = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> {
+        username : $(<span class="string">'#reg_userName'</span>).val(),
+        email : $(<span class="string">'#reg_email'</span>).val(),
+        password : $(<span class="string">'#reg_password'</span>).val()
+    };
+};
+
+module.exports = RegisterDialog;</code></pre>

@@ -1,0 +1,322 @@
+<h1>svg.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * This module contains functionality for creating and accessing SVG elements.
+ * All SVG elements created with this module can be accessed by ID through the instance object.
+ *
+ * An SVG element created with this module can be seperated into multiple parts which can be managed speratly.
+ * The 'root' part will be created by default. When creating a new svg part you can set it as default part, so all actions
+ * like insertions will be executed on the default part if there is no other part as argument.
+ */</span>
+<span class="keyword">var</span> SVGElement = require(<span class="string">'./svgElement'</span>);
+<span class="keyword">var</span> SVGText = require(<span class="string">'./svgText'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/Util'</span>);
+
+<span class="keyword">var</span> dom = util.dom;
+<span class="keyword">var</span> object = util.object;
+
+<span class="keyword">var</span> NAMESPACE_SVG = <span class="string">'http://www.w3.org/2000/svg'</span>;
+<span class="keyword">var</span> NAMESPACE_XLINK = <span class="string">'http://www.w3.org/1999/xlink'</span>;
+
+<span class="keyword">var</span> instances = {};
+
+<span class="comment">/**
+ * The constructor initializes a new SVG element within the given containerId.
+ * The constructor accepts the containerId either as selector '#containerId' or as id string 'containerId'.
+ *
+ * The id of the nw SVG element will be the containerId with the suffix '_svg' -> 'containerId_svg'.
+ *
+ * Attributes of the new SVG elemnt can be set through the constructor argument 'cfg'.
+ *
+ * The SVG can be seperated in multiple parts so you can easily append elements to the different part.
+ * The constructor creates a 'root' part as default.
+ *
+ * @param containerId
+ * @param cfg
+ * @constructor
+ */</span>
+<span class="keyword">var</span> SVG = <span class="keyword">function</span>(containerId, cfg) {
+    cfg = cfg || {};
+
+    <span class="comment">//Get id from selector if its an selector</span>
+    <span class="keyword">this</span>.containerId = dom.getRawId(containerId);
+    <span class="keyword">this</span>.$containerNode = $.qCache(<span class="string">'#'</span>+<span class="keyword">this</span>.containerId).get(<span class="number">0</span>);
+
+    <span class="keyword">if</span>(!<span class="keyword">this</span>.$containerNode) {
+        console.error(<span class="string">'Attempt to initiate svg stage for invalid containerId: '</span>+<span class="keyword">this</span>.containerId);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">this</span>.svgId = <span class="keyword">this</span>.containerId+<span class="string">'_svg'</span>;
+
+    <span class="comment">// Create SVG root element with given settings.</span>
+    <span class="keyword">this</span>.root = <span class="keyword">new</span> SVGElement(<span class="string">'svg'</span>, <span class="literal">undefined</span>, {
+        xmlns : NAMESPACE_SVG,
+        <span class="string">'xmlns:xlink'</span> : NAMESPACE_XLINK,
+        version : <span class="string">'1.1'</span>,
+        id : <span class="keyword">this</span>.svgId
+    });
+
+    cfg.height = cfg.height || <span class="string">'100%'</span>;
+    cfg.width = cfg.width  || <span class="string">'100%'</span>;
+
+    <span class="comment">// Set cfg values as svg root attributes</span>
+    <span class="keyword">this</span>.root.attr(cfg);
+
+    <span class="comment">// Append the svg root element to the containernode</span>
+    dom.appendSVGElement(<span class="keyword">this</span>.$containerNode, <span class="keyword">this</span>.root);
+
+    <span class="comment">// The root part is the svg element itself</span>
+    <span class="keyword">this</span>.svgParts = {<span class="string">'root'</span>:<span class="keyword">this</span>.root};
+    <span class="keyword">this</span>.defaultPart = <span class="keyword">this</span>.root;
+
+    instances[<span class="keyword">this</span>.svgId] = <span class="keyword">this</span>;
+};
+
+<span class="comment">/**
+ * Returns the svg root domNode.
+ * @returns {*} svg root domNode
+ */</span>
+SVG.prototype.getRootNode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.instance();
+};
+
+<span class="comment">/**
+ * Returns a cached jQuery object of the root node.
+ * @returns {*}
+ */</span>
+SVG.prototype.$ = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> $.qCache(<span class="string">'#'</span>+<span class="keyword">this</span>.svgId);
+};
+
+<span class="comment">/**
+ * This is used for importing diagrams into the svg instance.
+ * @param element
+ */</span>
+SVG.prototype.setRoot = <span class="keyword">function</span>(element) {
+    <span class="keyword">var</span> newId = dom.getAttributes(element)[<span class="string">'id'</span>];
+    <span class="keyword">this</span>.root.instance(element);
+    <span class="keyword">this</span>.root.attr({id : newId});
+    instances[newId] = <span class="keyword">this</span>;
+};
+
+<span class="comment">/**
+ * Returns the root element as SVGElement
+ * @returns {SVGElement|exports|module.exports|*}
+ */</span>
+SVG.prototype.getRoot = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root;
+};
+
+<span class="comment">/**
+ * Returns the current defaultPart
+ * @returns {SVGElement|exports|module.exports|*} current defaultPart
+ */</span>
+SVG.prototype.getDefaultPart = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.defaultPart;
+};
+
+<span class="comment">/**
+ * Creates and returns a new svg part which is represented by a new group within the root.
+ * The part id is composite of the svg root id and the partId.
+ * By setting the isDefault argument as true the new part will be set as default part.
+ * @param partId
+ * @param isDefault
+ * @returns {*}
+ */</span>
+SVG.prototype.createPart = <span class="keyword">function</span>(partId, isDefault) {
+    <span class="comment">//New parts are always added to the root part</span>
+    <span class="keyword">this</span>.svgParts[partId] = <span class="keyword">this</span>.g({id: <span class="keyword">this</span>.svgId+<span class="string">'_'</span>+partId, parentPart: <span class="string">'root'</span>});
+    <span class="keyword">if</span>(isDefault) {
+        <span class="keyword">this</span>.defaultPart = <span class="keyword">this</span>.svgParts[partId];
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>.svgParts[partId];
+};
+
+SVG.prototype.part = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.svgParts[id];
+};
+
+<span class="comment">/**
+ * Adds an svg element to the given part.
+ *
+ * @param part
+ * @param element
+ */</span>
+SVG.prototype.addToPart = <span class="keyword">function</span>(part, element) {
+    <span class="keyword">this</span>.addToGroup(<span class="keyword">this</span>.svgParts[part], element);
+};
+
+<span class="comment">/**
+ * This function can be used to append or prepend elements with text to the svg root.
+ *
+ * @param element
+ * @param prepend
+ * @param text
+ * @returns {*}
+ */</span>
+SVG.prototype.addToRoot = <span class="keyword">function</span>(element, prepend, text) {
+    <span class="keyword">if</span>(prepend) {
+        <span class="keyword">return</span> dom.prependSVGElement(<span class="keyword">this</span>.getRoot(), element, text);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> dom.appendSVGElement(<span class="keyword">this</span>.getRoot(), element, text);
+    }
+};
+
+<span class="comment">/**
+ * This function can be used to append/prepend elements with text to a given (or default) svg part.
+ *
+ * @param element
+ * @param part
+ * @param prepend
+ * @param text
+ * @returns {*}
+ */</span>
+SVG.prototype.add = <span class="keyword">function</span>(element, part, prepend, text) {
+    part = part || <span class="keyword">this</span>.getDefaultPart();
+    element.parent = part;
+    <span class="keyword">if</span>(prepend) {
+        <span class="keyword">return</span> dom.prependSVGElement(part, element, text);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> dom.appendSVGElement(part, element, text);
+    }
+};
+
+<span class="comment">/**
+ * Imports an xml document to the given svg part.
+ * @param elementXML
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.import = <span class="keyword">function</span>(svgStr, part, prepend) {
+    part = <span class="keyword">this</span>.svgParts[part] || <span class="keyword">this</span>.getDefaultPart();
+    <span class="keyword">return</span> dom.importSVG(part, svgStr, prepend);
+};
+
+<span class="comment">/**
+ * Adds and returns a newly created svg Rect with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.rect = <span class="keyword">function</span>(cfg, part) {
+    part = <span class="keyword">this</span>.svgParts[part] || <span class="keyword">this</span>.getDefaultPart();
+    <span class="keyword">return</span> <span class="keyword">this</span>.add(<span class="keyword">new</span> SVGElement(<span class="string">'rect'</span>, <span class="keyword">this</span>.root, cfg), part);
+};
+
+<span class="comment">/**
+ * Adds and returns a newly created svg Text with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.text = <span class="keyword">function</span>(text, cfg, part) {
+    part = <span class="keyword">this</span>.svgParts[part] || <span class="keyword">this</span>.getDefaultPart();
+    <span class="keyword">return</span> <span class="keyword">this</span>.add(<span class="keyword">new</span> SVGText(text, <span class="keyword">this</span>.root, cfg), part, <span class="literal">false</span>);
+};
+
+<span class="comment">/**
+ * Adds and returns a newly created svg Circle with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.circle = <span class="keyword">function</span>(cfg, part) {
+    part = <span class="keyword">this</span>.svgParts[part] || <span class="keyword">this</span>.getDefaultPart();
+    <span class="keyword">return</span> <span class="keyword">this</span>.add(<span class="keyword">new</span> SVGElement(<span class="string">'circle'</span>, <span class="keyword">this</span>.root, cfg), part);
+};
+
+<span class="comment">/**
+ * Adds and returns a newly created svg Group with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.g = <span class="keyword">function</span>(cfg) {
+    <span class="keyword">var</span> cfg = cfg ||{};
+
+    <span class="keyword">var</span> parentPart = <span class="keyword">this</span>.svgParts[cfg.parentPart] || <span class="keyword">this</span>.getDefaultPart();
+
+    <span class="keyword">delete</span> cfg.part;
+
+    <span class="keyword">var</span> group = <span class="keyword">this</span>.add(<span class="keyword">new</span> SVGElement(<span class="string">'g'</span>, <span class="keyword">this</span>.root, cfg), parentPart);
+
+    <span class="keyword">if</span>(arguments.length > <span class="number">1</span>) {
+        <span class="keyword">for</span>(<span class="keyword">var</span> i = <span class="number">1</span>;i &lt; arguments.length; i++) {
+            console.log(<span class="string">'addToGroup: '</span>+group.attr(<span class="string">'id'</span>)+<span class="string">' - '</span>+ arguments[i].attr(<span class="string">'id'</span>));
+            dom.appendSVGElement(group.instance(), arguments[i]);
+        }
+    }
+
+    <span class="keyword">return</span> group;
+};
+
+<span class="comment">/**
+ * Adds ands an svg element ot the given group.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.addToGroup = <span class="keyword">function</span>(group, element) {
+    <span class="keyword">var</span> result;
+    <span class="keyword">if</span>(object.isArray(element)) {
+        result = [];
+        object.each(element, <span class="keyword">function</span>(index, val) {
+            result.push(dom.appendSVGElement(group.instance(), element));
+        })
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> dom.appendSVGElement(group.instance(), element);
+    }
+};
+
+<span class="comment">/**
+ * Adds and returns a newly created svg Path with the given settings to the given (or default) part.
+ * @param cfg
+ * @param part
+ * @returns {*}
+ */</span>
+SVG.prototype.path = <span class="keyword">function</span>(cfg, part) {
+    <span class="keyword">var</span> part = <span class="keyword">this</span>.svgParts[part] || <span class="keyword">this</span>.getDefaultPart();
+    <span class="keyword">return</span> <span class="keyword">this</span>.add(<span class="keyword">new</span> SVGElement(<span class="string">'path'</span>, <span class="keyword">this</span>.root, cfg), part);
+};
+
+SVG.prototype.empty = <span class="keyword">function</span>() {
+    $(<span class="keyword">this</span>.root.instance()).empty();
+};
+
+SVG.prototype.asString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.root.toString();
+};
+
+<span class="comment">/**
+ * This function creates an SVGElement out of the given id selector element.
+ * @param idSelector
+ * @returns {SVGElement|exports|module.exports}
+ */</span>
+SVG.get = <span class="keyword">function</span>(idSelector) {
+    <span class="keyword">var</span> $node;
+
+    <span class="keyword">if</span>(!object.isString(idSelector)) {
+        $node = $(idSelector);
+    } <span class="keyword">else</span> {
+        $node = $.qCache(dom.getIdSelector(idSelector));
+    }
+
+    <span class="keyword">if</span>(!$node) {
+        console.warn(<span class="string">'call SVG.get on a non existing node: '</span>+idSelector);
+        <span class="keyword">return</span>;
+    }
+
+    <span class="keyword">var</span> $svgRootNode = $node.closest(<span class="string">'svg'</span>);
+    <span class="keyword">if</span>($svgRootNode) {
+        <span class="keyword">var</span> id = $svgRootNode.attr(<span class="string">'id'</span>);
+        <span class="keyword">var</span> svgInstance = instances[id];
+        <span class="keyword">return</span> <span class="keyword">new</span> SVGElement($node.get(<span class="number">0</span>), svgInstance.getRoot());
+    } <span class="keyword">else</span> {
+        console.warn(<span class="string">'call SVG.get on node with no svg parent'</span>);
+    }
+};
+
+SVG.prototype.get = SVG.get;
+
+module.exports = SVG;
+</code></pre>

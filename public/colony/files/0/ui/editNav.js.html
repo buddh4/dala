@@ -1,0 +1,83 @@
+<h1>editNav.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> toolTip = require(<span class="string">'./toolTip'</span>);
+
+<span class="keyword">var</span> editTransitionMenu = require(<span class="string">'./editTransitionMenu'</span>);
+<span class="keyword">var</span> editNodeMenu = require(<span class="string">'./editNodeMenu'</span>);
+
+<span class="comment">// CONSTANTS</span>
+<span class="keyword">var</span> CONTAINER_SELECTOR = <span class="string">'#editNav'</span>;
+<span class="keyword">var</span> CONTENT_SELECTOR = <span class="string">'#editContent'</span>;
+<span class="keyword">var</span> $CONTAINER_NODE = $(CONTAINER_SELECTOR);
+<span class="keyword">var</span> $CONTAINER_CONTENT = $(CONTENT_SELECTOR);
+
+
+<span class="keyword">var</span> init = <span class="keyword">function</span>() {
+    editTransitionMenu.init();
+    editNodeMenu.init();
+    clearInfo();
+    initListener();
+};
+
+<span class="keyword">var</span> initListener = <span class="keyword">function</span>() {
+    event.listen(<span class="string">'node_selected'</span>, nodeSelectListener);
+    event.listen(<span class="string">'node_edit_undo'</span>, noteEditListener);
+    event.listen(<span class="string">'transition_edit_undo'</span>, transitionEditListener);
+    event.listen(<span class="string">'node_removed'</span>, nodeRemovedListener);
+    event.listen(<span class="string">'selection_clear'</span>, clearInfo);
+    event.listen(<span class="string">'transition_select'</span>, transitionSelectListener);
+};
+
+<span class="keyword">var</span> transitionEditListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(editTransitionMenu.getEditTransition() === evt.data) {
+        transitionSelectListener(evt);
+    }
+};
+
+<span class="keyword">var</span> noteEditListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(editNodeMenu.getEditNode() === evt.data) {
+        nodeSelectListener(evt);
+    }
+};
+
+<span class="comment">/**
+ * Check if the current edit node was removed and clear the edit fields if this was the case.
+ */</span>
+<span class="keyword">var</span> nodeRemovedListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(editNodeMenu.editNode === evt.data) {
+        clearInfo();
+    }
+};
+
+<span class="comment">/**
+ * Clears the edit node and edit transition data and hides the menus
+ */</span>
+<span class="keyword">var</span> clearInfo = <span class="keyword">function</span>() {
+    editTransitionMenu.clear();
+    editNodeMenu.clear();
+};
+
+<span class="comment">/**
+ * Sets the menu data for a the current node selection.
+ */</span>
+<span class="keyword">var</span> nodeSelectListener = <span class="keyword">function</span>(evt) {
+    clearInfo();
+    <span class="keyword">if</span>(evt.data.additions.edit) {
+        editNodeMenu.createForm(evt.data);
+        editNodeMenu.show();
+        editNodeMenu.update();
+        editNodeMenu.focus();
+    }
+};
+
+<span class="keyword">var</span> transitionSelectListener = <span class="keyword">function</span>(evt) {
+    clearInfo();
+    editTransitionMenu.fillForm(evt.data);
+    editTransitionMenu.show();
+    editTransitionMenu.update();
+    editTransitionMenu.focus();
+};
+
+module.exports = {
+    init : init
+};</code></pre>

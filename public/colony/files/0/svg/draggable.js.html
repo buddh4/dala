@@ -1,0 +1,254 @@
+<h1>draggable.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> SVGElement = require(<span class="string">'./svgElement'</span>);
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+<span class="keyword">var</span> ShiftDrag = <span class="keyword">function</span>(cfg) {
+    <span class="keyword">this</span>.cfg = cfg;
+    <span class="keyword">if</span>(!cfg.restrictionX &amp;&amp; !cfg.restrictionY) {
+        <span class="keyword">this</span>.init();
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.disable();
+    }
+};
+
+ShiftDrag.prototype.init = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.state = <span class="string">'init'</span>;
+    <span class="keyword">this</span>.xShift = {
+        shiftAlign : <span class="number">0</span>,
+        unshiftAlign : <span class="number">0</span>
+    };
+
+    <span class="keyword">this</span>.yShift = {
+        shiftAlign : <span class="number">0</span>,
+        unshiftAlign : <span class="number">0</span>
+    };
+};
+
+ShiftDrag.prototype.disable = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.state = <span class="string">'disabled'</span>;
+};
+
+ShiftDrag.prototype.update = <span class="keyword">function</span>(evt, dx ,dy) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.state) {
+        <span class="keyword">case</span> <span class="string">'init'</span> :
+            <span class="keyword">this</span>.xShift.shiftAlign += dx;
+            <span class="keyword">this</span>.yShift.shiftAlign += dy;
+
+            <span class="keyword">if</span>(<span class="keyword">this</span>.checkShiftHook(evt)) {
+                <span class="keyword">if</span>(Math.abs(<span class="keyword">this</span>.xShift.shiftAlign) > Math.abs(<span class="keyword">this</span>.yShift.shiftAlign)) {
+                    <span class="keyword">this</span>.restrictionX = <span class="literal">undefined</span>;
+                    <span class="keyword">this</span>.restrictionY = <span class="keyword">function</span>(evt, dx ,dy) {
+                        <span class="keyword">return</span> that.shiftRestriction(that.yShift, dy);
+                    };
+                    <span class="keyword">this</span>.state = <span class="string">'shiftedX'</span>;
+                } <span class="keyword">else</span> {
+                    <span class="keyword">this</span>.restrictionY = <span class="literal">undefined</span>;
+                    <span class="keyword">this</span>.restrictionX = <span class="keyword">function</span>(evt, dx , dy) {
+                        <span class="keyword">return</span> that.shiftRestriction(that.xShift, dx);
+                    };
+                    <span class="keyword">this</span>.state = <span class="string">'shiftedY'</span>;
+                }
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'shiftedX'</span>:
+            <span class="keyword">if</span>(!evt.shiftKey) {
+                <span class="keyword">this</span>.restrictionY = <span class="keyword">function</span>(evt, dx, dy) {
+                    <span class="keyword">return</span> that.unShiftRestriction(that.yShift, dy);
+                };
+                <span class="keyword">this</span>.state = <span class="string">'init'</span>;
+            }
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'shiftedY'</span>:
+            <span class="keyword">if</span>(!evt.shiftKey) {
+                <span class="keyword">this</span>.restrictionX = <span class="keyword">function</span>(evt, dx ,dy) {
+                    <span class="keyword">return</span> that.unShiftRestriction(that.xShift, dx);
+                };
+                <span class="keyword">this</span>.state = <span class="string">'init'</span>;
+            }
+            <span class="keyword">break</span>;
+    }
+};
+
+
+ShiftDrag.prototype.shiftRestriction = <span class="keyword">function</span>(shiftData, d) {
+    <span class="comment">//Update shifted d</span>
+    shiftData.unshiftAlign += d;
+    <span class="comment">//Align shift drag back to the start position</span>
+    <span class="keyword">var</span> result = (Math.abs(shiftData.shiftAlign) > <span class="number">0</span>) ? shiftData.shiftAlign * -<span class="number">1</span> : <span class="number">0</span>;
+    shiftData.shiftAlign = <span class="number">0</span>;
+    <span class="keyword">return</span> result;
+};
+
+ShiftDrag.prototype.unShiftRestriction = <span class="keyword">function</span>(shiftData, d) {
+    <span class="comment">//Align shift drag back to the start position</span>
+    <span class="keyword">var</span> result = shiftData.unshiftAlign + d;
+    shiftData.unshiftAlign = <span class="number">0</span>;
+    <span class="keyword">return</span> result;
+};
+
+ShiftDrag.prototype.checkShiftHook = <span class="keyword">function</span>(evt) {
+    <span class="keyword">return</span> evt.shiftKey &amp;&amp; (Math.abs(<span class="keyword">this</span>.xShift.shiftAlign) > <span class="number">4</span> || Math.abs(<span class="keyword">this</span>.yShift.shiftAlign) > <span class="number">4</span>);
+};
+
+<span class="comment">//TODO: this would be more elegant to use the alignment align center to center.x if checkShiftHook</span>
+
+ShiftDrag.prototype.getRestrictionX = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.cfg.restrictionX || <span class="keyword">this</span>.restrictionX;
+};
+
+ShiftDrag.prototype.getRestrictionY = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.cfg.restrictionY || <span class="keyword">this</span>.restrictionY;
+};
+
+SVGElement.prototype.draggable = <span class="keyword">function</span>(cfg, dragElement) {
+    <span class="keyword">var</span> cfg = cfg || {};
+
+    <span class="keyword">if</span>(!object.isDefined(dragElement)) {
+        dragElement = <span class="keyword">this</span>.instance();
+    }
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+
+    <span class="keyword">var</span> dragMove = <span class="keyword">function</span>(evt) {
+        <span class="keyword">if</span>(evt.preventDefault) {
+            evt.preventDefault();
+        }
+
+        <span class="keyword">var</span> actualdx = (object.isDefined(evt.dx)) ? evt.dx : evt.clientX - that.dragCurrentX;
+        <span class="keyword">var</span> actualdy = (object.isDefined(evt.dy)) ? evt.dy : evt.clientY - that.dragCurrentY;
+
+        <span class="comment">// DRAG BEFORE HOOK</span>
+        <span class="keyword">if</span>(cfg.dragBeforeMove) {
+            cfg.dragBeforeMove.apply(that, [evt, actualdx, actualdy, dragElement]);
+        }
+
+        <span class="comment">// DRAG ALIGNMENT</span>
+        <span class="keyword">if</span>(cfg.dragAlignment &amp;&amp; !evt.triggerEvent) {
+            <span class="keyword">var</span> alignment = cfg.dragAlignment.check(actualdx, actualdy);
+            actualdx = alignment.dx;
+            actualdy = alignment.dy;
+        }
+
+        <span class="comment">//Check for shiftDrag restriction, shiftDrag will only hook up if no other restriction is set.</span>
+        <span class="comment">//Shiftdrag is not given for triggerdrags</span>
+        <span class="keyword">if</span>(that.shiftDrag &amp;&amp; !evt.triggerEvent) {
+            that.shiftDrag.update(evt, actualdx, actualdy);
+            <span class="keyword">var</span> restrictionX = that.shiftDrag.getRestrictionX();
+            <span class="keyword">var</span> restrictionY = that.shiftDrag.getRestrictionY();
+        }
+
+        <span class="comment">// DRAG RESTRICTION</span>
+        <span class="keyword">var</span> dx = (restrictionX &amp;&amp; !evt.triggerEvent) ? restrictionX.apply(that, [evt, actualdx, actualdy]) : actualdx;
+        <span class="keyword">var</span> dy = (restrictionY &amp;&amp; !evt.triggerEvent) ? restrictionY.apply(that, [evt, actualdx, actualdy]) : actualdy;
+
+        <span class="comment">//TODO: somehow the scale should be determined in a more elegant way perhaps store it in svg instance...</span>
+        <span class="keyword">if</span>(cfg.getScale) {
+            <span class="keyword">var</span> scale = cfg.getScale();
+            dx /= scale;
+            dy /= scale;
+        }
+
+        <span class="comment">// EXECUTE DRAG</span>
+        <span class="keyword">if</span>(dx !== <span class="number">0</span> || dy !== <span class="number">0</span>) {
+            that.move(dx, dy);
+        }
+
+        <span class="keyword">var</span> evtData = getMouseEventData(evt);
+        <span class="comment">// Keep track of current mouse position</span>
+        that.dragCurrentX = evtData.clientX;
+        that.dragCurrentY = evtData.clientY;
+
+        that.dxSum += dx;
+        that.dySum += dy;
+
+        <span class="comment">// DRAG MOVE HOOK</span>
+        <span class="keyword">if</span>(cfg.dragMove) {
+            cfg.dragMove.apply(that, [evt, dx, dy, dragElement]);
+        }
+    };
+
+    <span class="keyword">var</span> dragEnd = <span class="keyword">function</span>(evt) {
+        evt.preventDefault();
+        <span class="comment">//Turn off drag events</span>
+        event.off(that.getRootNode(), <span class="string">'mousemove'</span>);
+        event.off(document, <span class="string">'mouseup'</span>, dragEnd);
+
+        <span class="keyword">if</span>(cfg.dragAlignment) {
+            cfg.dragAlignment.reset();
+        }
+
+        <span class="keyword">this</span>.drag = <span class="literal">false</span>;
+
+        <span class="keyword">if</span>(cfg.cursor) {
+            $(<span class="string">'body'</span>).css(<span class="string">'cursor'</span>,<span class="string">'default'</span>);
+        }
+
+        <span class="comment">// DRAG END HOOK</span>
+        <span class="keyword">if</span>(cfg.dragEnd) {
+            cfg.dragEnd.apply(that, [evt]);
+        }
+    };
+
+    <span class="keyword">if</span>(dragElement) {
+        <span class="keyword">var</span> evtType = (cfg.once)? event.once : event.on;
+        evtType(dragElement,<span class="string">'mousedown'</span>, <span class="keyword">function</span>(e) {
+            <span class="keyword">if</span>(e.ctrlKey || !that.isVisible()) {
+                <span class="keyword">return</span>;
+            }
+            e.preventDefault();
+            <span class="comment">// We stop the event propagation to prevent the document mousedown handler to fire</span>
+            e.stopPropagation();
+
+            initDragValues(that, e, cfg);
+
+            <span class="comment">// DRAG START HOOK</span>
+            <span class="keyword">if</span>(cfg.dragStart) {
+                cfg.dragStart.apply(that, [e]);
+            }
+
+            <span class="keyword">if</span>(cfg.cursor) {
+                $(<span class="string">'body'</span>).css(<span class="string">'cursor'</span>, cfg.cursor);
+            }
+
+            that.drag = <span class="literal">true</span>;
+            event.on(that.getRootNode(), <span class="string">'mousemove'</span>, dragMove);
+            event.on(document, <span class="string">'mouseup'</span>, dragEnd);
+        });
+    }
+
+    <span class="comment">//Simulates an drag start event</span>
+    <span class="keyword">this</span>.initDrag = <span class="keyword">function</span>() {
+        $(dragElement).trigger(<span class="string">'mousedown'</span>);
+    };
+
+    <span class="comment">//For manual dragging a svg element the triggerEvent is used to identify this event was triggered manually</span>
+    <span class="comment">//See Selectionmanager setSelection dragMove handler</span>
+    <span class="keyword">this</span>.triggerDrag = <span class="keyword">function</span>(dx, dy) {
+        dragMove.apply(<span class="keyword">this</span>,[{dx:dx, dy:dy, triggerEvent:<span class="literal">true</span>}]);
+    };
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+<span class="keyword">var</span> initDragValues = <span class="keyword">function</span>(that, evt, cfg) {
+    that.dxSum = <span class="number">0</span>;
+    that.dySum = <span class="number">0</span>;
+    that.shiftDrag = <span class="keyword">new</span> ShiftDrag(cfg);
+    <span class="keyword">var</span> evtData = getMouseEventData(evt);
+    that.dragCurrentX = evtData.clientX;
+    that.dragCurrentY = evtData.clientY;
+
+    that.drag = <span class="literal">true</span>;
+};
+
+<span class="keyword">var</span> getMouseEventData = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(!evt.clientX) {
+        <span class="keyword">return</span> event.mouse();
+    }
+    <span class="keyword">return</span> evt;
+};</code></pre>

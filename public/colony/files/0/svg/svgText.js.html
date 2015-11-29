@@ -1,0 +1,68 @@
+<h1>text.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+<span class="keyword">var</span> SVGElement = require(<span class="string">'./svgElement'</span>);
+
+<span class="keyword">var</span> SVGText = <span class="keyword">function</span>(text, svgRoot, cfg, attributeSetter) {
+    cfg = cfg || {};
+    cfg[<span class="string">'text-anchor'</span>] = cfg[<span class="string">'text-anchor'</span>] || <span class="string">'start'</span>;
+    SVGElement.call(<span class="keyword">this</span>, <span class="string">'text'</span>, svgRoot, cfg, attributeSetter);
+    <span class="keyword">this</span>.text = text;
+    <span class="comment">//TODO: Span / multi line text</span>
+};
+
+SVGText.prototype = Object.create(SVGElement.prototype);
+
+<span class="keyword">var</span> _super = SVGElement.prototype;
+
+SVGText.prototype.switchAnchor = <span class="keyword">function</span>() {
+    <span class="keyword">switch</span>(<span class="keyword">this</span>.anchor()) {
+        <span class="keyword">case</span> <span class="string">'start'</span>:
+            <span class="keyword">this</span>.end();
+        <span class="keyword">case</span> <span class="string">'end'</span>:
+            <span class="keyword">this</span>.start();
+    }
+};
+
+SVGText.prototype.getExtentOfChar = <span class="keyword">function</span>(charNum) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.instance().getExtentOfChar(charNum);
+};
+
+SVGText.prototype.getCharHeight = <span class="keyword">function</span>(charNum) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.getExtentOfChar(charNum).height;
+};
+
+SVGText.prototype.getCharDiff = <span class="keyword">function</span>(charNum) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.height() - <span class="keyword">this</span>.getCharHeight(charNum)
+
+    <span class="keyword">this</span>.getCharHeight(charNum) + <span class="keyword">this</span>.getExtentOfChar(charNum).y;
+};
+
+SVGText.prototype.start = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.anchor(<span class="string">'start'</span>);
+};
+
+SVGText.prototype.end = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.anchor(<span class="string">'end'</span>);
+};
+
+SVGText.prototype.middle = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.anchor(<span class="string">'middle'</span>);
+};
+
+SVGText.prototype.anchor = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'text-anchor'</span>, value);
+};
+
+SVGText.prototype.hanging = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'alignment-baseline'</span>, <span class="string">'hanging'</span>);
+};
+
+SVGText.prototype.baseline = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'alignment-baseline'</span>, <span class="string">'baseline '</span>);
+};
+
+SVGText.prototype.alignBaseline = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.attr(<span class="string">'alignment-baseline'</span>, value);
+};
+
+module.exports = SVGText;</code></pre>

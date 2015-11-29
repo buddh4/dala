@@ -1,0 +1,428 @@
+<h1>diagram.js</h1>
+<pre><code class="lang-js"><span class="comment">/**
+ * This class represents an instance of a diagram and is responsible for initializing and
+ * building the stage. Furthermore it contains diagram related utility functionality.
+ *
+ * An instance of this class offers the access to all nodes/transitions and templates of the
+ * diagram.
+ *
+ * This class is designed to be able to manage multiple diagrams within one
+ * application instance.
+ */</span>
+<span class="keyword">var</span> util = require(<span class="string">'../util/util'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../core/event'</span>);
+<span class="keyword">var</span> SVG = require(<span class="string">'../svg/svg'</span>);
+<span class="keyword">var</span> PathData = require(<span class="string">'../svg/pathData'</span>); <span class="comment">//Rather implement svg.createpath().start().line()...</span>
+<span class="keyword">var</span> templateManager = require(<span class="string">'./templateManager'</span>).init();
+<span class="keyword">var</span> commandManager = require(<span class="string">'../core/commandManager'</span>);
+<span class="keyword">var</span> SelectionManager = require(<span class="string">'./selectionManager'</span>);
+<span class="keyword">var</span> NodeManager = require(<span class="string">'./nodeManager'</span>);
+<span class="keyword">var</span> TransitionManager = require(<span class="string">'./transitionManager'</span>);
+<span class="keyword">var</span> KnobManager = require(<span class="string">'./knobManager'</span>);
+require(<span class="string">'./knobTemplate'</span>);
+<span class="keyword">var</span> Promise = require(<span class="string">'bluebird'</span>);
+<span class="keyword">var</span> Config = require(<span class="string">'../core/config'</span>);
+<span class="keyword">var</span> xml = require(<span class="string">'../util/xml'</span>);
+
+<span class="keyword">var</span> Helper = require(<span class="string">'./helper'</span>);
+
+<span class="keyword">var</span> object = util.object;
+<span class="keyword">var</span> dom = util.dom;
+
+
+<span class="keyword">var</span> CONTAINER_SELECTOR = <span class="string">'#svgStage'</span>;
+<span class="comment">// Contains the parent dom node (div) of the SVG element</span>
+<span class="keyword">var</span> $CONTAINER_NODE = $(CONTAINER_SELECTOR);
+
+<span class="comment">/**
+ * Constructor for initiating a new diagram instance within the containerID.
+ *
+ * @param {type} containerID The parent of the new SVG diagram
+ * @param {type} cfg
+ */</span>
+ <span class="keyword">var</span> Diagram = <span class="keyword">function</span>(cfg) {
+    cfg = cfg || {};
+
+    <span class="keyword">if</span>(!cfg.id) {
+        console.warn(<span class="string">'Created diagram without id'</span>);
+    }
+
+    <span class="keyword">this</span>.uniqueIds = [];
+
+    <span class="keyword">this</span>.id = cfg.id || <span class="string">'not specified'</span>;
+    <span class="keyword">this</span>.projectId = cfg.projectId || <span class="string">'default'</span>;
+    <span class="keyword">this</span>.title = cfg.title || <span class="string">'new'</span>;
+
+    <span class="comment">//Diagram intern event context</span>
+    <span class="keyword">this</span>.event = event.sub(<span class="keyword">this</span>.id);
+
+    <span class="keyword">if</span>(cfg.container) {
+        <span class="keyword">this</span>.$containerNode = $(cfg.container);
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.$containerNode = $CONTAINER_NODE;
+    }
+
+    <span class="keyword">this</span>.commandMgr = commandManager.sub(<span class="keyword">this</span>.id, <span class="keyword">function</span>(cmd) {
+        event.trigger(<span class="string">'diagram_updated'</span>, cfg.id);
+    });
+
+    <span class="comment">// Handles the loading and creation of templates</span>
+    <span class="keyword">this</span>.templateMgr = templateManager;
+    <span class="comment">// Responsible for creating and maintaining nodes</span>
+    <span class="keyword">this</span>.nodeMgr = <span class="keyword">new</span> NodeManager(<span class="keyword">this</span>);
+    <span class="comment">// Responsible for creating and maintaining transitions</span>
+    <span class="keyword">this</span>.transitionMgr = <span class="keyword">new</span> TransitionManager(<span class="keyword">this</span>);
+    <span class="comment">// This helper class manages the selection of nodes/transitions</span>
+    <span class="keyword">this</span>.selectionMgr = <span class="keyword">new</span> SelectionManager(<span class="keyword">this</span>);
+    <span class="comment">// Responsible for tracking and accessing all dockings on the diagram</span>
+    <span class="keyword">this</span>.knobMgr = <span class="keyword">new</span> KnobManager(<span class="keyword">this</span>);
+
+    <span class="comment">// Build the SVG stage within the container</span>
+    <span class="keyword">this</span>.svg = <span class="keyword">new</span> SVG(<span class="keyword">this</span>.$containerNode.attr(<span class="string">'id'</span>), {<span class="string">"xmlns:dala"</span> : <span class="string">"http://www.dala.com"</span>});
+
+    <span class="comment">// Init stage related and key events</span>
+    <span class="keyword">this</span>.initEvents();
+
+    <span class="keyword">this</span>.scale = <span class="number">1</span>;
+
+    <span class="comment">//TODO: load defs/marker on demand</span>
+    <span class="keyword">this</span>.initDefs();
+
+    <span class="keyword">this</span>.mainPart = <span class="keyword">this</span>.svg.createPart(<span class="string">'main'</span>, <span class="literal">true</span>);
+    <span class="keyword">this</span>.helper = <span class="keyword">new</span> Helper(<span class="keyword">this</span>);
+};
+
+Diagram.prototype.getNodes = <span class="keyword">function</span>(filter) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.nodeMgr.getNodes(filter);
+};
+
+<span class="comment">/*
+ * Initializes Stage Mouse and Key events.
+ */</span>
+Diagram.prototype.initEvents = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="comment">// Double clicks on the stage area will create new nodes of the selected</span>
+    <span class="comment">// template type. Only if we do not dbclick another node in this case</span>
+    <span class="comment">// we start a transition drag.</span>
+    event.on(<span class="keyword">this</span>.svg.getRootNode(), <span class="string">'dblclick'</span>, <span class="keyword">function</span>(evt) {
+        <span class="keyword">if</span> (!that.selectionMgr.isElementHover()) {
+            that.event.trigger(<span class="string">'node_create'</span>, that.templateMgr.getSelectedTemplate(), evt);
+        }
+    });
+
+    event.on(<span class="keyword">this</span>.svg.getRootNode(), <span class="string">'mousedown'</span>, <span class="keyword">function</span>(evt) {
+        <span class="keyword">var</span> startPosition = that.getStagePosition(evt);
+        <span class="keyword">this</span>.mouseDownPosition = startPosition;
+
+        <span class="keyword">if</span>(evt.ctrlKey) {
+            <span class="comment">//Move main part</span>
+            that.mainPart.draggable({
+                once: <span class="literal">true</span>,
+                cursor: <span class="string">'all-scroll'</span>,
+                dragMove: <span class="keyword">function</span>(event, dx, dy) {
+                    that.event.trigger(<span class="string">'viewport_update'</span>, <span class="keyword">this</span>.position());
+                },
+                dragEnd: <span class="keyword">function</span>(event) {
+                    that.event.trigger(<span class="string">'viewport_updated'</span>, <span class="keyword">this</span>.position());
+                },
+                restrictionX: <span class="keyword">function</span>(event, dx, dy) {
+                  <span class="keyword">return</span> (<span class="keyword">this</span>.x() + dx &lt;= <span class="number">0</span>)? dx : <span class="number">0</span>;
+                },
+                restrictionY: <span class="keyword">function</span>(event, dx, dy) {
+                    <span class="keyword">return</span> (<span class="keyword">this</span>.y() + dy &lt;= <span class="number">0</span>)? dy : <span class="number">0</span>;
+                },
+                getScale: <span class="keyword">function</span>() {
+                    <span class="keyword">return</span> that.scale;
+                }
+            });
+            event.triggerDom(that.mainPart.instance(), <span class="string">'mousedown'</span>);
+            <span class="keyword">return</span>;
+        }
+
+        <span class="comment">// INIT drag selection</span>
+        <span class="keyword">if</span> (!that.selectionMgr.isElementHover()) {
+            that.selectionMgr.clear();
+            evt.preventDefault();
+            <span class="keyword">var</span> moveSelection = <span class="keyword">function</span>(evt) {
+                <span class="keyword">var</span> stagePosition = that.getStagePosition(evt);
+                <span class="keyword">var</span> path = <span class="keyword">new</span> PathData().start(startPosition)
+                    .line(startPosition)
+                    .line(stagePosition)
+                    .line(stagePosition)
+                    .complete();
+                <span class="keyword">if</span>(!that.dragSelection) {
+                    that.dragSelection = that.svg.path({
+                        d : path,
+                        style : <span class="string">'stroke:gray;stroke-width:1px;stroke-dasharray:5,5;fill:none;'</span>
+                    });
+                } <span class="keyword">else</span> {
+                    <span class="comment">//Move selection away from mouse pointer</span>
+                    <span class="keyword">var</span> alignedMouseX = stagePosition.x -<span class="number">1</span>;
+                    <span class="keyword">var</span> alignedMouseY = stagePosition.y -<span class="number">1</span>;
+
+                    that.dragSelection.data().clear().start(startPosition)
+                        .line({x: startPosition.x,  y: alignedMouseY})
+                        .line({x: alignedMouseX,    y: alignedMouseY})
+                        .line({x: alignedMouseX,    y: startPosition.y})
+                        .complete();
+                    that.dragSelection.update();
+
+                    object.each(that.nodeMgr.nodes, <span class="keyword">function</span>(id, node) {
+                        <span class="keyword">if</span>(that.dragSelection.overlays(node.getCenter())) {
+                            that.selectionMgr.addSelectedNode(node);
+                        } <span class="keyword">else</span> {
+                            that.selectionMgr.removeSelectedNode(node);
+                        }
+                    });
+
+
+                    object.each(that.knobMgr.dockings, <span class="keyword">function</span>(id, docking) {
+                        <span class="keyword">if</span>(that.dragSelection.overlays(docking.position())) {
+                            that.selectionMgr.addSelectedNode(docking.node);
+                        } <span class="keyword">else</span> {
+                            that.selectionMgr.removeSelectedNode(docking.node);
+                        }
+                    });
+                }
+            };
+            event.on(that.svg.getRootNode(), <span class="string">'mousemove'</span>, moveSelection);
+        }
+    });
+
+    event.on(document, <span class="string">'mouseup'</span>, <span class="keyword">function</span>(evt) {
+        event.off(that.svg.getRootNode(), <span class="string">'mousemove'</span>);
+        <span class="keyword">if</span>(object.isDefined(that.dragSelection)) {
+            that.dragSelection.remove();
+            <span class="keyword">delete</span> that.dragSelection;
+        }
+    });
+
+    event.on(document, <span class="string">"dragstart"</span>, <span class="keyword">function</span>(e) {
+        <span class="keyword">if</span> (e.target.nodeName.toUpperCase() === <span class="string">"POLYLINE"</span> || e.target.nodeName.toUpperCase() === <span class="string">'PATH'</span> || e.target.nodeName.toUpperCase() === <span class="string">'CIRCLE'</span>) {
+            e.preventDefault();
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+    });
+};
+
+Diagram.prototype.part = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.svg.part(id);
+};
+
+Diagram.prototype.import = <span class="keyword">function</span>(svg, part, prepend) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.svg.import(svg, part, prepend);
+};
+
+Diagram.prototype.part = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.svg.part(id);
+};
+
+Diagram.prototype.initDefs = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">this</span>.templateMgr.getTemplate(<span class="string">'defs_marker'</span>)
+    .then(<span class="keyword">function</span>(tmpl) {
+        <span class="keyword">if</span>(tmpl) {
+            tmpl.createNode({diagramId:that.id}, that).init(<span class="string">'root'</span>, <span class="literal">true</span>);
+        } <span class="keyword">else</span> {
+            console.error(<span class="string">'Could initialize defs template result undefined'</span>);
+        }
+    }, <span class="keyword">function</span>(err) {
+        console.error(<span class="string">'Could not initialize defs template :'</span>+err);
+    });
+};
+
+Diagram.prototype.createKnob = <span class="keyword">function</span>(p, group, cfg) {
+    <span class="keyword">var</span> knobId = <span class="keyword">this</span>.uniqueId();
+    <span class="keyword">var</span> config = object.extend({node_id:<span class="string">'docking_'</span>+knobId, x: p.x, y: p.y, type:<span class="string">'circle'</span>}, cfg);
+    <span class="keyword">var</span> tmpl;
+    <span class="keyword">switch</span>(config.type) {
+        <span class="keyword">case</span> <span class="string">'circle'</span>:
+            tmpl = <span class="keyword">this</span>.templateMgr.getTemplateSync(<span class="string">'knob_circle'</span>);
+            <span class="keyword">break</span>;
+        <span class="keyword">case</span> <span class="string">'rect'</span>:
+            tmpl = <span class="keyword">this</span>.templateMgr.getTemplateSync(<span class="string">'knob_rect'</span>);
+            <span class="keyword">break</span>;
+    }
+    <span class="keyword">var</span> node = tmpl.createNode(config, <span class="keyword">this</span>).init();
+    <span class="keyword">if</span>(group) {
+        <span class="keyword">this</span>.svg.addToGroup(group, node.root);
+    }
+    <span class="keyword">return</span> node;
+};
+
+Diagram.prototype.uniqueId = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> newId = <span class="keyword">this</span>.checkId(Date.now() + <span class="string">''</span>);
+    <span class="keyword">this</span>.uniqueIds.push(newId);
+    <span class="keyword">return</span> newId;
+};
+
+<span class="comment">/**
+ * Prevent duplicates
+ */</span>
+Diagram.prototype.checkId = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> ($.inArray(id, <span class="keyword">this</span>.uniqueIds) > -<span class="number">1</span>) ? <span class="keyword">this</span>.checkId(<span class="string">'u'</span>+id) : id;
+};
+
+Diagram.prototype.getHoverNode = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.nodeMgr.hoverNode;
+};
+
+Diagram.prototype.isMultiSelection = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.selectionMgr.isMultiSelection();
+};
+
+Diagram.prototype.getEditItem = <span class="keyword">function</span>(node, editKey) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.nodeMgr.getEditItem(node, editKey);
+};
+
+Diagram.prototype.setEditValue = <span class="keyword">function</span>(node, editKey, newValue) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.nodeMgr.setEditValue(node, editKey, newValue);
+};
+
+Diagram.prototype.isPoint = <span class="keyword">function</span>(value) {
+    <span class="keyword">return</span> object.isDefined(value.x);
+};
+
+Diagram.prototype.newDiagram = <span class="keyword">function</span>() {
+    <span class="comment">//TODO: we should unify this with the constructor svg creation technique</span>
+    <span class="keyword">this</span>.loadDiagram(<span class="string">'&lt;svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="svgStage_svg" xmlns:dala="http://www.dala.com" height="100%" width="100%">&lt;/svg>'</span>);
+    <span class="keyword">this</span>.initDefs();
+};
+
+Diagram.prototype.loadDiagram = <span class="keyword">function</span>(svgString) {
+    <span class="comment">//TODO: rather handle this per event</span>
+    <span class="keyword">this</span>.selectionMgr.clear();
+    <span class="keyword">this</span>.nodeMgr.clear();
+    <span class="keyword">this</span>.$containerNode.empty();
+    <span class="keyword">this</span>.svg.setRoot(dom.importSVG(<span class="keyword">this</span>.svg.$containerNode, svgString));
+    <span class="keyword">this</span>.activateNodes();
+    <span class="keyword">this</span>.activateTransitions();
+    <span class="keyword">this</span>.initEvents();
+};
+
+Diagram.prototype.triggerDockingVisibility = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.knobMgr.hideDocking) {
+        <span class="keyword">this</span>.knobMgr.showKnobs();
+    } <span class="keyword">else</span> {
+        <span class="keyword">this</span>.knobMgr.hideKnobs();
+    }
+};
+
+Diagram.prototype.activateNodes = <span class="keyword">function</span>() {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    $(<span class="string">'.element_root'</span>).each(<span class="keyword">function</span>() {
+        that.activateNode(<span class="keyword">this</span>);
+    });
+};
+
+Diagram.prototype.activateNode = <span class="keyword">function</span>(domNode) {
+    <span class="keyword">var</span> attributes = dom.getAttributes(domNode);
+    <span class="keyword">var</span> tmplId = attributes[<span class="string">'dala:tmpl'</span>];
+    <span class="keyword">var</span> rootId = attributes[<span class="string">'id'</span>];
+
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="keyword">var</span> tmpl = <span class="keyword">this</span>.templateMgr.getTemplate(tmplId)
+        .then(<span class="keyword">function</span>(tmpl) {
+            that.nodeMgr.activateNode(rootId, tmpl);
+        });
+};
+
+<span class="comment">//TODO: move to transitionmgr</span>
+Diagram.prototype.activateTransitions = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.transitionMgr.activateTransition($(<span class="string">'.transition'</span>));
+};
+
+Diagram.prototype.getNodeById = <span class="keyword">function</span>(nodeId) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.nodeMgr.getNode(nodeId);
+};
+
+Diagram.prototype.getTransitionById = <span class="keyword">function</span>(id) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.transitionMgr.getNode(id);
+};
+
+Diagram.prototype.zoomIn = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.scale += <span class="number">0.1</span>;
+    <span class="keyword">this</span>.part(<span class="string">'main'</span>).scale(<span class="keyword">this</span>.scale);
+};
+
+Diagram.prototype.zoomOut = <span class="keyword">function</span>() {
+    <span class="keyword">if</span>(<span class="keyword">this</span>.scale > <span class="number">0</span>) {
+        <span class="keyword">this</span>.scale -= <span class="number">0.1</span>;
+        <span class="keyword">this</span>.part(<span class="string">'main'</span>).scale(<span class="keyword">this</span>.scale);
+    }
+};
+
+<span class="comment">/**
+ * This method determines the relative stage coordinates for a given
+ * window position either by providing the x and y position or an event
+ * object with given pageX and pageY attributes or an point with x,y attributes.
+ *
+ * @param {type} x either an event object with pageX, pageY or an point with x,y
+ *                 or just the plain x coordinate.
+ * @param {type} y the y coordinate is just mandatory if the fisrst arg is the plain x
+ * @returns {Diagram_L13.Diagram.prototype.getStagePosition.DiagramAnonym$2}
+ */</span>
+Diagram.prototype.getStagePosition = <span class="keyword">function</span>(x, y) {
+    <span class="keyword">if</span>(object.isDefined(x.pageX)) {
+        y = x.pageY;
+        x = x.pageX;
+    } <span class="keyword">else</span> <span class="keyword">if</span>(object.isDefined(x.x)) {
+        y = x.y;
+        x = x.x;
+    }
+
+    <span class="keyword">var</span> stagePosition = <span class="keyword">this</span>.$containerNode.offset();
+    <span class="keyword">var</span> viewPointAlignment = <span class="keyword">this</span>.mainPart.position();
+
+    <span class="comment">//TODO: viewbox alignement ?</span>
+    <span class="keyword">return</span> {
+        x : parseInt((x  - stagePosition.left - viewPointAlignment.x) / <span class="keyword">this</span>.scale),
+        y : parseInt((y  - stagePosition.top - viewPointAlignment.y) / <span class="keyword">this</span>.scale)
+    };
+};
+
+<span class="comment">/**
+ * Checks if a given position is within the boundaries of a diagram node.
+ *
+ * @param {type} position
+ * @returns {Boolean}
+ */</span>
+Diagram.prototype.overlaysNode = <span class="keyword">function</span>(position) {
+    <span class="keyword">var</span> result;
+    object.each(<span class="keyword">this</span>.nodeMgr.nodes, <span class="keyword">function</span>() {
+        <span class="keyword">if</span> (<span class="keyword">this</span>.overlays(position)) {
+            result = <span class="keyword">this</span>;
+            <span class="keyword">return</span> <span class="literal">false</span>;
+        }
+    });
+
+    <span class="keyword">return</span> result;
+};
+
+Diagram.prototype.asString = <span class="keyword">function</span>() {
+    <span class="keyword">return</span> <span class="keyword">this</span>.svg.asString();
+};
+
+Diagram.prototype.undoCommand = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.commandMgr.undo();
+};
+
+Diagram.prototype.redoCommand = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.commandMgr.redo();
+};
+
+Diagram.prototype.registerCommand = <span class="keyword">function</span>(cmdId, cmd) {
+    <span class="keyword">this</span>.commandMgr.register(cmdId, cmd);
+};
+
+Diagram.prototype.executeCommand = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">this</span>.commandMgr.exec(cmdId, doArgs, undoArgs);
+};
+
+Diagram.prototype.addCommand = <span class="keyword">function</span>(cmdId, doArgs, undoArgs) {
+    <span class="keyword">this</span>.commandMgr.add(cmdId, doArgs, undoArgs);
+};
+
+module.exports = Diagram;
+
+</code></pre>

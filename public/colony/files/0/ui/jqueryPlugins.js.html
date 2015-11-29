@@ -1,0 +1,88 @@
+<h1>jqueryPlugins.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> SVG = require(<span class="string">'../svg/svg'</span>);
+<span class="keyword">var</span> queryCache = require(<span class="string">'../core/cache'</span>);
+
+$.fn.svg = <span class="keyword">function</span>(selector) {
+    <span class="keyword">if</span>(selector) {
+        <span class="keyword">return</span> $(selector).svg();
+    }
+
+    <span class="keyword">if</span>(<span class="keyword">this</span>.length === <span class="number">1</span>) {
+        <span class="keyword">return</span> SVG.get(<span class="keyword">this</span>);
+    } <span class="keyword">else</span> <span class="keyword">if</span>(<span class="keyword">this</span>.length > <span class="number">1</span>) {
+        <span class="keyword">var</span> result =  [];
+        <span class="keyword">this</span>.each(<span class="keyword">function</span>() {
+            result.push(SVG.get(<span class="keyword">this</span>));
+        })
+        <span class="keyword">return</span> result;
+    }
+
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+$.svg = $.fn.svg;
+
+
+$.qCache = <span class="keyword">function</span>(selector, preventCache) {
+    <span class="keyword">if</span>(selector) {
+        <span class="keyword">return</span> queryCache.$(selector, preventCache);
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> queryCache;
+    }
+};
+
+$.qUncache = <span class="keyword">function</span>(selector) {
+    <span class="keyword">return</span> queryCache.remove(selector);
+}
+
+$.fn.growl = <span class="keyword">function</span>(params) {
+    <span class="keyword">var</span> $root = <span class="keyword">this</span>;
+
+    <span class="comment">// tooltip content and styling</span>
+    <span class="keyword">var</span> $content = $(
+        <span class="string">'&lt;a class="icon-close" href="#">&lt;/a>'</span>+
+        <span class="string">'&lt;h1 style="color: white; font-size: 12pt; font-weight: bold; padding-bottom: 5px;">'</span> + params.title + <span class="string">'&lt;/h1>'</span> +
+        <span class="string">'&lt;p style="margin: 0; padding: 5px 0 5px 0; font-size: 10pt;">'</span> + params.text + <span class="string">'&lt;/p>'</span>);
+
+    <span class="comment">// add 'Close' button functionality</span>
+    <span class="keyword">var</span> $close = $($content[<span class="number">0</span>]);
+    $close.click(<span class="keyword">function</span>(e) {
+        $root.uitooltip(<span class="string">'close'</span>);
+    });
+
+    <span class="comment">// prevent standard tooltip from closing</span>
+    $root.bind(<span class="string">'focusout mouseleave'</span>, <span class="keyword">function</span>(e) { e.preventDefault(); e.stopImmediatePropagation(); <span class="keyword">return</span> <span class="literal">false</span>; });
+
+    <span class="comment">// build tooltip</span>
+    $root.uitooltip({
+        content: <span class="keyword">function</span>() { <span class="keyword">return</span> $content; },
+        items: $root.selector,
+        tooltipClass: <span class="string">'growl '</span> + params.growlClass,
+        position: {
+            my: <span class="string">'right top'</span>,
+            at: <span class="string">'right-10 top+10'</span>
+        },
+        close: <span class="keyword">function</span>( event, ui ) {
+            $root.uitooltip(<span class="string">'destroy'</span>);
+        }
+    }).uitooltip(<span class="string">'open'</span>);
+
+    <span class="keyword">if</span>(params.closeAfter) {
+        setTimeout(<span class="keyword">function</span>(){ $root.uitooltip(<span class="string">'close'</span>); }, params.closeAfter);
+    }
+};
+
+$.widget( <span class="string">"custom.iconselectmenu"</span>, $.ui.selectmenu, {
+    _renderItem: <span class="keyword">function</span>( ul, item ) {
+        <span class="keyword">var</span> li = $( <span class="string">"&lt;li>"</span>, { text: item.label } );
+        <span class="keyword">if</span> ( item.disabled ) {
+            li.addClass( <span class="string">"ui-state-disabled"</span> );
+        }
+        $( <span class="string">"&lt;span>"</span>, {
+            style: item.element.attr( <span class="string">"data-style"</span> ),
+            <span class="string">"class"</span>: <span class="string">"ui-icon "</span> + item.element.attr( <span class="string">"data-class"</span> )
+        })
+            .appendTo( li );
+        <span class="keyword">return</span> li.appendTo( ul );
+    }
+});</code></pre>

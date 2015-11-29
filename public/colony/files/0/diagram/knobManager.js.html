@@ -1,0 +1,48 @@
+<h1>knobManager.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> object = require(<span class="string">'../util/object'</span>);
+
+<span class="keyword">var</span> KnobManager = <span class="keyword">function</span>(diagram) {
+    <span class="keyword">this</span>.dockings = [];
+    <span class="keyword">this</span>.hideDocking = <span class="literal">false</span>;
+    diagram.event.listen(<span class="string">'knob_created'</span>, <span class="keyword">this</span>.addDockingListener, <span class="keyword">this</span>);
+    diagram.event.listen(<span class="string">'knob_delete'</span>, <span class="keyword">this</span>.deleteKnob, <span class="keyword">this</span>);
+};
+
+KnobManager.prototype.addDockingListener = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(object.isDefined(evt.data)) {
+        <span class="keyword">this</span>.dockings.push(evt.data);
+    }
+};
+
+KnobManager.prototype.hideKnobs = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.hideDocking = <span class="literal">true</span>;
+    <span class="keyword">this</span>.executeOnAllKnobs(<span class="keyword">function</span>(docking) {
+        docking.hide();
+    });
+};
+
+KnobManager.prototype.showKnobs = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.hideDocking = <span class="literal">false</span>;
+    <span class="keyword">this</span>.executeOnAllKnobs(<span class="keyword">function</span>(docking) {
+        docking.show();
+    });
+};
+
+KnobManager.prototype.executeOnAllKnobs = <span class="keyword">function</span>(func) {
+    object.each(<span class="keyword">this</span>.dockings, <span class="keyword">function</span>(index, docking) {
+        func(docking);
+    });
+}
+
+KnobManager.prototype.deleteKnob = <span class="keyword">function</span>(evt) {
+    <span class="keyword">if</span>(object.isDefined(evt.data)) {
+        <span class="keyword">var</span> index = <span class="keyword">this</span>.dockings.indexOf(evt.data);
+        <span class="keyword">if</span>(index > -<span class="number">1</span>) {
+            <span class="keyword">this</span>.dockings.splice(index, <span class="number">1</span>);
+        }
+        evt.data.remove();
+    }
+};
+
+module.exports = KnobManager;
+</code></pre>

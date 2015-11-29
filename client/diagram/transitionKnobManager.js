@@ -114,10 +114,10 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBound
             },
             dragEnd : function() {
                 if(initialDrag) {
-                    that.event.trigger('transition_docking_created', {'transition':that.transition.id, 'dockingIndex':knobIndex});
+                    that.transition.exec('knob_add', [knobIndex, knob.position()]);
                     initialDrag = false;
                 } else {
-                    that.event.trigger('transition_docking_dropped', {'transition':that.transition.id, 'dockingIndex':knobIndex});
+                    that.transition.exec('knob_drop', [knobIndex, knob.position()]);
                 }
             }
         });
@@ -167,10 +167,25 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBound
             that.transition.hoverOut();
         }
     });
+
     return knob;
 };
 
-TransitionKnobManager.isInitState = function() {
+/**
+ * Api call for moving transition knobs
+ */
+TransitionKnobManager.prototype.moveKnob = function(knob, dx, dy) {
+    //TODO: prevent redundancy with evt driven appraoch
+    var knob = (knob.node) ? knob : this.getKnob(knob);
+    var index = this.getIndexForKnob(knob);
+    knob.move(dx,dy);
+    var newPostion = knob.position();
+    this.getPathManager().updatePart(index, newPostion);
+    this.transition.update();
+    this.transition.exec('knob_drop', [index, newPostion]);
+};
+
+TransitionKnobManager.prototype.isInitState = function() {
     return this.size() < 2;
 }
 

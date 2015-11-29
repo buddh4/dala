@@ -1,0 +1,157 @@
+<h1>fileTree.js</h1>
+<pre><code class="lang-js"><span class="keyword">var</span> FileTreeBuilder = require(<span class="string">'./fileTreeBuilder'</span>);
+<span class="keyword">var</span> stringUtil = require(<span class="string">'../../util/string'</span>);
+<span class="keyword">var</span> event = require(<span class="string">'../../core/event'</span>);
+
+<span class="keyword">var</span> typeDefinition = {
+    <span class="string">"root"</span> : {
+        <span class="string">"icon"</span> : <span class="string">"/images/icons/folder.png"</span>
+    },
+    <span class="string">"project"</span> : {
+        <span class="string">"icon"</span>: <span class="string">"/images/icons/project_folder.png"</span>
+    },
+    <span class="string">"diagram"</span> : {
+        <span class="string">"icon"</span>: <span class="string">"/images/icons/file.png"</span>,
+        <span class="string">"max_children"</span> : <span class="number">0</span>
+    }
+};
+
+<span class="comment">/**
+ * Context Menu definition
+ */</span>
+<span class="keyword">var</span> contextMenuDefinition = {
+    <span class="string">"items"</span>: <span class="function"><span class="keyword">function</span> <span class="params">(node)</span> {</span>
+        <span class="keyword">var</span> idSplitted = node.id.split(<span class="string">'_'</span>);
+        <span class="keyword">var</span> type = idSplitted[<span class="number">0</span>];
+        <span class="keyword">var</span> id = idSplitted[<span class="number">1</span>];
+        <span class="keyword">switch</span>(type) {
+            <span class="keyword">case</span> <span class="string">'project'</span>:
+                <span class="keyword">return</span> {
+                    <span class="string">"New Diagram"</span>: {
+                        <span class="string">"label"</span>: <span class="string">"New Diagram"</span>,
+                        <span class="string">"action"</span>: <span class="function"><span class="keyword">function</span> <span class="params">(obj)</span> {</span>
+                            event.trigger(<span class="string">'dialog_new_diagram'</span>, id);
+                        }
+                    }
+                };
+            <span class="keyword">case</span> <span class="string">'diagram'</span>:
+                <span class="keyword">break</span>;
+            <span class="keyword">case</span> <span class="string">'root'</span>:
+                <span class="keyword">return</span> {
+                    <span class="string">"New Project"</span>: {
+                        <span class="string">"label"</span>: <span class="string">"New Project"</span>,
+                        <span class="string">"action"</span>: <span class="function"><span class="keyword">function</span> <span class="params">(obj)</span> {</span>
+                            event.trigger(<span class="string">'dialog_new_project'</span>);
+                        }
+                    }
+                    <span class="comment">//TODO: DELETE / CLOSE PROJECT / RENAME / NEW FOLDER</span>
+                }
+        }
+    }
+};
+
+<span class="keyword">var</span> FileTree = <span class="keyword">function</span>(containerId) {
+    <span class="keyword">this</span>.init(containerId);
+};
+
+FileTree.prototype.init = <span class="keyword">function</span>(containerId) {
+    <span class="keyword">var</span> that = <span class="keyword">this</span>;
+    <span class="comment">//The builder is responsible for building the data array</span>
+    <span class="keyword">this</span>.builder = <span class="keyword">new</span> FileTreeBuilder(<span class="keyword">function</span>(data) {
+        that.updateTreeData(data);
+    });
+
+    <span class="keyword">this</span>.$treeNode = $(containerId);
+    <span class="keyword">this</span>.$treeNode.jstree({
+        <span class="string">'core'</span> : { <span class="string">'check_callback'</span>: check_callback},
+        <span class="string">"plugins"</span>: [<span class="string">"contextmenu"</span>, <span class="string">"types"</span>, <span class="string">"sort"</span>, <span class="string">"dnd"</span>],
+        <span class="string">"types"</span> : typeDefinition,
+        <span class="string">"contextmenu"</span>: contextMenuDefinition
+    });
+
+    $(document)
+        .on(<span class="string">'dnd_move.vakata'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(e, data)</span> {</span>
+            <span class="keyword">var</span> t = $(data.event.target);
+            <span class="keyword">if</span>(!t.closest(<span class="string">'.jstree'</span>).length) {
+                <span class="keyword">if</span>(t.closest(<span class="string">'#diagramStage'</span>).length) {
+                    <span class="keyword">var</span> test = data.helper.find(<span class="string">'.jstree-icon'</span>);
+                    data.helper.find(<span class="string">'.jstree-icon'</span>).removeClass(<span class="string">'jstree-er'</span>).addClass(<span class="string">'jstree-ok'</span>);
+                    <span class="comment">// Stop the jstree handlers since we don't need them for outter tree drag / drops</span>
+                    <span class="comment">// Furthermore they would change the helper class again.</span>
+                    e.stopImmediatePropagation();
+                }
+            }
+        })
+        .on(<span class="string">'dnd_stop.vakata'</span>, <span class="function"><span class="keyword">function</span> <span class="params">(e, data)</span> {</span>
+            <span class="keyword">var</span> t = $(data.event.target);
+            <span class="keyword">if</span>(!t.closest(<span class="string">'.jstree'</span>).length) {
+                <span class="keyword">if</span>(t.closest(<span class="string">'#diagramStage'</span>).length) {
+                    console.log(<span class="string">'asdfasdf'</span>);
+                    <span class="comment">// node data:</span>
+                    <span class="comment">// if(data.data.jstree &amp;&amp; data.data.origin) { console.log(data.data.origin.get_node(data.element); }</span>
+                }
+            }
+        });
+};
+
+<span class="comment">/**
+ * With this method we cann allow / disallow specific tree actions
+ */</span>
+<span class="keyword">var</span> check_callback = <span class="keyword">function</span>(operation, node, node_parent, node_position, more) {
+    <span class="comment">// operation can be 'create_node', 'rename_node', 'delete_node', 'move_node' or 'copy_node'</span>
+    <span class="comment">// in case of 'rename_node' node_position is filled with the new node name</span>
+
+    <span class="comment">/* if (operation === "move_node") {
+     return node_parent.original.type === "root"; //only allow dropping inside nodes of type 'Parent'
+     }*/</span>
+    <span class="keyword">return</span> <span class="literal">true</span>;  <span class="comment">//allow all other operations</span>
+};
+
+FileTree.prototype.updateTreeData = <span class="keyword">function</span>(data) {
+    <span class="keyword">this</span>.$treeNode.jstree(<span class="literal">true</span>).settings.core.data = data;
+    <span class="keyword">this</span>.refresh();
+};
+
+FileTree.prototype.build = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.builder.init();
+    <span class="keyword">return</span> <span class="keyword">this</span>.builder;
+};
+
+FileTree.prototype.refresh = <span class="keyword">function</span>() {
+    <span class="keyword">this</span>.$treeNode.jstree(<span class="literal">true</span>).refresh();
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+FileTree.prototype.getNodeText = <span class="keyword">function</span>(nodeType, itemId) {
+    <span class="keyword">return</span> <span class="keyword">this</span>.$treeNode.jstree(<span class="literal">true</span>).get_text(getNodeId(nodeType,itemId));
+};
+
+FileTree.prototype.openNode = <span class="keyword">function</span>(nodeType, itemId) {
+    <span class="keyword">this</span>.$treeNode.jstree(<span class="literal">true</span>).open_node(getNodeId(nodeType,itemId));
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+}
+
+FileTree.prototype.triggerFileChange = <span class="keyword">function</span>(nodeType, itemId) {
+    <span class="keyword">var</span> nodeId =  getNodeId(nodeType,itemId);
+    <span class="keyword">var</span> text = <span class="keyword">this</span>.getNodeText(nodeId);
+    <span class="keyword">if</span>(!stringUtil.endsWith(text, <span class="string">'*'</span>)) {
+        <span class="keyword">this</span>.setNodeText(nodeId, text+<span class="string">'*'</span>);
+    }
+    <span class="keyword">return</span> <span class="keyword">this</span>;
+};
+
+FileTree.prototype.setNodeText = <span class="keyword">function</span>(nodeType, itemId, text) {
+    <span class="keyword">var</span> nodeId = (arguments.length &lt; <span class="number">3</span>)? nodeType : getNodeId(type,itemId);
+    text = (arguments.length &lt; <span class="number">3</span>)? itemId : text;
+    <span class="keyword">this</span>.$treeNode.jstree(<span class="literal">true</span>).rename_node(nodeId, text);
+};
+
+<span class="keyword">var</span> getNodeId = <span class="keyword">function</span>(type, id) {
+    <span class="keyword">if</span>(id) {
+        <span class="keyword">return</span> type + <span class="string">'_'</span> + id;
+    } <span class="keyword">else</span> {
+        <span class="keyword">return</span> type;
+    }
+}
+
+module.exports = FileTree;</code></pre>
