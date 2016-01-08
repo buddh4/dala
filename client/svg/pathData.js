@@ -46,6 +46,7 @@ AbstractPathDataType.prototype.pointToString = function(p) {
 AbstractPathDataType.prototype.getOrSet = function(index, value) {
     if(value) {
         this.setValue(index, value);
+        return this;
     } else {
         return this.value(index);
     }
@@ -88,8 +89,12 @@ LineTo.prototype.moveAlong = function(from, distance) {
     return math.Line.moveAlong(from, this.to(), distance);
 };
 
+LineTo.prototype.getNearestPoint = function(from, position) {
+    return math.Line.getNearestPoint(from, this.to(), position);
+};
+
 var QBezier = function(controlP, toP, absolute) {
-    AbstractPathDataType.call(this, 'l', absolute);
+    AbstractPathDataType.call(this, 'q', absolute);
     this.control(controlP);
     this.to(toP);
 };
@@ -159,7 +164,7 @@ CBezier.prototype.moveAlong = function(from, distance) {
 
 CBezier.prototype.getCurve = function(from) {
     return [from, this.control1(), this.control2(), this.to()];
-}
+};
 
 var MoveTo = function(toP, absolute) {
     AbstractPathDataType.call(this, 'm', absolute);
@@ -354,12 +359,18 @@ PathData.prototype.smoothen = function(polynoms) {
     return this;
 };
 
-PathData.prototype.getLineByPathIndex = function(index, fromEnd) {
-    var startIndex = (fromEnd)  ? (index + 1) * -1 : index;
-    var endIndex =   (fromEnd)  ? (index + 2) * -1 : index + 1;
-    var p1 = this.value(startIndex).to();
-    var p2 = this.value(endIndex).to();
+PathData.prototype.getLineByPathIndex = function(index) {
+    var p1 = this.value(index - 1).to();
+    var p2 = this.value(index).to();
     return new math.Line(p1, p2);
+};
+
+PathData.prototype.getNearestPoint = function(point) {
+    var index = this.getPathIndexForPosition(point);
+    var part = this.getPathPart(index);
+    if(part.value.getNearestPoint) {
+        return part.value.getNearestPoint(part.start, point);
+    };
 };
 
 PathData.prototype.getPathIndexForPosition = function(point) {
@@ -396,15 +407,6 @@ PathData.prototype.getPathIndexForPosition = function(point) {
 
     if (candidate) {
         return candidate[0];
-    }
-};
-
-var _getDForVertical = function(part, point) {
-    if(util.math.checkRange())
-    var min = Math.min(part.start.y, part.end.y);
-    var max = Math.max(part.start.y, part.end.y);
-    if (point.y <= max && point.y >= min) {
-
     }
 };
 
@@ -468,25 +470,37 @@ PathData.prototype.value = function(index) {
     return this.data.value(index);
 };
 
-PathData.prototype.valueByType = function(index, type) {
-    var count = 0;
-    var result;
+PathData.prototype.lastIndexOfType = function(type) {
+    var i;
+    for(i = this.length() - 1; i >= 0; i--) {
+        var value = this.value(i);
+        if(value.is(type)) {
+            return i;
+        }
+    }
+    return -1;
+};
+
+PathData.prototype.valuesByType = function(type) {
+    var result = [];
 
     object.each(this.data.vectors, function(i, value) {
-       if(value.is(type) && count++ === index) {
-           result = value;
-           return false;
+       if(value.is(type)) {
+           result.push({index:i, value:value});
        }
     });
 
     return result;
-}
+};
 
 PathData.prototype.start = function(p, absolute) {
     if(arguments.length === 0) {
         return this.value(0).to();
+    } else if(this.length() > 0) {
+        this.value(0).to(p);
+    } else {
+        this.data.setValue(0, new MoveTo(p, absolute));
     }
-    this.data.setValue(0, new MoveTo(p, absolute));
     return this;
 };
 
@@ -548,7 +562,7 @@ PathData.prototype.qBezier = function(controlP,toP) {
 };
 
 PathData.prototype.insertQBezier = function(index,c, to, absolute) {
-    this.data.insert(index, new QBezier(to,absolute));
+    this.data.insert(index, new QBezier(c, to, absolute));
     return this;
 };
 

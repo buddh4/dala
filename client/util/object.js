@@ -7,6 +7,16 @@ module.exports = {
         return $.grep(arr, filter, invert);
     },
 
+    isOneOf: function(search) {
+        var i;
+        for(i = 1;i < arguments.length;i++) {
+          if(search === arguments[i]) {
+              return true;
+          }
+        }
+        return false;
+    },
+
     isArray: function(obj) {
         return $.isArray(obj);
     },

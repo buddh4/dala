@@ -23,7 +23,7 @@ module.exports = {
     },
     listen:  function(type, handler, module) {
         if(!object.isFunction(handler)) {
-            return;once
+            return;
         }
 
         var eventConfig = {

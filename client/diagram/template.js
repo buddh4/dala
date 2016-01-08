@@ -8,38 +8,21 @@ var dom = util.dom;
 
 var Template = function(id, cfg) {
     this.config = cfg || {};
+    this.id = id;
 
-    if(this.config.fromDom) { //Load tmpl from dom script node
-        this.id = id;
-        this.tmplXML = dom.parseNodeXML($.qCache('#'+id));
-    } else if(object.isString(id)) { //Remote tmpl is initialized later (after loading xml)
-        this.id = id;
-        this.tmplXML = (this.config.svg) ? xml.parseXML(this.config.svg) : undefined;
-    } else { //id is templateXML
-        this.tmplXML = id;
-        this.id = $(this.tmplXML).attr('id');
+    //Templates can define the svgString within the config, so the svg doesn't have to be loaded in addition
+    if(this.config.svg) {
+        this.init(this.config.svg);
     }
 
-    //Remote templates are initialized later;
-    if(this.tmplXML) {
-        this.init();
-    }
-
-    if(object.isDefined(this.config)) {
-        if(object.isDefined(this.config.resize)) {
-            this.initResizeConfig();
-        }
+    //TODO: implement a more generic way...
+    if(object.isDefined(this.config.resize)) {
+        this.initResizeConfig();
     }
 };
 
-Template.prototype.init = function(tmplXML) {
-    this.config.rootName = this.config.rootName || 'g';
-
-    if(tmplXML) {
-        this.tmplXML = tmplXML;
-    }
-
-    this.svg = xml.serializeToString($(this.tmplXML).find(this.config.rootName)[0]);
+Template.prototype.init = function(tmplStr) {
+    this.svg = tmplStr;
 };
 
 Template.prototype.isInitialized = function() {
@@ -83,10 +66,6 @@ Template.prototype.setupSettings = function(index, item, setting) {
     }
 };
 
-Template.prototype.resizable = function() {
-    return object.isDefined(this.config.resize);
-};
-
 Template.prototype.createNode = function(config, diagram) {
     var resultConfig = this.getConfig(config);
     return new Node(this, resultConfig, diagram);
@@ -94,16 +73,6 @@ Template.prototype.createNode = function(config, diagram) {
 
 Template.prototype.getSVGString = function(cfg) {
     return config.replaceConfigValues(this.svg, cfg);
-};
-
-Template.prototype.getSVGXML = function(cfg) {
-    return dom.parseXML(getSVGString(cfg));
-};
-
-Template.prototype.getFunctions = function(cfg) {
-    if(this.function) {
-        return config.replaceConfigValues(this.functions, cfg);
-    }
 };
 
 Template.prototype.getConfig = function(cfg) {

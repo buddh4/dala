@@ -179,10 +179,31 @@ TransitionKnobManager.prototype.moveKnob = function(knob, dx, dy) {
     var knob = (knob.node) ? knob : this.getKnob(knob);
     var index = this.getIndexForKnob(knob);
     knob.move(dx,dy);
+    //TODO: not very clean... is used for tracing api move calls... transitionManager CMD_KNOB_DROP command
+    knob.node.root.dxSum = dx;
+    knob.node.root.dySum = dy;
     var newPostion = knob.position();
     this.getPathManager().updatePart(index, newPostion);
     this.transition.update();
     this.transition.exec('knob_drop', [index, newPostion]);
+};
+
+TransitionKnobManager.prototype.getSelectedKnobs = function() {
+    var result = [];
+    $.each(this.getInnerKnobs(), function(index, knob) {
+        if(knob.isSelected()) {
+            result.push(knob);
+        }
+    });
+    return result;get
+};
+
+TransitionKnobManager.prototype.getInnerKnobs = function() {
+    var result = [];
+    for(var i = 1; i < this.knobs.length - 1; i++) {
+        result.push(this.knobs[i]);
+    }
+    return result;
 };
 
 TransitionKnobManager.prototype.isInitState = function() {
@@ -211,6 +232,9 @@ TransitionKnobManager.prototype.updateKnob = function(knobIndex, position) {
 TransitionKnobManager.prototype.removeKnob = function(knob) {
     if(!this.transition.removed) {
         var index = this.getIndexForKnob(knob);
+        if(index < 0) {
+            return;
+        }
         this.knobs.splice(index, 1);
         this.getPathManager().removePathPart(index);
         this.transition.update();

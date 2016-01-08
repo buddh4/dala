@@ -1,20 +1,10 @@
-var Dialog = require('./dialog');
 var SVG = require('../svg/svg');
 var event = require('../core/event');
 var xml = require('../util/xml');
 
-var dialog, svg;
+var svg;
 
 var init = function() {
-    dialog = new Dialog({
-        width: '600px',
-        dialogId : "#svgTester-dialog",
-        triggerId : "#svgTestButton",
-        buttons : {
-            "update": update
-        }
-    });
-
     svg = new SVG('#svgTestStage');
 
     $('#svgTestInput').on('change', function(evt) {

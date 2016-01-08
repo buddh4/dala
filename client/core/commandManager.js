@@ -2,6 +2,7 @@ var util = require('../util/util');
 var object = util.object;
 var dom = util.dom;
 var event = require('./event');
+var Command = require('./command');
 
 //Command instances for diagrams
 var instances = {};
@@ -16,6 +17,17 @@ var CommandManager = function(subId, updateHandler) {
     this.undoCommands = [];
     this.redoCommands = [];
     this.updateHandler = updateHandler;
+    this.register('cmd_group', new Command(this, function(commands) {
+        var that = this;
+        $.each(commands, function(index, cmd) {
+            that.commands[cmd[0]].instance(cmd[1], cmd[2]).exec();
+        });
+    }, function(commands) {
+        var that = this;
+        $.each(commands, function(index, cmd) {
+            that.commands[cmd[0]].instance(cmd[1], cmd[2]).undo();
+        });
+    }));
 };
 
 /**
@@ -29,6 +41,15 @@ var CommandManager = function(subId, updateHandler) {
  */
 CommandManager.prototype.register = function(cmdId, cmd) {
     this.commands[cmdId] = cmd;
+    cmd.id = cmdId;
+};
+
+CommandManager.prototype.addGroup = function(commands) {
+    this.add('cmd_group', commands, commands);
+};
+
+CommandManager.prototype.execGroup = function(commands) {
+    this.exec('cmd_group', commands, commands);
 };
 
 CommandManager.prototype.exec = function(cmdId, doArgs, undoArgs) {
@@ -45,7 +66,6 @@ CommandManager.prototype.add = function(cmdId, doArgs, undoArgs) {
         this.updated(command);
         var cmdInstance = command.instance(doArgs,undoArgs);
         if(cmdInstance) {
-            cmdInstance.id = cmdId+'_'+Date.now();
             console.log('Add command '+cmdInstance.id);
             this.undoCommands.push(cmdInstance);
             if(!this.lockRedo) {

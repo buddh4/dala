@@ -4,6 +4,8 @@ var client = require('../core/client');
 
 var userManager = require('../user/userManager');
 
+var config = require('../core/config');
+
 var diagrams = {};
 var activeDiagramId;
 
@@ -11,12 +13,26 @@ var initListener = function() {
     event.listen('diagram_new', newDiagramListener);
     event.listen('tab_activated', activeTabListener);
     event.listen('key_save_press', saveDiagram);
+    event.listen('key_paste_press', pasteDiagramDataListener);
+    event.listen('key_copy_press', copyDiagramDataListener)
 
     event.listen('view_zoomIn', zoomIn);
     event.listen('view_zoomOut', zoomOut);
+    event.listen('view_toggle_mode_move', toggleModeMove);
+    event.listen('view_toggle_setting_align', toggleSettingAlign);
 
     event.listen('key_redo_press', redoCommand);
     event.listen('key_undo_press', undoCommand);
+};
+
+var toggleModeMove = function() {
+    var  val = config.is('diagram_mode_move', false);
+    config.setVal('diagram_mode_move', !val);
+};
+
+var toggleSettingAlign = function() {
+    var  val = config.is('dragAlign', true);
+    config.setVal('dragAlign', !val);
 };
 
 var undoCommand = function(evt) {
@@ -25,6 +41,20 @@ var undoCommand = function(evt) {
 
 var redoCommand = function(evt) {
     getActiveDiagram().redoCommand();
+};
+
+var copyDiagramDataListener = function(evt) {
+    var activeDiagram = getActiveDiagram();
+    if(activeDiagram) {
+        activeDiagram.trigger('copy',[evt.mouse]);
+    };
+};
+
+var pasteDiagramDataListener = function(evt) {
+    var activeDiagram = getActiveDiagram();
+    if(activeDiagram) {
+        activeDiagram.trigger('paste',[evt.mouse]);
+    };
 };
 
 var saveDiagram = function(evt) {

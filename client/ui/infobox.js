@@ -5,10 +5,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
 
 
 var initListener = function() {
-    event.listen('node_selected', viewNodeInfo);
+    //event.listen('node_selected', viewNodeInfo);
     //TODO: transition_select listener
-    event.listen('selection_clear', clearInfo);
-    event.listen('transition_select', clearInfo);
+    //event.listen('selection_clear', clearInfo);
+   // event.listen('transition_select', clearInfo);
 }
 
 /**

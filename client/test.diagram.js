@@ -161,7 +161,7 @@ describe('transition', function() {
         diagram.api.getTransitionById(t2.id).remove();
     });
 
-    it('transition command add knob', function () {
+    it('transition command drop knob', function () {
         var t2 = diagram.api.createTransition(n2,n3);
         var knobPosition = {x:n3.getCenter().x, y:n2.getCenter().y};
         var knob = t2.addKnob(knobPosition);

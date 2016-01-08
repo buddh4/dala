@@ -71,7 +71,7 @@ var DragAlignment = function(diagram, getConfig, tolerance) {
 
 DragAlignment.prototype.check = function(dx, dy) {
     var result;
-    if(config.val('dragAlign', true) && !this.diagram.isMultiSelection()) {
+    if(config.is('dragAlign', true) && !this.diagram.isMultiSelection()) {
         var that = this;
 
         // Reset the alignments to notify a new search loop

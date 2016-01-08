@@ -205,7 +205,7 @@ var _getChildText = function(node) {
 var getAttributes = function(node) {
     var result = {};
     $(node.attributes).each(function() {
-        result[this.nodeName] = this.nodeValue;
+        result[this.nodeName] = this.value;
     });
     return result;
 };

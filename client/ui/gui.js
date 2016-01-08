@@ -5,6 +5,7 @@ require('./infobox').init();
 require('./userNotificationBar').init();
 require('./fileMenu').init();
 require('./stage').init();
+require('./diagramMenu').init();
 require('./../project/ui/fileBrowser').init();
 require('./overviewBox').init();
 require('./../user/ui/userLogin').init();

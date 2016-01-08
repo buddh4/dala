@@ -112,6 +112,33 @@ TransitionAddition.prototype.endTransitionDrag = function(mouseEvt) {
     event.off(this.diagram.svg.getRootNode(), 'mousemove');
 };
 
+TransitionAddition.prototype.ownsTransition = function(transition) {
+    var result = false;
+    $.each(this.outgoingTransitions, function(index, value) {
+        if(object.isString(transition) && value.id === transition) {
+            result = true;
+            return false; //exit each loop
+        } else if(value.id === transition.id) {
+            result = true;
+            return false; //exit each loop
+        }
+    });
+
+    if(!result) {
+        $.each(this.incomingTransitions, function(index, value) {
+            if(object.isString(transition) && value.id === transition) {
+                result = true;
+                return false; //exit each loop
+            } else if(value.id === transition.id) {
+                result = true;
+                return false; //exit each loop
+            }
+        });
+    }
+
+    return result;
+};
+
 TransitionAddition.prototype.addOutgoingTransition = function(transition) {
     this.outgoingTransitions.push(transition);
     return transition;

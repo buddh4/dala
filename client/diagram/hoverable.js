@@ -1,5 +1,5 @@
 var object = require('../util/object');
-var SVGShape = require('../svg/genericShape');
+var SVGShape = require('../svg/svgShape');
 var event = require('../core/event');
 
 SVGShape.prototype.hoverable = function(handler) {

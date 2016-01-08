@@ -10,6 +10,10 @@ module.exports = {
         }
     },
 
+    is : function(key, defaultVal) {
+        return this.val(key,defaultVal) === true;
+    },
+
     debug : function(val) {
         if(object.isBoolean(val)) {
             this.setVal('debug', val);

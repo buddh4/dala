@@ -72,6 +72,11 @@ SVGElement.prototype.remove = function() {
     this.$().remove();
 };
 
+SVGElement.prototype.find = function(selector) {
+    var result = this.svg.get(this.$().find(selector));
+    return util.object.isArray(result) ? result : [result];
+};
+
 SVGElement.prototype.firstChild = function() {
     return $.qCache().svg(this.$().children().first());
 };

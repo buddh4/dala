@@ -4,7 +4,7 @@
             <div id="overviewBox">
                 <h3>Overview</h3>
                 <div style="width:100%;height:250px;background-color:#ffffff;">
-                    <div id="viewbox" style="width:100%;height:250px;background-color:grey;opacity: 0.4;">
+                    <div id="viewbox" style="width:100%;height:125px;background-color:grey;opacity: 0.4;">
                         <div id="viewport" style="background-color:#ffffff;border:1px solid black;position:relative;">&nbsp;</div>
                     </div>
                 </div>
@@ -25,7 +25,7 @@
             <div id="contentTabs">
                 <ul>
                     <li><a href="#tabs-stage">Stage</a></li>
-                    <li><a href="#tabs-2">Repository</a></li>
+                    <li><a href="#tabs-svgTester">SVG-Test</a></li>
                     <li><a href="#tabs-3">Editor</a></li>
                 </ul>
                 <div id="tabs-stage">
@@ -48,6 +48,7 @@
                             <!-- Collect the nav links, forms, and other content for toggling -->
                             <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                                 <ul class="nav navbar-nav">
+                                    <li class="seperator">&nbsp;</li>
                                     <li class="dropdown">
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                                             <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span class="caret"></span></a>
@@ -59,6 +60,7 @@
                                             <li><a href="#">!Export!</a></li>
                                         </ul>
                                     </li>
+                                    <li class="seperator">&nbsp;</li>
                                     <li class="dropdown">
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                                             <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Diagram <span class="caret"></span></a>
@@ -68,10 +70,13 @@
                                             <li><a href="#" id="dragAlign">Drag Alignment</a></li>
                                         </ul>
                                     </li>
-                                    <li><a href="#" id="zoomOut"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
-                                    <li><a href="#" id="zoomIn"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
-                                    <li><a href="#" id="viewXML"><span>{SVG}</span></a></li>
-                                    <li><a href="#" id="svgTestButton"><span>SVGTester</span></a></li>
+                                    <li class="seperator">&nbsp;</li>
+                                    <li><a href="#" id="diagram-zoomOut" title="zoom out"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
+                                    <li><a href="#" id="diagram-zoomIn" title="zoom in"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
+                                    <li><a href="#" id="diagram-move" title="mode move"><span class="glyphicon glyphicon-move"></span></a></li>
+                                    <li><a href="#" id="diagram-align" title="align nodes"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
+                                    <li><a href="#" id="viewXML" style="font-size:0.8em;" title="svg view">{SVG}</a></li>
+                                    <li class="seperator">&nbsp;</li>
 
                                 </ul>
                                 <ul class="nav navbar-nav navbar-right">
@@ -86,14 +91,11 @@
                         </ul>
                     </div>
                 </div>
-                <div id="tabs-2">
-                    <!-- object data="/test/asdf.pdf" type="application/pdf" width="100%" height="100%">
-
-                        <p>It appears you don't have a PDF plugin for this browser.
-                            No biggie... you can <a href="/test/asdf.pdf">click here to
-                                download the PDF file.</a></p>
-
-                    </object -->
+                <div id="tabs-svgTester">
+                    <div id="svgTester" title="SVG Test" style="height:700px;">
+                        <textarea id="svgTestInput" style="width:100%;height:100px;" spellcheck="false"></textarea>
+                        <div id="svgTestStage" style="height:600px;"></div>
+                    </div>
                 </div>
                 <div id="tabs-3">
                     <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
@@ -143,6 +145,7 @@
                     <select class="edit" name="transitionType" id="transitionType">
                         <option value="straight">line</option>
                         <option value="curved">curved</option>
+                        <option value="round">round</option>
                     </select>
                 </fieldset>
                 <fieldset>
@@ -255,11 +258,6 @@
             <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
         </fieldset>
     </form>
-</div>
-
-<div id="svgTester-dialog" title="SVG Test" style="height:600px;width:600px;">
-    <textarea id="svgTestInput" style="width:100%;height:100px;" spellcheck="false"></textarea>
-    <div id="svgTestStage"></div>
 </div>
 
 <script>

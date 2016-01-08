@@ -38,13 +38,11 @@ TransitionDocking.prototype.initKnobEvents = function() {
             var dragCenter = that.knob.position();
             dragCenter.x += dx;
             return that.node.overlays(dragCenter) ? dx : 0;
-            //return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dx : 0;
         },
         restrictionY : function(evt, dx, dy) {
             var dragCenter = that.knob.position();
             dragCenter.y += dy;
             return that.node.overlays(dragCenter) ? dy : 0;
-            //return (dockingType.checkOrientationBoundary(that.node, dragCenter)) ? dy : 0;
         },
         dragAlignment : function() {
             //We align our knob center to the node center and also to our transition alignment point
@@ -59,7 +57,7 @@ TransitionDocking.prototype.initKnobEvents = function() {
     });
 };
 
-TransitionDocking.prototype.position = function() {
+TransitionDocking.prototype.position = function(withStroke) {
     if(this.knob) {
         return this.knob.position();
     } else {

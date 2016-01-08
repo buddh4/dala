@@ -6,13 +6,14 @@
  * The 'root' part will be created by default. When creating a new svg part you can set it as default part, so all actions
  * like insertions will be executed on the default part if there is no other part as argument.
  */
-var SVGGenericShape = require('./genericShape');
+var SVGGenericShape = require('./svgShape');
 require('./draggable');
 var shapes = require('./elements');
 var util = require('../util/Util');
 
 var dom = util.dom;
 var object = util.object;
+var Helper = require('./helper');
 
 var NAMESPACE_SVG = 'http://www.w3.org/2000/svg';
 var NAMESPACE_XLINK = 'http://www.w3.org/1999/xlink';
@@ -188,7 +189,7 @@ SVG.prototype.add = function(element, part, prepend, text) {
  */
 SVG.prototype.import = function(svgStr, part, prepend) {
     part = this.svgParts[part] || this.getDefaultPart();
-    return dom.importSVG(part, svgStr, prepend);
+    return SVG.get(dom.importSVG(part, svgStr, prepend));
 };
 
 /**
@@ -200,6 +201,13 @@ SVG.prototype.import = function(svgStr, part, prepend) {
 SVG.prototype.rect = function(cfg, part) {
     part = this.svgParts[part] || this.getDefaultPart();
     return this.add(new shapes.Rect(this, cfg), part);
+};
+
+SVG.prototype.helper = function(cfg, part) {
+    if(!this._helper) {
+        this._helper = new Helper(this);
+    }
+    return this._helper;
 };
 
 /**
@@ -303,30 +311,39 @@ SVG.prototype.asString = function() {
 
 /**
  * This function creates an SVGElement out of the given id selector element.
- * @param idSelector
+ * @param selector
  * @returns {SVGElement|exports|module.exports}
  */
-SVG.get = function(idSelector) {
-    var $node;
-
-    if(!object.isString(idSelector)) {
-        $node = $(idSelector);
-    } else {
-        $node = $.qCache(dom.getIdSelector(idSelector));
+SVG.get = function(selector) {
+    if(selector.SVGElement) {
+        return selector;
     }
 
-    if(!$node) {
-        console.warn('call SVG.get on a non existing node: '+idSelector);
-        return;
+    if(object.isString(selector)) {
+        $node = $(dom.getIdSelector(selector));
+    } else {
+        $node = $(selector);
     }
 
-    var $svgRootNode = $($node.get(0).ownerSVGElement);
-
-    if($svgRootNode.length) {
-        var svgInstance = instances[$svgRootNode.attr('id')];
-        return SVG._svgInstance($node, svgInstance);
+    if(!$node.length) {
+        console.warn('call SVG.get on a non existing node: '+selector);
+        return [];
+    } else if($node.length > 1) {
+        //Return list of SVGElements
+        var result = [];
+        $node.each(function(index, value) {
+            result.push(SVG.get(this));
+        });
+        return result;
     } else {
-        console.warn('Call SVG.get on node with no svg root');
+        //Return single SVgElement
+        var $svgRootNode = $($node.get(0).ownerSVGElement);
+        if($svgRootNode.length) {
+            var svgInstance = instances[$svgRootNode.attr('id')];
+            return SVG._svgInstance($node, svgInstance);
+        } else {
+            console.warn('Call SVG.get on node with no svg root');
+        }
     }
 };
 

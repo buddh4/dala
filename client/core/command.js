@@ -37,6 +37,9 @@ Command.prototype.instance = function(doArgs, undoArgs) {
     if(undoArgs) {
         instance.undoArgs = undoArgs;
     }
+
+    instance.id = this.id+'_'+Date.now();
+
     return instance;
 };
 

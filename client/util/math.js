@@ -119,6 +119,11 @@ Line.moveAlong = function(p1,p2, dist, direction) {
     };
 };
 
+Line.prototype.moveAlong = function(dist, direction) {
+    //TODO: note this is just working if we are initiating the line with two points...
+    return Line.moveAlong(this.p1, this.p2, dist, direction);
+};
+
 Line.calcGradient = function(p1, p2) {
     return (p2.y - p1.y) / (p2.x - p1.x);
 };
@@ -156,6 +161,31 @@ Line.prototype.calcLineIntercept = function(other) {
     var t = this.t + (-1 * other.t);
     var x = (m !== 0) ? t / m : t;
     return this.calcFX(x);
+};
+
+Line.prototype.getNearestPoint = function(p) {
+    return Line.getNearestPoint(this.p1, this.p2, p);
+};
+
+Line.getNearestPoint = function(a, b, p) {
+    var AP = [p.x - a.x, p.y - a.y]; // vector A->P
+    var AB = [b.x - a.x, b.y - a.y]; // vector A->B
+    var magnitude = AB[0] * AB[0] + AB[1] * AB[1] //AB.LengthSquared
+
+    var AP_DOT_AB = AP[0] * AB[0] + AP[1] * AB[1];
+
+    var distance = AP_DOT_AB / magnitude;
+
+    if(distance < 0) {
+        return a;
+    } else if (distance > 1) {
+        return b;
+    } else {
+        return {
+            x: a.x + AB[0] * distance,
+            y: a.y + AB[1] * distance
+        }
+    }
 };
 
 Line.calcDistance = function(p1, p2) {
@@ -451,6 +481,29 @@ var toPoint = function(x,y) {
     return {x:x,y:y};
 };
 
+var toRadians = function (angle) {
+    return angle * (Math.PI / 180);
+};
+
+var toDegrees = function(angle) {
+    return angle * (180 / Math.PI);
+};
+
+var rotate = function(p, rotCenter, angle) {
+    if(angle === 0 || (p.x === rotCenter.x && p.y === rotCenter.y)) {
+        return p;
+    }
+
+    var rotated = {};
+    var rad = toRadians(angle);
+    rotated.x = (p.x - rotCenter.x) * Math.cos(rad) - (p.y - rotCenter.y) * Math.sin(rad) + rotCenter.x;
+    rotated.y = (p.y - rotCenter.y) * Math.cos(rad) + (p.x - rotCenter.x) * Math.sin(rad) + rotCenter.y;
+    p.x = rotated.x;
+    p.y = rotated.y;
+    return p;
+};
+
+
 module.exports = {
     calcLineIntersection : calcLineIntersection,
     Line : Line,
@@ -462,5 +515,8 @@ module.exports = {
     minMax : minMax,
     checkRangeDiff : checkRangeDiff,
     getPoint : getPoint,
-    bezier : bezier
+    bezier : bezier,
+    toRadians : toRadians,
+    toDegrees : toDegrees,
+    rotate : rotate
 };

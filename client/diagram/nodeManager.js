@@ -2,7 +2,6 @@ require('./draggable');
 require('./hoverable');
 
 var util = require('../util/util');
-var xml = require('../util/xml');
 var event = require('../core/event');
 var Node = require('./node');
 var AbstractManager = require('./abstractManager');
@@ -14,6 +13,7 @@ var dom = util.dom;
 var EVT_CREATE = 'node_create';
 var EVT_DELETE = 'node_delete';
 var EVT_COPY = 'node_copy';
+var EVT_PAST = 'key_paste_press';
 
 var EVT_RESIZED = 'node_resized';
 var EVT_ADDED = 'node_added';
@@ -47,9 +47,67 @@ var NodeManager = function(diagram) {
     this.command(CMD_DROP, this.moveNode, this.moveNode);
     this.command(CMD_RESIZE, this.resizeNode, this.resizeNode);
     this.command(CMD_EDIT, this.editNode, this.undoEdit);
+
+    var that = this;
+    this.diagram.on('paste', function(evt) {
+        that.importCopyNodes()
+            .then(function(result) {
+                var ids = [];
+                var svgStrings = [];
+                var nodeMapping = {};
+                that.selectionMgr.clear();
+                $.each(result, function(index, node) {
+                    node.select(true);
+                    nodeMapping[node.config.oldId] = node.config.newId;
+                    ids.push(node.id);
+                    svgStrings.push(node.toString());
+                });
+
+                that.importCopyTransitions(nodeMapping).then(function(transitions) {
+                    //that.addCmd('cmd_group', [[CMD_COPY, [svgStrings], [ids]], []])
+
+                    that.addCmd(CMD_COPY, [svgStrings], [ids]);
+                });
+
+            }, function(err) {});
+    });
+};
+
+NodeManager.prototype.importCopy = function(copyResults, cfg) {
+
 };
 
 util.inherits(NodeManager, AbstractManager);
+
+NodeManager.prototype.importCopyNodes = function() {
+    var promises = [];
+    var that = this;
+    $.each(that.selectionMgr.lastCopy.nodes, function(key, value) {
+        promises.push(that.importNode(value.svg, {
+            oldId : key,
+            x : value.position.x + 20,
+            y : value.position.y + 20,
+            newId : that.diagram.uniqueId()
+        }));
+    });
+    return Promise.all(promises);
+};
+
+NodeManager.prototype.importCopyTransitions = function(nodeIdMapping) {
+    var that = this;
+    return new Promise(function(resolve, reject) {
+        var result = [];
+        $.each(that.selectionMgr.lastCopy.transitions, function(key, value) {
+            var svg = value.svg;
+            svg = svg.replace(new RegExp(value.start, 'g'), nodeIdMapping[value.start]);
+            svg = svg.replace(new RegExp(value.end, 'g'), nodeIdMapping[value.end]);
+            var transition = that.diagram.transitionMgr.importTransition(svg, {oldId:key, newId:that.diagram.uniqueId()});
+            transition.update();
+            result.push(transition);
+        });
+        resolve(result);
+    });
+};
 
 NodeManager.prototype.createNodeListener = function(evt) {
     try {
@@ -88,10 +146,11 @@ NodeManager.prototype.createNode = function(tmpl, config) {
         }).on('edit', function(evt, key, value, oldValue) {
             that.addCmd(CMD_EDIT, [node.id, key, value], [node.id, key, oldValue]);
         }).on('dragEnd', function() {
+            var selection = that.selectionMgr.getSelectedNodes();
             //We just add the command since we don't want to execute the drag twice
             that.addCmd(CMD_DROP,
-                [node.id, node.dragContext.dxSum, node.dragContext.dySum],
-                [node.id, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
+                [selection, node.dragContext.dxSum, node.dragContext.dySum],
+                [selection, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
         });
     }
     this.addNode(node);
@@ -104,20 +163,31 @@ NodeManager.prototype.addNode = function(node) {
 };
 
 
-NodeManager.prototype.activateByDomNode = function(domNode) {
+NodeManager.prototype.activateNode = function(node, cfg) {
+    var domNode;
+    if(node.SVGElement) {
+        domNode = node.instance();
+    } else if(object.isString(node)) {
+        domNode = this.diagram.svg.get(node);
+    } else {
+        domNode = node;
+    }
+
     var attributes = dom.getAttributes(domNode);
     var that = this;
     return new Promise(function(resolve, reject) {
-        var tmpl = that.templateMgr.getTemplate(attributes['dala:tmpl'])
+        that.templateMgr.getTemplate(attributes['dala:tmpl'])
             .then(function (tmpl) {
-                resolve(that.activate(attributes['id'], tmpl));
+                resolve(that.activate(attributes['id'], tmpl, cfg));
             }, reject);
     });
 };
 
-NodeManager.prototype.activate = function(elementId, tmpl) {
-    var node = tmpl.createNode({}, this.diagram)
-        .activate(elementId)
+NodeManager.prototype.activate = function(nodeId, tmpl, cfg) {
+    //Create Node instance and set nodeId
+    cfg = cfg || {};
+    var node = tmpl.createNode(cfg, this.diagram)
+        .activate(nodeId)
         .draggable();
 
     this.addNode(node);
@@ -131,7 +201,7 @@ NodeManager.prototype.deleteNodeListener = function(evt) {
             //CMD is handled by transitionMgr
             node.remove();
         } else if(node) {
-            return this.exec(CMD_DELETE, [node.id], [this.getNodeAsString(node)]);
+            return this.exec(CMD_DELETE, [node.id], [node.toString()]);
         }
     } catch(err) {
         console.error(err);
@@ -140,6 +210,14 @@ NodeManager.prototype.deleteNodeListener = function(evt) {
 };
 
 NodeManager.prototype.deleteNode = function(node) {
+    if(object.isArray(node)) {
+        var that = this;
+        $.each(node, function(index, value) {
+            that.deleteNode(value);
+        });
+        return;
+    }
+
     node = this.getNode(node);
     if(node) {
         node.remove();
@@ -151,6 +229,24 @@ NodeManager.prototype.deleteNode = function(node) {
 };
 
 NodeManager.prototype.importNode = function(nodeStr, cfg) {
+    if(object.isArray(nodeStr)) {
+        var promises = [];
+        var that = this;
+        $.each(nodeStr, function(index, value) {
+            promises.push(that.importNode(value, cfg));
+        });
+
+        return new Promise(function(resolve, reject) {
+            Promise.all(promises).then(function(nodes) {
+                $.each(nodes, function(index, node) {
+                    node.select(true);
+                });
+                resolve(nodes);
+            });
+        });
+
+    }
+
     cfg = cfg || {};
 
     //If set we replace the old node id with a new one e.g. when we copy a node
@@ -160,25 +256,19 @@ NodeManager.prototype.importNode = function(nodeStr, cfg) {
 
     //Insert to dom and activate the new node
     var targetInstance = this.diagram.import(nodeStr);
-    var node = this.diagram.activateNode(targetInstance);
-
-    //If set we move the new node to a given position
-    if(cfg.mouse) {
-        var stagePosition = this.diagram.getStagePosition(cfg.mouse);
-        node.moveTo(stagePosition.x, stagePosition.y);
-    }
+    return this.activateNode(targetInstance, cfg);
 };
 
 NodeManager.prototype.getNodeAsString = function(node) {
     node = this.getNode(node);
-    return xml.serializeToString(node.instance());
+    return node.toString();
 };
 
 NodeManager.prototype.copyNodeListener = function(evt) {
     try {
         var node = this.getNode(evt.data);
         if(object.isDefined(node)) {
-            var nodeStr = this.getNodeAsString(node);
+            var nodeStr = node.toString();
             var newNodeId = Date.now();
             return this.exec(CMD_COPY, [nodeStr,
                 {
@@ -194,9 +284,16 @@ NodeManager.prototype.copyNodeListener = function(evt) {
 };
 
 NodeManager.prototype.moveNode = function(node, dxSum, dySum) {
-    node = this.getNode(node);
-    if(node) {
-        node.triggerDrag(dxSum, dySum);
+    if(object.isArray(node)) {
+        var that = this;
+        $.each(node, function(index, value) {
+            that.moveNode(value, dxSum, dySum);
+        });
+    } else {
+        node = this.getNode(node);
+        if(node) {
+            node.triggerDrag(dxSum, dySum);
+        }
     }
 };
 

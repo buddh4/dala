@@ -26,11 +26,41 @@ SVGShape.prototype.getTransformation = function() {
     return this.attributes.transform;
 };
 
-SVGShape.prototype.scale = function(scale) {
-    var result = this.getTransformation().scale(scale);
+SVGShape.prototype.transformedX = function(px) {
+    return this.scaledX(this.translatedX(px));
+};
+
+SVGShape.prototype.transformedY = function(px) {
+    return this.scaledY(this.translatedY(px));
+};
+
+SVGShape.prototype.scaledX = function(px) {
+    return px * this.scale()[0]
+};
+
+SVGShape.prototype.scaledY = function(py) {
+    return py * this.scale()[1]
+};
+
+SVGShape.prototype.rotate = function(val) {
+    var result = this.getTransformation().rotate(val);
 
     if(result instanceof Transform) {
-        // The trnaslate setter returns the Transform object so we reset thestyle
+        // The scale setter returns the Transform itself object so we reset the scale
+        // transform attribute in dom (setter was called)
+        this.updateAttribute('transform');
+        return this;
+    } else {
+        // The getter just returns the x,y values of the translate transformation
+        return result;
+    }
+};
+
+SVGShape.prototype.scale = function(sx, sy) {
+    var result = this.getTransformation().scale(sx, sy);
+
+    if(result instanceof Transform) {
+        // The scale setter returns the Transform itself object so we reset the scale
         // transform attribute in dom (setter was called)
         this.updateAttribute('transform');
         return this;
@@ -181,7 +211,7 @@ SVGShape.prototype.getRelativeLocation = function(position) {
         return 'left';
     } else if(position.y === this.y()) {
         return 'top';
-    } else if(position.x === this.getRightX()) {
+    } else if(position.x === this.getRightX()) {heigh
         return 'right';
     } else if(position.y === this.getBottomY()) {
         return 'bottom';
@@ -203,27 +233,64 @@ SVGShape.prototype.getRelativeLocation = function(position) {
     }
 };
 
-SVGShape.prototype.x = function() {
-    return this.translatedX(0);
+SVGShape.prototype.x = function(withStroke) {
+    return (withStroke) ? this.translatedX(this._getX()) - this.scaledX(this.strokeWidth()) / 2 : this.translatedX(this._getX());
 };
 
-SVGShape.prototype.y = function() {
-    return this.translatedY(0);
+SVGShape.prototype._getX = function() {
+    return 0;
 };
 
-SVGShape.prototype.position = function() {
+SVGShape.prototype.y = function(withStroke) {
+    return (withStroke) ? this.translatedY(this._getY()) - this.scaledY(this.strokeWidth()) / 2 : this.translatedY(this._getY());
+};
+
+SVGShape.prototype._getY = function() {
+    return 0;
+};
+
+SVGShape.prototype.position = function(withStroke) {
     var that = this;
     return {
-        x : that.x(),
-        y : that.y()
+        x : that.x(withStroke),
+        y : that.y(withStroke)
+    };
+};
+
+SVGShape.prototype.topLeft = function(withStroke) {
+    return this.position(withStroke);
+};
+
+SVGShape.prototype.topRight = function(withStroke) {
+    var that = this;
+    return {
+        x : that.getRightX(withStroke),
+        y : that.y(withStroke)
+    };
+};
+
+SVGShape.prototype.bottomRight = function(withStroke) {
+    var that = this;
+    return {
+        x : that.getRightX(withStroke),
+        y : that.getBottomY(withStroke)
+    };
+};
+
+SVGShape.prototype.bottomLeft = function(withStroke) {
+    var that = this;
+    return {
+        x : that.x(withStroke),
+        y : that.getBottomY(withStroke)
     };
 };
 
 SVGShape.prototype.getCenter = function() {
-    return {
+    var c = {
         x: this.x() + Math.floor(this.width() / 2),
         y: this.y() + Math.floor(this.height() / 2)
     };
+    return util.math.rotate(c, this.position(), this.rotate());
 };
 
 SVGShape.prototype.overlays = function() {
@@ -284,20 +351,50 @@ SVGShape.prototype.moveY = function(y) {
 /**
  * Note: the implementation of getBBox differs between browsers some add the sroke-width and some do not add stroke-width
  */
-SVGShape.prototype.height = function() {
+SVGShape.prototype.height = function(value) {
+    if((object.isBoolean(value) && value)) {
+        return this.scaledY(this._getHeight()) + this.scaledY(this.strokeWidth());
+    } else if(!object.isDefined(value) || (object.isBoolean(value) && !value)) {
+        return this.scaledY(this._getHeight());
+    } else {
+        this._setHeight(value);
+        return this;
+    }
+};
+
+SVGShape.prototype._getHeight = function() {
     return this.getBBox().height;
 };
 
-SVGShape.prototype.width = function() {
+SVGShape.prototype._setHeight = function() {
+    //ABSTRACT
+};
+
+SVGShape.prototype.width = function(value) {
+    if((object.isBoolean(value) && value)) {
+        return this.scaledX(this._getWidth()) + this.scaledX(this.strokeWidth());
+    } else if(!object.isDefined(value) || (object.isBoolean(value) && !value)) {
+        return this.scaledX(this._getWidth());
+    } else {
+        this._setWidth(value);
+        return this;
+    }
+};
+
+SVGShape.prototype._getWidth = function() {
     return this.getBBox().width;
 };
 
-SVGShape.prototype.getBottomY = function() {
-    return this.y() + this.height();
+SVGShape.prototype._setWidth = function() {
+   //ABSTRACT
 };
 
-SVGShape.prototype.getRightX = function() {
-    return this.x() + this.width();
+SVGShape.prototype.getBottomY = function(withStroke) {
+    return this.y(withStroke) + this.height(withStroke);
+};
+
+SVGShape.prototype.getRightX = function(withStroke) {
+    return this.x(withStroke) + this.width(withStroke);
 };
 
 module.exports = SVGShape;

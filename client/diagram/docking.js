@@ -19,7 +19,7 @@ var math = util.math;
 
 var checkOrientationBoundary = function(node, p) {
     var dockingType = (node.config.docking && node.config.docking.type) ? node.config.docking.type : 'RECT';
-    switch(node.config.docking.type.toUpperCase()) {
+    switch(dockingType.toUpperCase()) {
         case 'CENTER':
             return false;
         case 'CIRCLE':
@@ -34,24 +34,39 @@ var checkOrientationBoundary = function(node, p) {
 
 var calculateDockingPosition = function(node, orientationOut, orientationIn) {
     var dockingType = (node.config.docking && node.config.docking.type) ? node.config.docking.type : 'RECT';
-    switch(node.config.docking.type.toUpperCase()) {
+    var result;
+    switch(dockingType.toUpperCase()) {
         case 'SIMPLE':
-            return SIMPLE.call(node, orientationOut, orientationIn);
+            result = SIMPLE.call(node, orientationOut, orientationIn);
+            break;
         case 'CENTER':
-            return CENTER.call(node, orientationOut, orientationIn);
+            result = CENTER.call(node, orientationOut, orientationIn);
+            break;
         case 'CIRCLE':
-            return CIRCLE.call(node, orientationOut, orientationIn);
+            result = CIRCLE.call(node, orientationOut, orientationIn);
+            break;
         case 'ELLIPSE':
-            return ELLIPSE.call(node, orientationOut, orientationIn);
+            result = ELLIPSE.call(node, orientationOut, orientationIn);
+            break;
         case 'SQUARE':
         case 'RECT':
-            return RECT.call(node,orientationOut, orientationIn);
+            result = RECT.call(node,orientationOut, orientationIn);
+            break;
         case 'FREE':
-            return FREE.call(node,orientationOut, orientationIn);
+            result = FREE.call(node,orientationOut, orientationIn);
+            break;
         default:
-            return CENTER.call(node, orientationOut, orientationIn);
+            result = CENTER.call(node, orientationOut, orientationIn);
+            break;
 
     };
+
+    var rotation = node.root.rotate();
+    if(rotation) {
+        result = math.rotate(result, node.position(), rotation);
+    }
+
+    return result;
 };
 
 var FREE = function(position , orientationIn) {
@@ -63,7 +78,6 @@ var ELLIPSE = function(position , orientationIn) {
     var ry = this.height() / 2;
     var ellipse = new math.Ellipse(this.getCenter(), rx, ry);
     var result = ellipse.calcLineIntercept(position, orientationIn);
-
     return (result.length > 0)?result[0]:orientationIn;
 
 };
@@ -153,6 +167,7 @@ var RECT = function(position, orientation) {
         var result = transition.calcLineIntercept(topLine);
         //We explicitly set this because of possible calculation deviations
         result.y = this.y();
+
         return result;
     }
 };

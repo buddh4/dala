@@ -1,8 +1,9 @@
 (function() {
     dala.require('templateManager').registerPanel({
-        id: 'communication',
-        label: 'Communication',
+        id: 'chart',
+        label: 'Chart',
         templates: {
+            simple_circle : {id: 'chart_bar', label: 'Bar'}
         }
     });
 })();

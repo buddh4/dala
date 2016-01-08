@@ -11,6 +11,7 @@ util.inherits(CurvedPathManager, AbstractPathManager);
 CurvedPathManager.type = 'curved';
 
 CurvedPathManager.prototype.create = function(position) {
+    //Control points are calculated by calling update
     this.path.cBezier(undefined, undefined, position);
 };
 

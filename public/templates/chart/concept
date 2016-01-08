@@ -1,0 +1,62 @@
+JSonConfig/Format for Diagram:
+Bar Chart:
+
+{
+    'label':
+        type : 'text',
+
+}
+
+ChartData
+
+ListEdit:
+{
+    key: {
+        type : "text",
+        label : "Title"
+    },
+    category: {
+        type : "text",
+        label : "Category"
+    },
+    value : {
+        type : "number",
+        label : "Title"
+    },
+    color: {
+        type : "color",
+        label : "Title"
+    }
+
+}
+
+{
+    categories : ['speed', 'rating', 'safety'],
+    y : {
+        label : 'Amount',
+        range : [1,10]
+    },
+    data : {
+        'fiat': {
+            'speed' : 1.0,
+            'rating' : 2.0,
+            'safety' : 5.0,
+            'color': 'red'
+        },
+        'audi': {
+            'speed' : 1.0,
+            'rating' : 2.0,
+            'safety' : 5.0,
+            'color': 'red'
+        }
+    }
+}
+
+
+1.0;'fiat';'speed',
+3.0;'fiat';'rating',
+5.0;'fiat';'safety',
+
+2.0;'audi';'speed',
+4.0;'audi';'rating',
+5.0;'audi';'safety',

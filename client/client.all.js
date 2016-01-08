@@ -13,7 +13,9 @@ require('jstree');
 
 require('bootstrap');
 
-$.fn.bootstrapBtn = $.fn.button.noConflict();
+if($.fn.button.noConflict) {
+    $.fn.bootstrapBtn = $.fn.button.noConflict();
+}
 
 //INIT GLOBAL DALA
 dala = {};
@@ -100,6 +102,7 @@ event.on(document, 'keydown', function(e) {
             break;
         case 86: //v
             if(e.ctrlKey && stageFocus) {
+                e.preventDefault();
                 event.trigger('key_paste_press', {}, e);
             }
             break;

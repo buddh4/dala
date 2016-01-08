@@ -141,6 +141,11 @@ module.exports = {
         cfg.dataType = 'xml';
         return this.get(path,cfg);
     },
+    text : function(path, cfg) {
+        cfg = cfg || {};
+        cfg.dataType = 'text';
+        return this.get(path,cfg);
+    },
     getScript: function(path, cfg) {
         cfg = cfg || {};
 

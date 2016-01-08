@@ -1,6 +1,7 @@
 var config = require('../core/config');
 var CurvePathManager = require('./curvedPathManager');
 var StraightPathManager = require('./straightPathManager');
+var RoundPathManager = require('./roundPathManager');
 var pathManager = {};
 
 var register =   function(constructor) {
@@ -9,6 +10,7 @@ var register =   function(constructor) {
 
 register(CurvePathManager);
 register(StraightPathManager);
+register(RoundPathManager);
 
 module.exports =  {
     register : register,

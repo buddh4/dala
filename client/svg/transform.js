@@ -25,10 +25,10 @@ Transform.prototype.setDefinitionFromString = function(value) {
         var transformation = transformations[i].trim();
         if(transformation.length > 0) {
             var values = DomElement.getAttributeValueFromStringList(transformations[i+1]);
-            for(var i = 0; i < values.length; i++) {
-                // We prefer integer values for calculations
-                if(!isNaN(values[i])) {
-                    values[i] = parseInt(values[i]);
+            for(var j = 0; j < values.length; j++) {
+                // We prefer float values for calculations
+                if(!isNaN(values[j])) {
+                    values[j] = parseFloat(values[j]);
                 }
             }
             this.definition[transformation] = values;
@@ -57,15 +57,44 @@ Transform.prototype.toString = function() {
 };
 
 Transform.prototype.hasTransformation = function(key) {
-    return (typeof definition[key] !== 'undefined');
+    return (typeof this.definition[key] !== 'undefined');
 };
 
-Transform.prototype.scale = function(s) {
-    if(s) {
-        this.definition.scale = s;
+
+Transform.prototype.rotate = function(val) {
+    if(object.isDefined(val)) {
+        this.definition.rotate = val;
         return this;
     } else {
-        return this.definition.scale;
+        return this.definition.rotate || 0;
+    }
+};
+
+Transform.prototype.scale = function(sx, sy) {
+    sy = sy || sx;
+    if(object.isDefined(sx)) {
+        if(!this.definition.scale) {
+            this.definition.scale = [sx, sy];
+        } else {
+            this.definition.scale[0] = sx;
+            this.definition.scale[1] = sy;
+        }
+        return this;
+    } else {
+        var result = this.definition.scale;
+        if(result && result.length === 1) {
+            return [result[0], result[0]];
+        } else if(result && result.length === 2) {
+            return [result[0], result[1]]
+        } else {
+            return [1,1];
+        }
+    }
+};
+
+Transform.prototype.setScale = function(index, value) {
+    if(index < 2 && this.definition.scale) {
+        this.definition.scale[index] = value;
     }
 };
 
@@ -73,7 +102,12 @@ Transform.prototype.translate = function(x, y) {
     var p = util.math.getPoint(x,y);
 
     if(object.isDefined(p)) {
-        this.definition.translate = [p.x, p.y];
+        if(!this.definition.translate) {
+            this.definition.translate = [p.x, p.y];
+        } else {
+            this.definition.translate[0] = p.x;
+            this.definition.translate[1] = p.y;
+        }
         return this;
     } else {
         if(this.definition.translate) {

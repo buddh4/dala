@@ -348,6 +348,16 @@ h3 {
     font-size: 1.2em;
 }
 
+#stageNav .active {
+    background-color:#d1d1d1;
+}
+
+#stageNav .seperator {
+    width:1px;
+    height:40px;
+    background-color:#e7e7e7;
+}
+
 #fileSystem {
     background-color:#ffffff;
 }

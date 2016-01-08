@@ -2,6 +2,8 @@ var util = require('../util/util');
 var event = require('../core/event');
 var config = require('../core/config');
 
+var Eventable = require('./eventable');
+
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');
 var TransitionPathManager = require('./curvedPathManager');
@@ -30,6 +32,8 @@ var Transition = function(node, startPosition) {
     }
 };
 
+util.inherits(Transition, Eventable);
+
 Transition.prototype.getPath = function() {
     return this.pathManager.path;
 };
@@ -56,8 +60,8 @@ Transition.prototype.activate = function(domGroup) {
     this.group.$().children('.knob').remove();
 
     //Get line and linearea from dom
-    this.line = this.getLine();
-    this.lineArea = this.getLineArea();
+    this.getLine();
+    this.getLineArea();
     this.lineArea.d(this.line.d());
 
     //Init Manager
@@ -70,16 +74,24 @@ Transition.prototype.activate = function(domGroup) {
 
 Transition.prototype.getLine = function() {
     if(!this.line && this.group) {
-        this.line = this.getInnerSVG('line');
+        this._setLine(this.getInnerSVG('line'));
     }
     return this.line;
 };
 
 Transition.prototype.getLineArea = function() {
     if(!this.lineArea && this.group) {
-        this.lineArea = this.getInnerSVG('lineArea');
+         this._setLineArea(this.getInnerSVG('lineArea'));
     }
     return this.lineArea;
+};
+
+Transition.prototype._setLineArea = function(svgLineArea) {
+    this.lineArea = this.eventBase = svgLineArea;
+};
+
+Transition.prototype._setLine = function(svgLine) {
+    this.line = svgLine;
 };
 
 /**
@@ -141,6 +153,14 @@ Transition.prototype.getEndAlignment = function() {
     return result;
 };
 
+Transition.prototype.getStartNode = function() {
+    return this.dockingManager.startNode;
+};
+
+Transition.prototype.getEndNode = function() {
+    return this.dockingManager.endNode;
+};
+
 Transition.prototype.start = function() {
     return this.knobManager.start();
 };
@@ -182,17 +202,17 @@ Transition.prototype.initTransitionSVG = function() {
     var path = this.pathManager.path;
 
     //Note we share the path between line and lineArea an update
-    this.line = this.svg.path({
+    this._setLine(this.svg.path({
         d : path,
         id : 'line_'+this.id,
         style  : STYLE_TRANSITION_ACTIVE
-    });
+    }));
 
-    this.lineArea = this.svg.path({
+    this._setLineArea(this.svg.path({
         d : path,
         id: 'lineArea_'+this.id,
         style  : STYLE_AREA
-    });
+    }));
 
     //TODO: make this configurable in node template or something !!!
     this.endMarker('trianglefill');
@@ -221,7 +241,7 @@ Transition.prototype.initEvents = function() {
 
         var dragInitiated = false;
         var startPosition = that.diagram.getStagePosition(evt);
-        var knobIndex = that.getPath().getPathIndexForPosition(startPosition);
+        var knobIndex = that.pathManager.getIndexForPosition(startPosition);
 
         if (knobIndex) {
             event.once(document, "mouseup", function(evt) {
@@ -238,6 +258,11 @@ Transition.prototype.initEvents = function() {
                 }
             });
         }
+    }).on('dblclick', function(evt) {
+        var startPosition = that.diagram.getStagePosition(evt);
+        var pointOnLine = that.pathManager.getNearestPoint(startPosition);
+        var knobIndex = that.pathManager.getIndexForPosition(startPosition);
+        var knob = that.knobManager.addKnob(pointOnLine, knobIndex);
     });
 };
 
@@ -268,6 +293,10 @@ Transition.prototype.redraw = function() {
         this.lineArea.update();
     }
 };
+
+Transition.prototype.getSelectedKnobs = function() {
+    return this.knobManager.getSelectedKnobs();
+}
 
 Transition.prototype.updateStart = function(mouse) {
     var outerOrientation = mouse || this.knobManager.getPosition(1);
@@ -323,24 +352,6 @@ Transition.prototype.remove = function() {
     this.removed = true;
     this.group.remove();
     this.dockingManager.remove();
-};
-
-/**
- * Needed by Interface editable // See abstractEditAddition
- */
-Transition.prototype.exec = function(func, args, prevDomEvent) {
-    this.executeAddition(func, args);
-    if(!prevDomEvent) {
-        this.trigger(func, args);
-    }
-};
-
-Transition.prototype.executeAddition = function(func, args) {
-    object.each(this.additions, function(key, addition) {
-        if(object.isDefined(addition) && object.isFunction(addition[func])) {
-            addition[func].apply(addition, args);
-        }
-    });
 };
 
 Transition.prototype.index = function() {
@@ -417,7 +428,6 @@ Transition.prototype.markerValue = function(type, marker) {
     }
 };
 
-
 Transition.prototype.getMarkerValueString = function(markerId) {
     markerId = (util.string.endsWith(markerId, this.diagram.id)) ? markerId : markerId + '_' + this.diagram.id;
     return 'url(#' + markerId + ')';
@@ -451,21 +461,8 @@ Transition.prototype.inactiveStyle = function() {
     this.line.attr({style:STYLE_TRANSITION_INACTIVE});
 };
 
-Transition.prototype.on = function(evt, handler) {
-    this.lineArea.on(evt, handler);
-    return this;
-};
-
-Transition.prototype.trigger = function(evt, args) {
-    if(this.lineArea) {
-        this.lineArea.trigger(evt, args);
-    }
-    return this;
-};
-
-Transition.prototype.off = function(evt) {
-    this.lineArea.off(evt);
-    return this;
+Transition.prototype.toString = function() {
+    return this.group.toString();
 };
 
 module.exports = Transition;

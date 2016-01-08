@@ -1,6 +1,6 @@
 var util = require('../util/util');
 var object = require('../util/object');
-var SVGShape = require('./genericShape');
+var SVGShape = require('./svgShape');
 var SVGText = require('./text');
 
 var DEFAULT_DOMINANT_BASELINE = 'inherit'

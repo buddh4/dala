@@ -19,17 +19,20 @@ var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var DiagramAPI = require('./api');
 
+var Eventable = require('./eventable');
+
 var KnobManager = require('./knobManager');
 require('./knobTemplate');
 var xml = require('../util/xml');
 
 var Promise = require('bluebird');
 
-var Helper = require('./helper');
+var Helper = require('./../svg/helper');
+
+var config = require('../core/config');
 
 var object = util.object;
 var dom = util.dom;
-
 
 var CONTAINER_SELECTOR = '#svgStage';
 // Contains the parent dom node (div) of the SVG element
@@ -63,6 +66,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
         this.$container = $CONTAINER_NODE;
     }
 
+    // Build the SVG stage within the container
+    this.svg = new SVG(this.$container.attr('id'), this.ns());
+    this.eventBase = this.svg.root;
+
     var that = this;
     this.commandMgr = commandManager.sub(this.id, function(cmd) {
         that.triggerUpdate();
@@ -70,17 +77,14 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
 
     // Handles the loading and creation of templates
     this.templateMgr = templateManager;
+    // This helper class manages the selection of nodes/transitions
+    this.selectionMgr = new SelectionManager(this);
     // Responsible for creating and maintaining nodes
     this.nodeMgr = new NodeManager(this);
     // Responsible for creating and maintaining transitions
     this.transitionMgr = new TransitionManager(this);
-    // This helper class manages the selection of nodes/transitions
-    this.selectionMgr = new SelectionManager(this);
     // Responsible for tracking and accessing all dockings on the diagram
     this.knobMgr = new KnobManager(this);
-
-    // Build the SVG stage within the container
-    this.svg = new SVG(this.$container.attr('id'), {"xmlns:dala" : "http://www.dala.com"});
 
     // Init stage related and key events
     this.initEvents();
@@ -92,7 +96,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
         .then(function() {
             that.initialized = true;
             that.mainPart = that.svg.createPart('main', true);
-            that.helper = new Helper(this);
+            that.helper = that.svg.helper();
             that.trigger('initialized');
         }, function(err) {
             console.error('Could not load defs initialisation failed!');
@@ -106,6 +110,12 @@ Diagram.prototype = {
         }
         return this._api;
     }
+};
+
+util.inherits(Diagram, Eventable);
+
+Diagram.prototype.ns = function() {
+    return {"xmlns:dala" : "http://www.dala.com"};
 };
 
 Diagram.prototype.getRootSVG = function() {
@@ -126,20 +136,6 @@ Diagram.prototype.trigger = function(evt, args) {
     this.event.trigger(event, args);
 };
 
-Diagram.prototype.on = function(evt, handler) {
-    //perhaps also listen to diagram intern events not only dom events.
-    this.svg.root.on(evt, handler);
-};
-
-Diagram.prototype.one = function(evt, handler) {
-    //perhaps also listen to diagram intern events not only dom events.
-    this.svg.root.one(evt, handler);
-};
-
-Diagram.prototype.off = function(evt) {
-    this.svg.root.off(evt);
-};
-
 /*
  * Initializes Stage Mouse and Key events.
  */
@@ -157,7 +153,7 @@ Diagram.prototype.initEvents = function() {
     this.on('mousedown', function(evt) {
         var startPosition = that.getStagePosition(evt);
 
-        if(evt.ctrlKey) {
+        if(evt.ctrlKey || config.is('diagram_mode_move', false)) {
             //Move main part
             that.mainPart.draggable({
                 once: true,
@@ -283,12 +279,8 @@ Diagram.prototype.triggerDockingVisibility = function() {
 Diagram.prototype.activateNodes = function() {
     var that = this;
     $('.element_root').each(function() {
-        that.activateNode(this);
+        this.nodeMgr.activateNode(this);
     });
-};
-
-Diagram.prototype.activateNode = function(domNode) {
-    this.nodeMgr.activateByDomNode(domNode);
 };
 
 //TODO: move to transitionmgr

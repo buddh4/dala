@@ -43,9 +43,7 @@ var Resize = function(node, diagram) {
 Resize.prototype.activateKnobs = function() {
     var positions = this.calculateKnobPosition();
 
-    var translX = this.node.x() - DIF_REL;
-    var translY = this.node.y() - DIF_REL;
-    this.group = this.diagram.svg.g({}).translate(translX, translY);
+    this.group = this.diagram.svg.g({}).translate(this.node.position()).rotate(this.node.rotate());
 
     //Initialize the different knobs with different drag restricitons
     this.createKnob(KNOB_NW,positions[KNOB_NW],new DragConfig());
@@ -76,8 +74,12 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
         })
         .dragMove(function(evt, dx, dy) {
             //We keep track of the total drag movement
+            dx = object.isOneOf(knob, KNOB_NW, KNOB_W, KNOB_SW) ? -1 * dx : dx;
+            dy = object.isOneOf(knob, KNOB_NW, KNOB_N, KNOB_NE) ? -1 * dy : dy;
+
             that.dx += dx;
             that.dy += dy;
+
             that.resize(dx,dy);
         })
         .dragEnd(function(evt) {
@@ -102,8 +104,12 @@ Resize.prototype.getResizeElements = function() {
     var result = [];
     var that = this;
     object.each(this.config, function(index, value) {
-        var svgSelector = that.node.getNodeSelector(value.bind);
-        result[index] = $.qCache().svg(svgSelector);
+        if(value.bind === 'root') {
+            result[index] = that.node.root;
+        } else {
+            var svgSelector = that.node.getNodeSelector(value.bind);
+            result[index] = $.qCache().svg(svgSelector);
+        }
     });
     return result;
 };
@@ -135,7 +141,6 @@ Resize.prototype.updateKnobs = function(resizeKnob) {
     if(object.isDefined(this.group)) {
         if(object.isDefined(resizeKnob) && resizeKnob) {
             var positions = this.calculateKnobPosition();
-
             this.knobs[KNOB_NW].moveTo(positions[KNOB_NW]);
             this.knobs[KNOB_N].moveTo(positions[KNOB_N]);
             this.knobs[KNOB_NE].moveTo(positions[KNOB_NE]);
@@ -147,28 +152,29 @@ Resize.prototype.updateKnobs = function(resizeKnob) {
             this.node.exec('resize');
         } else {
             //If the flag is not set we just do an update probably from simple node drag/drop
-            var translX = this.node.root.getTransformation().translate().x - DIF_REL;
-            var translY = this.node.root.getTransformation().translate().y - DIF_REL;
-            this.group.translate(translX, translY);
+            this.group.translate(this.node.position());
         }
     }
 };
 
 Resize.prototype.calculateKnobPosition = function() {
-    var rightX = SIZE + (DIF*2) + this.node.width();
-    var centerX = rightX / 2;
-    var bottomY = SIZE + (DIF*2) + this.node.height();
-    var centerY = bottomY / 2;
+    var sizeDifsum = (SIZE + DIF)
+    var left = -1 * sizeDifsum;
+    var top = left;
+    var right = this.node.width() + DIF;
+    var centerX = right / 2 - (sizeDifsum / 2);
+    var bottom = this.node.height() + DIF;
+    var centerY = bottom / 2 - (sizeDifsum / 2);
 
     var result = [];
-    result[KNOB_NW] = {x:0, y:0};
-    result[KNOB_N] = {x:centerX, y:0};
-    result[KNOB_NE] = {x:rightX, y:0};
-    result[KNOB_E] = {x:rightX, y:centerY};
-    result[KNOB_SE] = {x:rightX, y:bottomY};
-    result[KNOB_S] = {x:centerX, y:bottomY};
-    result[KNOB_SW] = {x:0, y:bottomY};
-    result[KNOB_W] = {x:0, y:centerY};
+    result[KNOB_NW] = {x:left, y:top};
+    result[KNOB_N] = {x:centerX, y:top};
+    result[KNOB_NE] = {x:right, y:top};
+    result[KNOB_E] = {x:right, y:centerY};
+    result[KNOB_SE] = {x:right, y:bottom};
+    result[KNOB_S] = {x:centerX, y:bottom};
+    result[KNOB_SW] = {x:left, y:bottom};
+    result[KNOB_W] = {x:left, y:centerY};
     return result;
 
 };
@@ -181,14 +187,24 @@ Resize.prototype.removeKnobs = function() {
 };
 
 Resize.prototype.updateNodes = function(dx,dy) {
-    var that = this;
+
     if(!object.isDefined(this.resizeElements)) {
         this.resizeElements = this.getResizeElements();
     }
 
+    var that = this;
     object.each(this.resizeElements, function(index, element) {
         that.updateNode(index,element,dx,dy);
-    }) ;
+    });
+
+    if(!object.isDefined(dx)) {
+        return;
+    }
+
+    var alignX = object.isOneOf(this.dragKnob, KNOB_NW, KNOB_W, KNOB_SW) ? dx * -1 : 0;
+    var alignY = object.isOneOf(this.dragKnob, KNOB_NW, KNOB_N, KNOB_NE) ? dy * -1 : 0;
+    this.node.root.move(alignX, alignY);
+    this.group.move(alignX, alignY);
 };
 
 Resize.prototype.updateNode = function(index, element, dx, dy) {
@@ -197,12 +213,19 @@ Resize.prototype.updateNode = function(index, element, dx, dy) {
 
     var elementConfig = this.config[index];
     if(object.isDefined(elementConfig.value)) {
-        if(elementConfig.value[0].type !== 'vertical') {
-            this.setResize(element, elementConfig, elementConfig.value[0], dx, 'width');
-        }
-        //We just set one dimension for a circle
-        if(elementConfig.value[0].type !== 'circle' || this.dragKnob === KNOB_S || this.dragKnob === KNOB_N) {
-            this.setResize(element,elementConfig, elementConfig.value[1], dy, 'height');
+        //TODO: cleaner implementation
+        //Scale with even alignment (default for type scale)
+        if(elementConfig.value[0].type === 'scale' && elementConfig.even) {
+            var d = util.math.minMax(dx,dy).max;
+            this.setResize(element, elementConfig, elementConfig.value[0], d, 'width');
+        } else {
+            if(elementConfig.value[0].type !== 'vertical') {
+                this.setResize(element, elementConfig, elementConfig.value[0], dx, 'width');
+            }
+            //We just set one dimension for a circle
+            if(elementConfig.value[0].type !== 'circle' || this.dragKnob === KNOB_S || this.dragKnob === KNOB_N) {
+                this.setResize(element,elementConfig, elementConfig.value[1], dy, 'height');
+            }
         }
     }
 
@@ -238,8 +261,36 @@ Resize.prototype.setResize = function(svgElement, elementConfig, setting, d, dim
             var parentVal = svgElement.$().parent().get(0).getBBox()[dimension];
             svgElement[dimension](parentVal + setting.value);
             break;
+        case 'scale':
+            if(elementConfig.even) {
+                var scale = svgElement.scale()[0];
+                var ratio = d / svgElement.getBBox().width;
+                svgElement.scale(scale + ratio);
+                $.each(svgElement.find('.alignScale'), function(index, svgToAlign) {
+                    svgToAlign.scale(1 / svgElement.scale()[0]);
+                });
+                $.each(svgElement.find('.alignScaleStroke'), function(index, svgToAlign) {
+                    var current = svgToAlign.strokeWidth();
+                    var init = current * scale;
+                    svgToAlign.strokeWidth(init / svgElement.scale()[0]);
+                });
+                break;
+            } else {
+                var scaleOld  = svgElement.scale();
+                var scaleIndex = (dimension === 'height') ? 1 : 0;
+                var scaleNew = scaleOld.slice();
+                //Add the ratio from original size (without scale)
+                scaleNew[scaleIndex] += (d / svgElement.getBBox()[dimension]);
+                svgElement.scale(scaleNew[0], scaleNew[1]);
+            }
+
+
+            /**
+             * TODO: search for inner elements with class .alignScaling and aling e.g. stroke-width, font-size..
+             */
+            break;
         default:
-            var currentVal = svgElement[dimension](false) ;
+            var currentVal = svgElement[dimension](false);
             var newValue = (currentVal + d);
             if(newValue > 0) {
                 svgElement[dimension]((currentVal + d));
@@ -296,7 +347,6 @@ Resize.prototype.getAlignedPosition = function(svgElement, settings, alignto, di
             if(object.isDefined(alignSVG)) {
                 var alignVal = alignSVG.getCenter()[dimensionCoord];
                 return alignVal - (svgElement[dimension]() / 2) - settings.value;
-                //return (alignVal - svgElement[dimension]()) / 2 + settings.value;
             };
             break;
         case 'relative':
@@ -329,12 +379,12 @@ Resize.prototype.getAlignElement = function(alignto, svgElement) {
     //The alignto setting can be the parent-, root- or an explicit element default is the previous sibling element
     if(!alignto || alignto === 'prev') {
         elementToAlign = $.qCache().svg(svgElement.$().prev());
-    }else if(!alignto || alignto === 'parent') {
+    }else if(alignto === 'parent') {
         elementToAlign = $.qCache().svg(svgElement.$().parent());;
     } else if(alignto === 'root') {
         elementToAlign = this.node.root;
     } else {
-        elementToAlign = $.qCache.svg(this.node.getNodeSelector(alignto));
+        elementToAlign = $.qCache().svg(this.node.getNodeSelector(alignto));
     }
 
     if(!elementToAlign) {

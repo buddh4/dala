@@ -94,14 +94,6 @@ module.exports.init = function() {
         }
     });
 
-    $('#zoomIn').on('click', function() {
-        event.trigger('view_zoomIn');
-    });
-
-    $('#zoomOut').on('click', function() {
-        event.trigger('view_zoomOut');
-    });
-
     $CONTAINER_NODE.droppable({
         drop: function( event, ui ) {
             console.log('DROPPPPPPED');

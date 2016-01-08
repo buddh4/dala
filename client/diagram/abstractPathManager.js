@@ -17,7 +17,7 @@ AbstractPathManager.prototype.fromString = function(pathDataStr) {
 AbstractPathManager.prototype.dragLine = function(position) {
     // Init path if no path was created yet
     if(!this.path) {
-        this._init(position)
+        this.init(position)
     }
 
     // Create full path if the path only consist of the start path part yet or update the end position of the path
@@ -30,7 +30,7 @@ AbstractPathManager.prototype.dragLine = function(position) {
     this.update();
 };
 
-AbstractPathManager.prototype._init = function(position) {
+AbstractPathManager.prototype.init = function(position) {
     this.path = new PathData().start(position);
 };
 
@@ -41,7 +41,7 @@ AbstractPathManager.prototype.updatePart = function(index, position) {
 
 AbstractPathManager.prototype.addPathPart = function(index, position) {
     if(!this.path) {
-        this._init(position);
+        this.init(position);
     } else {
         this.add(index,position);
         this.update();
@@ -55,13 +55,7 @@ AbstractPathManager.prototype.removePathPart = function(index) {
 };
 
 AbstractPathManager.prototype.replace = function(old, positions) {
-    this._init(positions[0]);
-
-    for(var i  = 1; i < positions.length; i++) {
-        this.add(i, positions[i]);
-    }
-
-    this.update();
+    this.buildPath(positions);
 
     //We set our created path data to the existing path, since the transition line and linearea are dependent on this path instance
     old.path.data = this.path.data;
@@ -69,6 +63,24 @@ AbstractPathManager.prototype.replace = function(old, positions) {
 
     this.transition.pathManager = this;
     return this;
+};
+
+AbstractPathManager.prototype.buildPath = function(positions) {
+    this.init(positions[0]);
+
+    for(var i  = 1; i < positions.length; i++) {
+        this.add(i, positions[i]);
+    }
+
+    this.update();
+};
+
+AbstractPathManager.prototype.getNearestPoint = function(position) {
+    return this.path.getNearestPoint(position);
+};
+
+AbstractPathManager.prototype.getIndexForPosition = function(position) {
+    return this.path.getPathIndexForPosition(position);
 };
 
 AbstractPathManager.prototype.create = function(position) {/*Abstract*/};

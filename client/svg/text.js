@@ -1,6 +1,6 @@
 var util = require('../util/util');
 var object = require('../util/object');
-var SVGShape = require('./genericShape');
+var SVGShape = require('./svgShape');
 
 var DEFAULT_FONT_SIZE = 11;
 var DEFAULT_FONT_FAMILY = "Helvetica"; //Verdana, Arial, sans-serif ?
@@ -23,10 +23,6 @@ var SVGText = function(svgRoot, cfg, attributeSetter) {
 };
 
 util.inherits(SVGText, SVGShape);
-
-SVGText.prototype.fontFamily = function(value) {
-    return this.attr('font-family', value);
-};
 
 SVGText.prototype.padding = function(value) {
     if(object.isDefined(value)) {
@@ -133,11 +129,6 @@ SVGText.prototype.getCharHeight = function(charNum) {
     return this.getExtentOfChar(charNum).height;
 };
 
-SVGText.prototype.getCharDiff = function(charNum) {
-    return this.height() - this.getCharHeight(charNum)
-    this.getCharHeight(charNum) + this.getExtentOfChar(charNum).y;
-};
-
 SVGText.prototype.start = function() {
     return this.anchor('start');
 };
@@ -156,7 +147,7 @@ SVGText.prototype.anchor = function(value) {
 
 SVGText.prototype.tSpan = function(index) {
     return this.svg.get(this.$().children('tspan').get(index));
-}
+};
 
 SVGText.prototype.hanging = function(hanging) {
     var hanging = object.isDefined(hanging) ? hanging : true;

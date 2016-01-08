@@ -71,26 +71,26 @@ var _setSelectedTemplate = function(tmplId) {
  * @returns {bluebird|exports|module.exports}
  */
 var getTemplate = function(tmplId) {
+    var panelId = tmplId.substring(0, tmplId.indexOf('_'));
     return new Promise(function(resolve, reject) {
-        var panelId = tmplId.substring(0, tmplId.indexOf('_'));
         if(templates[tmplId]) { //Template is loaded
             var tmpl = templates[tmplId];
             if(!tmpl.isInitialized()) { //Template is not initialized yet so load svg
-                _loadRemoteTemplateSVGasXML(tmplId, panelId).
+                _loadRemoteTemplateSVG(tmplId, panelId).
                     then(function() {
                         resolve(tmpl);
                     }, function(err) {
                         reject(err);
                     });
+            } else {
+                resolve(templates[tmplId]);
             }
-            resolve(templates[tmplId]);
         } else { //Template not loaded yet
-            var panelId = tmplId.substring(0, tmplId.indexOf('_'));
             if(panelId) { //Load and initialize template
                 //TODO: here we have to consider other loading mechanism as dom loading / browser cache first
-                _loadRemoteTemplate(panelId, tmplId, true)
-                    .then(function() {
-                        resolve(templates[tmplId]);
+                _loadRemoteTemplate(panelId, tmplId)
+                    .then(function(tmpl) {
+                        resolve(tmpl);
                     }, function(err) {
                         reject(err);
                     });
@@ -146,15 +146,13 @@ var _loadPanel = function(panelId) {
  * @returns {bluebird|exports|module.exports}
  * @private
  */
-var _loadRemoteTemplate = function(panelId, tmplId, fetchSVG) {
+var _loadRemoteTemplate = function(panelId, tmplId) {
     return new Promise(function(resolve, reject) {
+        var that = this;
         client.getScript(PATH_TEMPLATES+'/'+panelId+'/'+tmplId+'.js', {
             success : function(response) {
-                if(fetchSVG) {
-                     _loadRemoteTemplateSVGasXML(tmplId, panelId).then(resolve,reject);
-                } else {
-                    resolve();
-                }
+                //Now that we have loaded and initialized the template script we can get the template
+                getTemplate(tmplId).then(resolve, reject);
             },
             error: function(errorMsg) {
                 reject(errorMsg);
@@ -184,9 +182,9 @@ var registerTemplate = function(templateId, config) {
  * @returns {bluebird|exports|module.exports}
  * @private
  */
-var _loadRemoteTemplateSVGasXML = function(tmplId, panelId) {
+var _loadRemoteTemplateSVG = function(tmplId, panelId) {
     return new Promise(function(resolve, reject) {
-        client.xml('/templates/'+panelId+'/'+tmplId+'.svg', {
+        client.text('/templates/'+panelId+'/'+tmplId+'.tmpl', {
             success : function(response) {
                 _initTemplate(tmplId, response.data);
                 resolve(response.data);
@@ -203,8 +201,8 @@ var _loadRemoteTemplateSVGasXML = function(tmplId, panelId) {
 
 };
 
-var _initTemplate = function(tmplId, svgXML) {
-    templates[tmplId].init(svgXML);
+var _initTemplate = function(tmplId, tmplStr) {
+    templates[tmplId].init(tmplStr);
 };
 
 /**

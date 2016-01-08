@@ -54,6 +54,6 @@ KnobManager.prototype.executeOnAllKnobs = function(func) {
     object.each(this.knobs, function(index, knob) {
         func(knob);
     });
-}
+};
 
 module.exports = KnobManager;

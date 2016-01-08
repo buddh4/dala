@@ -1,4 +1,4 @@
-var SVGShape = require('./genericShape');
+var SVGShape = require('./svgShape');
 var util = require('../util/util');
 var event = require('../core/event');
 

@@ -1,6 +1,6 @@
 var util = require('../util/util');
 var object = require('../util/object');
-var SVGShape = require('./genericShape');
+var SVGShape = require('./svgShape');
 
 var SVGGroup = function(svgRoot, cfg) {
     cfg = cfg || {};

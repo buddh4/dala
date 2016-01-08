@@ -1,7 +1,10 @@
 var object = require('../util/object');
+var util = require('../util/util');
 var app = require('../util/app');
 var dom = require('../dom/dom');
 var Transform = require('../svg/transform');
+
+var Eventable = require('./eventable');
 
 var DEFAULT_OPACITY = 0.5;
 var DEFAULT_KNOB_RADIUS = 5;
@@ -12,6 +15,8 @@ var Knob = function(diagram, p, cfg, group) {
     this.group = group;
     this.init(p, cfg);
 };
+
+util.inherits(Knob, Eventable);
 
 Knob.prototype.clearRelativeOrientation = function() {
     delete this.relativePosition;
@@ -34,6 +39,7 @@ Knob.prototype.relativeOrientation = function(position) {
 Knob.prototype.init = function(position, cfg) {
     this.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
     this.node = this.diagram.createKnobNode(position, this.group, this.config);
+    this.eventBase = this.node.eventBase;
     this.config = this.node.config;
     this.root = this.node.root;
     this.node.knob = this;
@@ -126,11 +132,6 @@ Knob.prototype.inactiveStyle = function() {
 Knob.prototype.hoverable = function(handler) {
     var that = this;
     this.node.root.hoverable(handler);
-    return this;
-};
-
-Knob.prototype.on = function(handler, args) {
-    this.node.on(handler, args);
     return this;
 };
 

@@ -24,8 +24,6 @@ var TransitionManager = function(diagram) {
     this.transitions = {};
     this.diagram = diagram;
     event.listen('transition_delete', this.deleteTransitionListener, this);
-    event.listen('transition_docking_created', this.transitionDockingCreatedListener, this);
-    event.listen('transition_docking_dropped', this.transitionDockingDropListener, this);
     event.listen('transition_edit', this.editTransitionListener, this);
 
     this.command(CMD_ADD, this.importTransition, this.deleteTransition);
@@ -56,16 +54,16 @@ TransitionManager.prototype.undoEdit = function(transition, key, value) {
     event.trigger('transition_edit_undo', transition);
 };
 
-TransitionManager.prototype.importTransition = function(transitionStr, transition) {
-    if(transition) {
-        transition = this.getTransition(transition)
-        if(transition) {
-            this.deleteTransition(transition.id);
-        }
+TransitionManager.prototype.importTransition = function(transitionStr, cfg) {
+    var cfg = cfg || {};
+
+    //If set we replace the old node id with a new one e.g. when we copy a node
+    if(cfg.newId && cfg.oldId) {
+        transitionStr = transitionStr.replace(new RegExp(cfg.oldId, 'g'), cfg.newId);
     }
 
     var transitionElement = this.diagram.import(transitionStr);
-    this.activateTransition(transitionElement);
+    return this.activateTransition(transitionElement);
 };
 
 TransitionManager.prototype.activateTransition = function(toActivate) {
@@ -114,6 +112,7 @@ TransitionManager.prototype.addTransition = function(transition) {
         that.addCmd(CMD_KNOB_ADD, [transition.id, knobIndex, position], [transition, knobIndex]);
     }).on('knob_drop', function(evt , knobIndex) {
         var knob = transition.knobManager.getKnob(knobIndex);
+        //TODO: perhaps rather use dragContext note: api call in transitionknobmanager
         that.addCmd(CMD_KNOB_DROP,
             [transition.id, knobIndex, knob.node.root.dxSum, knob.node.root.dySum],
             [transition.id, knobIndex, (-1 * knob.node.root.dxSum), (-1 * knob.node.root.dySum)]);

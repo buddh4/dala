@@ -21,7 +21,7 @@ Manager.prototype.addCmd = function(cmdId, doArgs, undoArgs) {
 
 Manager.prototype.listen = function(eventId, handler) {
     this.event.listen(eventId, handler, this);
-}
+};
 
 Manager.prototype.getNodeById = function(id) {
     return this.diagram.getNodeById(id);

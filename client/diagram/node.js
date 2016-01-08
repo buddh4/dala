@@ -2,6 +2,7 @@
  * This class represents the nodes of a diagram. Every note has a unique ID and
  * a template defining the type of the node.
  */
+var Eventable = require('./eventable');
 var util = require('../util/util');
 var dockingType = require('./docking');
 var SVG = require('../svg/svg');
@@ -16,6 +17,7 @@ var dom = util.dom;
  */
 var Node = function(tmpl, config, diagram) {
     this.config = config || {};
+    this.data = {};
     this.diagram = diagram;
     this.isNode = true;
     this.event = diagram.event;
@@ -24,6 +26,8 @@ var Node = function(tmpl, config, diagram) {
     this.selectable = object.isDefined(this.config.selectable) ? this.config.selectable : true;
     this.visible = true;
 };
+
+util.inherits(Node, Eventable);
 
 /**
  * This method renders the node to the stage and initializes all event handlers
@@ -34,8 +38,10 @@ var Node = function(tmpl, config, diagram) {
  */
 Node.prototype.init = function(part, prepend) {
     //ADD Element to stage
-    this.diagram.import(this.template.getSVGString(this.config), part, prepend);
-    return this.activate();
+    this._setRoot(this.diagram.import(this.template.getSVGString(this.config), part, prepend));
+    this.activate();
+    this.exec('init');
+    return this;
 };
 
 Node.prototype.getCorners = function() {
@@ -62,21 +68,33 @@ Node.prototype.activate = function(nodeID) {
         this.id = this.config.node_id = nodeID;
     }
 
-    //Note: there are some special node types without an nodeId like defs.
-    if(this.id) {
-        //The root element of the node, its supposed to be a group node in most cases
-        this.root = $.svg('#'+this.id);
+    if(!this.root) {
+        //Activation
+        this._setRoot(this.diagram.svg.get(this.id));
     }
 
     nodeAdditions.init(this);
 
-    if(this.root) {
+    if(this.root && this.id) {
         this.initEventFunctions(this.config);
-        this.root.attr({'dala:tmpl' : this.template.id});
+        this.root.dala('tmpl' , this.template.id);
+        //We set the dala namespace because in case the nodes are imported/exported/parsed...
+        this.root.attr('id', this.id);
+        this.root.attr(this.diagram.ns());
+        this.root.attr('class', 'element_root');
+        if(this.config.x && this.config.y) {
+            this.moveTo(this.config);
+        }
     }
 
-    this.exec('activate');
+    if(nodeID) {
+        this.exec('activate');
+    }
     return this;
+};
+
+Node.prototype._setRoot = function(root) {
+    this.root = this.eventBase = root;
 };
 
 Node.prototype.initEventFunctions = function() {
@@ -88,9 +106,7 @@ Node.prototype.initEventFunctions = function() {
 
     this.on('dblclick', function(evt) {
         that.exec('dbclick', [evt], true);
-    });
-
-    this.on('mousedown', function(evt) {
+    }).on('mousedown', function(evt) {
         if(!evt.ctrlKey && that.isVisible()) {
             evt.stopPropagation();
             that.exec('mousedown', [evt], true);
@@ -141,8 +157,13 @@ Node.prototype.moveDown = function() {
 };
 
 Node.prototype.remove = function() {
-    this.exec('remove');
+    //Note: jquery triggers a remove dom event itself...
+    this.exec('remove', undefined, true);
     this.root.remove();
+};
+
+Node.prototype.rotate = function(a) {
+    return this.root.rotate(a);
 };
 
 Node.prototype.moveTo = function(x, y) {
@@ -150,7 +171,7 @@ Node.prototype.moveTo = function(x, y) {
     this.exec('moveTo');
 };
 
-Node.prototype.position = function(x,y) {
+Node.prototype.position = function() {
     return {
         x : this.x(),
         y : this.y()
@@ -207,6 +228,11 @@ Node.prototype.selector = function(prefix) {
 Node.prototype.getNodeSelector = function(prefix) {
     var result = '';
 
+    if(!prefix || prefix.length === 0) {
+        return '#'+this.id;
+    }
+
+
     if(!util.string.startsWith(prefix, '#') && !util.string.startsWith(prefix, '.')) {
         result = '#'+prefix;
     } else {
@@ -222,20 +248,13 @@ Node.prototype.getRootNode = function() {
     return this.root.getRootNode();
 };
 
-Node.prototype.exec = function(func, args, prevDomEvent) {
-    args = args || this;
-    this.executeAddition(func, args);
-    if(this.root && !prevDomEvent) {
-        this.trigger(func, args);
-    }
-};
-
-Node.prototype.executeAddition = function(func, args) {
-    object.each(this.additions, function(key, addition) {
-        if(object.isDefined(addition) && object.isFunction(addition[func])) {
-            addition[func].apply(addition, args);
+Node.prototype.executeTemplateHook = function(hook, args) {
+    if(this.template.config && this.template.config.on) {
+        var hook = this.template.config.on[hook];
+        if(hook) {
+            hook.apply(this, args);
         }
-    });
+    }
 };
 
 Node.prototype.select = function(shifted) {
@@ -246,25 +265,6 @@ Node.prototype.select = function(shifted) {
 Node.prototype.deselect = function() {
     this.selected = false;
     this.exec('deselect');
-};
-
-Node.prototype.one = function(evt, handler) {
-    this.root.$().one(evt, handler);
-    return this;
-};
-
-Node.prototype.on = function(evt, handler) {
-    this.root.$().on(evt, handler);
-    return this;
-};
-
-Node.prototype.trigger = function(evt, args) {
-    this.root.$().trigger(evt, args);
-    return this;
-};
-
-Node.prototype.off = function(evt, handler) {
-    this.root.$().off(evt, handler);
 };
 
 Node.prototype.extractNodeId = function(rawId) {
@@ -345,6 +345,10 @@ Node.prototype.getRelativePosition = function(pageX,pageY) {
  */
 Node.prototype.getRelativeLocation = function(position) {
     return this.root.getRelativeLocation(position);
+};
+
+Node.prototype.toString = function(position) {
+    return this.root.toString();
 };
 
 Node.prototype.getOrientation = function(relative) {

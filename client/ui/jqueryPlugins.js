@@ -2,11 +2,15 @@ var SVG = require('../svg/svg');
 var queryCache = require('../core/cache');
 
 $.fn.svg = function(selector) {
-    if(selector) {
+    if(selector && selector.SVGElement) {
+        return selector;
+    }else if(selector) {
         return $(selector).svg();
     }
 
-    if(this.length === 1) {
+    if(!this.length) {
+        return;
+    } else if(this.length === 1) {
         return SVG.get(this);
     } else if(this.length > 1) {
         var result =  [];

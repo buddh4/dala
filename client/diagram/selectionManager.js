@@ -16,8 +16,6 @@ var SelectionManager = function(diagram) {
 
     event.listen('key_up_press', this.upListener, this);
     event.listen('key_down_press', this.downListener, this);
-    event.listen('key_copy_press', this.copyListener, this);
-    event.listen('key_paste_press', this.pasteListener, this);
     event.listen('key_del_press', this.deleteListener, this);
     event.listen('tab_activated', this.clear, this);
 
@@ -28,10 +26,46 @@ var SelectionManager = function(diagram) {
     //These are currently global events not diagram context events
     event.listen('element_hoverIn', this.hoverInElementListener, this);
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
+
+    var that = this;
+    this.diagram.on('copy', function(evt) {
+        var copyNodes = {};
+        var copyTransitions = {};
+        $.each(that.selectedNodes, function(index, node) {
+            if(!node.knob) {
+                copyNodes[node.id] =  {svg : node.toString(), position: node.position()};
+                $.each(node.additions.transition.outgoingTransitions, function(index, transition) {
+                    if(transition.getEndNode().selected) {
+                        copyTransitions[transition.id] ={svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
+                    }
+                });
+
+                $.each(node.additions.transition.incomingTransitions, function(index, transition) {
+                    if(!copyTransitions[transition.id] && transition.getStartNode().selected) {
+                        copyTransitions[transition.id] = {svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
+                    }
+                })
+            }
+        });
+
+        that.lastCopy = {
+            mouse : evt.mouse,
+            nodes : copyNodes,
+            transitions : copyTransitions
+        };
+    });
 };
 
 SelectionManager.prototype.getSelectedNodes = function() {
     return this.selectedNodes.slice();
+};
+
+SelectionManager.prototype.getSelectedNodeIds = function() {
+    var result = [];
+    $.each(this.selectedNodes, function(index, value) {
+        result.push(value.id);
+    });
+    return result;
 };
 
 SelectionManager.prototype.knobAddedListener = function(evt) {
@@ -83,17 +117,8 @@ SelectionManager.prototype.transitionAddedListener = function(evt) {
     }).select(evt.shiftKey);
 };
 
-SelectionManager.prototype.copyListener = function(evt) {
-    this.copyNodes = object.cloneArray(this.selectedNodes);
+SelectionManager.prototype.copyListener = function(mouse) {
 
-};
-
-SelectionManager.prototype.pasteListener = function(evt) {
-    evt.preventDefault();
-    var that = this;
-    object.each(this.copyNodes, function(index, node) {
-        that.event.trigger('node_copy', node, evt);
-    });
 };
 
 SelectionManager.prototype.upListener = function(evt) {
@@ -147,13 +172,13 @@ SelectionManager.prototype.removedNodeListener = function(evt) {
 };
 
 SelectionManager.prototype.deleteListener = function(evt) {
-    this.deleteSelectionNodes();
-
     //Remove selected transition
-    if(object.isDefined(this.selectedTransition)) {
+    if(object.isDefined(this.selectedTransition) && !this.selectedTransition.getSelectedKnobs().length) {
         this.event.trigger('transition_delete', this.selectedTransition);
+        return;
     };
 
+    this.deleteSelectionNodes();
     this.clear();
 };
 
@@ -209,14 +234,16 @@ SelectionManager.prototype.setNodeSelection = function(selectedNode, shifted) {
         //We use additon style instead of on event for a performance gain (on.dragMove is deactivated see draggable.js)
         //We don't have to remove this addition after reselect because only selected nodes can be dragged anyways.
         var that = this;
-        selectedNode.additions['multiSelectionDrag'] = {
-            dragMove : function(dx,dy, evt) {
-                if (!evt.triggerEvent) {
-                    object.each(that.selectedNodes, function (index, node) {
-                        if (selectedNode.id !== node.id) {
-                            node.triggerDrag(dx, dy);
-                        }
-                    });
+        if(!selectedNode.additions['multiSelectionDrag']) {
+            selectedNode.additions['multiSelectionDrag'] = {
+                dragMove: function (dx, dy, evt) {
+                    if (!evt.triggerEvent) {
+                        object.each(that.selectedNodes, function (index, node) {
+                            if (selectedNode.id !== node.id) {
+                                node.triggerDrag(dx, dy);
+                            }
+                        });
+                    }
                 }
             }
         }

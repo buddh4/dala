@@ -1,5 +1,5 @@
-var Helper = function(diagram) {
-    this.diagram = diagram;
+var Helper = function(svg) {
+    this.svg = svg;
     this.points = {};
 };
 
@@ -7,12 +7,12 @@ Helper.prototype.point = function(id, p, color, prevText) {
     color = color || 'red';
     var text = id+'(x:'+p.x + ' y:'+p.y+')';
     if(!this.points[id]) {
-        var point = this.diagram.svg.circle({
+        var point = this.svg.circle({
             r:2,
             style:'fill:'+color
         });
-        var t = this.diagram.svg.text(text);
-        var group = this.diagram.svg.g({id:'helper_'+id}, t, point);
+        var t = this.svg.text(text).fill(color);
+        var group = this.svg.g({id:'helper_'+id}, t, point);
         this.points[id] = {
             group : group,
             text : t,

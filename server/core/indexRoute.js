@@ -5,7 +5,7 @@ var path = require('path');
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('application', {
-      initial_templates : {panels:[ 'uml','simple','communication']}
+      initial_templates : {panels:[ 'uml','simple','network', 'chart']}
   });
 });
 

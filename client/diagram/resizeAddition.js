@@ -40,6 +40,10 @@ ResizeAddition.prototype.update = function() {
     this.resize.updateKnobs();
 };
 
+ResizeAddition.prototype.init = function() {
+    this.resize.updateNodes();
+};
+
 ResizeAddition.prototype.activate = function() {
     this.resize.updateNodes();
 };
