@@ -2,7 +2,7 @@ var util = require('../util/util');
 var event = require('../core/event');
 var config = require('../core/config');
 
-var Eventable = require('./eventable');
+var Eventable = require('./eventableNode');
 
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');

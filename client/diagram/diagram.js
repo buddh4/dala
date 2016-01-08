@@ -19,7 +19,7 @@ var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var DiagramAPI = require('./api');
 
-var Eventable = require('./eventable');
+var Eventable = require('./eventableNode');
 
 var KnobManager = require('./knobManager');
 require('./knobTemplate');

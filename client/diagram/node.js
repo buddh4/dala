@@ -2,7 +2,7 @@
  * This class represents the nodes of a diagram. Every note has a unique ID and
  * a template defining the type of the node.
  */
-var Eventable = require('./eventable');
+var Eventable = require('./eventableNode');
 var util = require('../util/util');
 var dockingType = require('./docking');
 var SVG = require('../svg/svg');
