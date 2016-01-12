@@ -2,7 +2,7 @@
  * This class represents the nodes of a diagram. Every note has a unique ID and
  * a template defining the type of the node.
  */
-var Eventable = require('./eventableNode');
+var Eventable = require('./../dom/eventableNode');
 var util = require('../util/util');
 var dockingType = require('./docking');
 var SVG = require('../svg/svg');
@@ -310,7 +310,6 @@ Node.prototype.isOver = function(mousePosition) {
 
 Node.prototype.overlays = function() {
     return this.root.overlays.apply(this.root, arguments);
-    //return this.root.overlayCheck(mousePosition);
 };
 
 Node.prototype.isUnder = function(mousePosition) {

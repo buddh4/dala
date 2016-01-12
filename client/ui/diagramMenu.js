@@ -1,5 +1,6 @@
 var event = require('../core/event');
 var config = require('../core/config');
+var transitionMenu = require('./transitionMenu');
 
 exports.init = function() {
     $('#diagram-zoomIn').on('click', function() {
@@ -28,5 +29,10 @@ exports.init = function() {
         $('#diagram-align').toggleClass('active');
     }
 
+    $('.nav-toggle').on('click', function() {
+        var navId = $(this).data('nav-id');
+        $(this).siblings('.'+navId).animate({width: 'toggle'});
+    });
 
+    transitionMenu.init();
 };

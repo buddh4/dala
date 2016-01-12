@@ -12,6 +12,11 @@ body {
   font-size: 10px;
 }
 
+input[type=color] {
+    background-color : #d1d1d1;
+    border:0px;
+}
+
 a:focus {
     outline: none;
 }
@@ -356,6 +361,65 @@ h3 {
     width:1px;
     height:40px;
     background-color:#e7e7e7;
+}
+
+#stageNav .seperator-big {
+    height:40px;
+    border-left:2px solid #777777;
+}
+
+#stageNav .nav-toggle {
+    width: 30px;
+    height :40px;
+    background-color:#acacac;
+    border-left:2px solid #777777;
+    cursor:pointer;
+}
+
+#stageNav .menu-box {
+    width:30px;
+    height:40px;
+}
+
+#stageNav .menu-box a {
+    display:block;
+    width:30px;
+    height:40px;
+}
+
+#transition-type-straight {
+    background: url("/images/icons/icon-nav-transition-straight.png") 0 0 no-repeat;
+}
+
+#transition-type-round {
+    background: url("/images/icons/icon-nav-transition-round.png") 0 0 no-repeat;
+}
+
+#transition-type-curved {
+    display:box;
+    background: url("/images/icons/icon-nav-transition-curved.png") 0 0 no-repeat;
+}
+
+#stageNav input[type=color] {
+    padding:2px;
+    width: 25px;
+    height:25px;
+    background-color:#F8F8F8;
+    -moz-box-sizing: border-box;
+    outline:none;
+    cursor:pointer;
+}
+
+#nav-toggle-diagram {
+    background: url("/images/icons/icon-nav-diagram.png") 0 0 no-repeat;
+}
+
+#nav-toggle-node {
+    background: url("/images/icons/icon-nav-node.png") 0 0 no-repeat;
+}
+
+#nav-toggle-transition {
+    background: url("/images/icons/icon-nav-transition.png") 0 0 no-repeat;
 }
 
 #fileSystem {

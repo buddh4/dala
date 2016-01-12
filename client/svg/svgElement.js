@@ -40,6 +40,10 @@ SVGElement.prototype.getRootNode = function() {
     return this.root.instance();
 };
 
+SVGElement.prototype.getSVGRoot = function() {
+    return this.root;
+};
+
 SVGElement.prototype.append = function(element) {
     var result;
     if(arguments.length > 1) {
@@ -125,30 +129,6 @@ SVGElement.prototype.getBBox = function() {
 SVGElement.prototype.getBoundingClientRect = function() {
     return this.instance().getBoundingClientRect();
 }
-
-/**
- * SVG Eventhandling
- */
-
-SVGElement.prototype.trigger = function(evt, args) {
-    this.$().trigger(evt, args);
-    return this;
-};
-
-SVGElement.prototype.on = function(evt, handler) {
-    this.$().on(evt, handler);
-    return this;
-};
-
-SVGElement.prototype.one = function(evt, handler) {
-    this.$().one(evt, handler);
-    return this;
-};
-
-SVGElement.prototype.off = function(evt) {
-    this.$().off(evt);
-    return this;
-};
 
 SVGElement.prototype.toString = function() {
     return util.xml.serializeToString(this.instance());

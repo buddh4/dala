@@ -2,6 +2,7 @@ var util = require('../util/util');
 var object = require('../util/object');
 var xml = require('../util/xml');
 var event = require('../core/event');
+var config = require('../core/config');
 var Transition = require('./transition');
 
 var AbstractManager = require('./abstractManager');
@@ -50,6 +51,9 @@ TransitionManager.prototype.editTransition = function(transition, key, value) {
 
 TransitionManager.prototype.undoEdit = function(transition, key, value) {
     transition = this.getTransition(transition);
+    if(!transition) {
+        return;
+    }
     transition.additions.edit.setValue(key, value);
     event.trigger('transition_edit_undo', transition);
 };
@@ -85,7 +89,10 @@ TransitionManager.prototype.isDragTransition = function(transition) {
 
 TransitionManager.prototype.startDragTransition = function(node, mouse) {
     mouse = mouse || node.getCenter();
-    return this.dragTransition = new Transition(node, mouse);
+
+    var cfg = $.extend({}, config.val('transition_settings', {}));
+    //TODO: check for node/template prefered/transition + transitionconfiguration prefer template or settings
+    return this.dragTransition = new Transition(node, mouse, cfg);
 };
 
 TransitionManager.prototype.getDragTransition = function() {

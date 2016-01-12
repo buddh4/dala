@@ -144,34 +144,6 @@ TransitionAddition.prototype.addOutgoingTransition = function(transition) {
     return transition;
 };
 
-TransitionAddition.prototype.undockStart = function(transition) {
-    this.edgeDockingDragListener(transition, 'Start');
-};
-
-TransitionAddition.prototype.undockEnd = function(transition) {
-    this.edgeDockingDragListener(transition, 'End');
-};
-
-TransitionAddition.prototype.undockEdgeDocking = function(transition, dockingType) {
-    var that = this;
-    //We wait till the drag event stops (mouseup)
-    event.once(this.diagram.svg.getRootNode(), "mouseup", function(mouseUpEvent) {
-        var mouse = that.diagram.getStagePosition(mouseUpEvent);
-        var hoverNode = that.diagram.overlaysNode(mouse);
-        if(hoverNode !== transition['get'+dockingType+'Node']()) {
-            //If we are hovering another node we swap start/end node
-            transition['set'+dockingType+'Node'](hoverNode);
-        } else if(hoverNode === transition['get'+dockingType+'Node']()){
-            //If we are hovering the same node we set a relative docking
-            transition['setRelative'+dockingType+'Knob'](mouse.x, mouse.y);
-            transition.update();
-        } else {
-            //Mouse is hovering empty space
-            transition.update();
-        }
-    });
-};
-
 TransitionAddition.prototype.executeOnAllTransitions = function(handler) {
     this.executeOnOutgoingTransitions(handler);
     this.executeOnIncomingTransitions(handler);

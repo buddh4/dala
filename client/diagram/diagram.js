@@ -19,7 +19,7 @@ var NodeManager = require('./nodeManager');
 var TransitionManager = require('./transitionManager');
 var DiagramAPI = require('./api');
 
-var Eventable = require('./eventableNode');
+var Eventable = require('./../dom/eventableNode');
 
 var KnobManager = require('./knobManager');
 require('./knobTemplate');
@@ -91,11 +91,15 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
 
     this.scale = 1;
 
+    //This is used by the eventable addition in case there are event restrictions (move mode...)
+    this.excludeEventRestrictions = true;
+
     var that = this;
     this.initDefs()
         .then(function() {
             that.initialized = true;
             that.mainPart = that.svg.createPart('main', true);
+            that.mainPart.excludeEventRestrictions = true;
             that.helper = that.svg.helper();
             that.trigger('initialized');
         }, function(err) {
@@ -145,7 +149,7 @@ Diagram.prototype.initEvents = function() {
     // template type. Only if we do not dbclick another node in this case
     // we start a transition drag.
     this.on('dblclick', function(evt) {
-        if (!that.selectionMgr.isElementHover()) {
+        if (!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
             that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
         }
     });
@@ -153,7 +157,7 @@ Diagram.prototype.initEvents = function() {
     this.on('mousedown', function(evt) {
         var startPosition = that.getStagePosition(evt);
 
-        if(evt.ctrlKey || config.is('diagram_mode_move', false)) {
+        if(evt.ctrlKey || config.is('diagram_mode_move')) {
             //Move main part
             that.mainPart.draggable({
                 once: true,
@@ -174,7 +178,7 @@ Diagram.prototype.initEvents = function() {
                     return that.scale;
                 }
             });
-            that.mainPart.trigger('mousedown');;
+            that.mainPart.trigger('mousedown');
         } else {
             that.selectionMgr.dragSelectionStart(evt, startPosition);
         }

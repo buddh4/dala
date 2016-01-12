@@ -70,14 +70,37 @@
                                             <li><a href="#" id="dragAlign">Drag Alignment</a></li>
                                         </ul>
                                     </li>
-                                    <li class="seperator">&nbsp;</li>
-                                    <li><a href="#" id="diagram-zoomOut" title="zoom out"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
-                                    <li><a href="#" id="diagram-zoomIn" title="zoom in"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
-                                    <li><a href="#" id="diagram-move" title="mode move"><span class="glyphicon glyphicon-move"></span></a></li>
-                                    <li><a href="#" id="diagram-align" title="align nodes"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
-                                    <li><a href="#" id="viewXML" style="font-size:0.8em;" title="svg view">{SVG}</a></li>
-                                    <li class="seperator">&nbsp;</li>
+                                    <li id="nav-toggle-diagram" class="nav-toggle" data-nav-id="diagram-nav" title="diagram menu">&nbsp;</li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-zoomOut" title="zoom out (Ctrl + - (minus sign)"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-zoomIn" title="zoom in (Ctrl + + (plus sign)"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-move" title="move diagram (Shift + Drag)"><span class="glyphicon glyphicon-move"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="viewXML" style="font-size:0.8em;" title="svg view">{SVG}</a></li>
 
+                                    <li id="nav-toggle-node" class="nav-toggle" data-nav-id="node-nav" title="node menu">&nbsp;</li>
+                                    <li class="node-nav" style="display:flex;">
+                                        <div>
+                                            <label for="node-default-bgcolor" style="margin:0px;height:15px;background:url('images/icons/icon-node-back.png')"></label>
+                                            <input id="node-default-bgcolor" type="color" title="background color" />
+                                        </div>
+                                    </li>
+                                    <li class="node-nav" style="display:flex;">
+                                        <div style="flex-wrap:wrap;">
+                                            <label for="node-default-bordercolor" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
+                                            <input id="node-default-bordercolor" type="color" title="border color" />
+                                        </div>
+                                    </li>
+                                    <li class="node-nav"><a href="#" id="diagram-align" title="node alignment"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
+                                    <li id="nav-toggle-transition" class="nav-toggle" data-nav-id="transition-nav" title="transition menu">&nbsp;</li>
+                                    <li class="transition-nav">
+                                        <div>
+                                            <label for="transition-default-stroke" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
+                                            <input id="transition-default-stroke" type="color" title="color" />
+                                        </div>
+                                    </li>
+                                    <li id="transition-type-straight" class="transition-nav menu-box transitionTypeOption" data-type="straight" title="straight transition">&nbsp;</li>
+                                    <li id="transition-type-round" class="transition-nav menu-box transitionTypeOption" data-type="round" title="round transition">&nbsp;</li>
+                                    <li id="transition-type-curved" class="transition-nav menu-box transitionTypeOption" data-type="curved" title="curved transition">&nbsp;</li>
+                                    <li class="seperator-big">&nbsp;</li>
                                 </ul>
                                 <ul class="nav navbar-nav navbar-right">
                                     <li><a id="downloadDiagram" href="#" download="diagram.xml"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>

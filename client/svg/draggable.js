@@ -1,6 +1,7 @@
 var SVGShape = require('./svgShape');
 var util = require('../util/util');
 var event = require('../core/event');
+var config = require('../core/config');
 
 var object = util.object;
 var dom = util.dom;
@@ -107,8 +108,12 @@ ShiftDrag.prototype.getRestrictionY = function() {
 SVGShape.prototype.draggable = function(cfg, dragElement) {
     var cfg = cfg || {};
 
-    if(!object.isDefined(dragElement)) {
-        dragElement = this.instance();
+
+
+    if(dragElement) {
+        dragElement = this.svg.get(dragElement);
+    } else {
+        dragElement = this;
     }
 
     var that = this;
@@ -127,7 +132,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
 
         // DRAG BEFORE HOOK
         if(cfg.dragBeforeMove) {
-            cfg.dragBeforeMove.apply(that, [evt, actualdx, actualdy, dragElement]);
+            cfg.dragBeforeMove.apply(that, [evt, actualdx, actualdy]);
         }
 
         // DRAG ALIGNMENT
@@ -171,14 +176,14 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
 
         // DRAG MOVE HOOK
         if(cfg.dragMove) {
-            cfg.dragMove.apply(that, [evt, dx, dy, dragElement]);
+            cfg.dragMove.apply(that, [evt, dx, dy]);
         }
     };
 
     var dragEnd = function(evt) {
         evt.preventDefault();
         //Turn off drag events
-        event.off(that.getRootNode(), 'mousemove');
+        that.getSVGRoot().off('mousemove');
         event.off(document, 'mouseup', dragEnd);
 
         if(cfg.dragAlignment) {
@@ -200,8 +205,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
     };
 
     if(dragElement) {
-        var evtType = (cfg.once)? event.once : event.on;
-        evtType(dragElement,'mousedown', function(e) {
+        var mouseDownHandler = function(e) {
             if(e.ctrlKey || !that.isVisible()) {
                 return;
             }
@@ -223,12 +227,18 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
             that.drag = true;
             event.on(that.getRootNode(), 'mousemove', dragMove);
             event.on(document, 'mouseup', dragEnd);
-        });
+        };
+
+        if(cfg.once) {
+            dragElement.on('mousedown', mouseDownHandler);
+        } else {
+            dragElement.on('mousedown', mouseDownHandler);
+        }
     }
 
     //Simulates an drag start event
     this.initDrag = function() {
-        $(dragElement).trigger('mousedown');
+        dragElement.trigger('mousedown');
     };
 
     //For manual dragging a svg element the triggerEvent is used to identify this event was triggered manually

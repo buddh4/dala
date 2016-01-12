@@ -4,7 +4,7 @@ var app = require('../util/app');
 var dom = require('../dom/dom');
 var Transform = require('../svg/transform');
 
-var Eventable = require('./eventableNode');
+var Eventable = require('./../dom/eventableNode');
 
 var DEFAULT_OPACITY = 0.5;
 var DEFAULT_KNOB_RADIUS = 5;

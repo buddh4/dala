@@ -2,7 +2,7 @@ var util = require('../util/util');
 var event = require('../core/event');
 var config = require('../core/config');
 
-var Eventable = require('./eventableNode');
+var Eventable = require('./../dom/eventableNode');
 
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');
@@ -11,14 +11,18 @@ var transitionAdditions = require('./transitionAdditions');
 
 var pathManagerFactory = require('./pathManagerFactory');
 
-var STYLE_TRANSITION_ACTIVE = "stroke:blue;stroke-width:1;fill:none;";
-var STYLE_TRANSITION_INACTIVE = "stroke:black;stroke-width:1;fill:none;";
+var COLOR_ACTIVE = "blue";
+var COLOR_INACTIVE = "black";
+var DEFAULT_ENDMARKER = 'trianglefill';
+var DEFAULT_WIDTH = '1';
+
 var STYLE_AREA = "stroke:grey;stroke-opacity:0.0;stroke-width:11;fill:none;";
 
 var object = util.object;
 var dom = util.dom;
 
-var Transition = function(node, startPosition) {
+var Transition = function(node, startPosition, cfg) {
+    this.cfg = cfg || {};
     if(node.isNode) {
         this.diagram = node.diagram;
         this.event = this.diagram.event;
@@ -61,6 +65,8 @@ Transition.prototype.activate = function(domGroup) {
 
     //Get line and linearea from dom
     this.getLine();
+    COLOR_INACTIVE = this.line.stroke();
+
     this.getLineArea();
     this.lineArea.d(this.line.d());
 
@@ -100,7 +106,6 @@ Transition.prototype._setLine = function(svgLine) {
  * @param {type} mouse
  */
 Transition.prototype.init = function(node, mouse) {
-    //TODO: user UUID.new or something
     this.id = this.diagram.uniqueId();
     //Initializes the transition group container
     this.initSVGGroup();
@@ -110,7 +115,7 @@ Transition.prototype.init = function(node, mouse) {
     //Initialize the transition docking mechanism (start/end) docking to nodes.
     this.dockingManager = new TransitionDockingManager(this, node, mouse);
     //Initialize the path creator which creates the path with the help of the knobs and a given transitiontype.
-    this.pathManager = pathManagerFactory.get(this);
+    this.pathManager = pathManagerFactory.get(this, this.cfg['type']);
     this.group.dala('transitionType', this.pathManager.type);
 
     //Initialize the transition knob mechanism for (start/end) and inner knobs for manipulating transitions
@@ -205,8 +210,9 @@ Transition.prototype.initTransitionSVG = function() {
     this._setLine(this.svg.path({
         d : path,
         id : 'line_'+this.id,
-        style  : STYLE_TRANSITION_ACTIVE
     }));
+
+    this._setInitStyle();
 
     this._setLineArea(this.svg.path({
         d : path,
@@ -214,10 +220,20 @@ Transition.prototype.initTransitionSVG = function() {
         style  : STYLE_AREA
     }));
 
-    //TODO: make this configurable in node template or something !!!
-    this.endMarker('trianglefill');
-
     this.group.prepend(this.lineArea, this.line);
+};
+
+Transition.prototype._setInitStyle = function() {
+    //TODO: set active color from global settings
+    this.colorInactive = this.cfg['stroke'] || COLOR_INACTIVE;
+    this.colorActive = COLOR_ACTIVE;
+
+    this.line.fill('none');
+    this.activeStyle();
+    this.line.strokeWidth(this.cfg['stroke-width'] || DEFAULT_WIDTH);
+    this.line.strokeDasharray(this.cfg['stroke-dasharray']);
+    this.startMarker(this.cfg['marker-start']);
+    this.endMarker(this.cfg['marker-end'] || DEFAULT_ENDMARKER);
 };
 
 Transition.prototype.initEvents = function() {
@@ -296,7 +312,7 @@ Transition.prototype.redraw = function() {
 
 Transition.prototype.getSelectedKnobs = function() {
     return this.knobManager.getSelectedKnobs();
-}
+};
 
 Transition.prototype.updateStart = function(mouse) {
     var outerOrientation = mouse || this.knobManager.getPosition(1);
@@ -448,7 +464,7 @@ Transition.prototype.hoverOut = function() {
 };
 
 Transition.prototype.activeStyle = function() {
-    this.line.attr({style:STYLE_TRANSITION_ACTIVE});
+    this.line.stroke(this.colorActive);
 };
 
 Transition.prototype.deselect = function() {
@@ -458,7 +474,7 @@ Transition.prototype.deselect = function() {
 };
 
 Transition.prototype.inactiveStyle = function() {
-    this.line.attr({style:STYLE_TRANSITION_INACTIVE});
+    this.line.stroke(this.colorInactive);
 };
 
 Transition.prototype.toString = function() {

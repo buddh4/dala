@@ -2,6 +2,8 @@ var util = require('../util/util');
 var object = util.object;
 var dom = util.dom;
 
+var Eventable = require('./eventableNode');
+
 var Element = function(tagName, cfg, attributeSetter) {
     this.attributeSetter = attributeSetter || {};
     this.attributes = {};
@@ -30,7 +32,12 @@ var Element = function(tagName, cfg, attributeSetter) {
             }
         }
     }
+
+    //See eventable
+    this.eventBase = this;
 };
+
+util.inherits(Element, Eventable);
 
 Element.prototype.instance = function(instance) {
     if(object.isDefined(instance)) {

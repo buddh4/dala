@@ -9,6 +9,13 @@ var config = require('../core/config');
 var diagrams = {};
 var activeDiagramId;
 
+//TODO: load from remote/local storage
+
+config.setVal('transition_settings', {
+    type: 'straight',
+    color: 'black'
+});
+
 var initListener = function() {
     event.listen('diagram_new', newDiagramListener);
     event.listen('tab_activated', activeTabListener);
@@ -28,6 +35,8 @@ var initListener = function() {
 var toggleModeMove = function() {
     var  val = config.is('diagram_mode_move', false);
     config.setVal('diagram_mode_move', !val);
+    config.setVal('events_restricted', !val);
+
 };
 
 var toggleSettingAlign = function() {

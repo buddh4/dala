@@ -211,7 +211,7 @@ SVGShape.prototype.getRelativeLocation = function(position) {
         return 'left';
     } else if(position.y === this.y()) {
         return 'top';
-    } else if(position.x === this.getRightX()) {heigh
+    } else if(position.x === this.getRightX()) {
         return 'right';
     } else if(position.y === this.getBottomY()) {
         return 'bottom';
