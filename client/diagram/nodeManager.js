@@ -9,6 +9,7 @@ var AbstractManager = require('./abstractManager');
 var cache = require('../core/cache');
 var object = util.object;
 var dom = util.dom;
+var config = require('../core/config');
 
 var EVT_CREATE = 'node_create';
 var EVT_DELETE = 'node_delete';
@@ -119,23 +120,24 @@ NodeManager.prototype.createNodeListener = function(evt) {
     }
 };
 
-NodeManager.prototype.createNodeCommand = function(tmpl, config) {
-    config = config || {};
+NodeManager.prototype.createNodeCommand = function(tmpl, cfg) {
+    cfg = cfg || {};
+    cfg = $.extend({}, cfg, config.val('node_settings', {}));
 
     if(!tmpl) {
         event.trigger('warn', 'Could not create Node: No template selected!');
         return;
     }
 
-    config.node_id = this.diagram.uniqueId();
-    config.diagramId = this.diagram.id;
-    return this.exec(CMD_ADD, [tmpl, config], [config.node_id]);
+    cfg.node_id = this.diagram.uniqueId();
+    cfg.diagramId = this.diagram.id;
+    return this.exec(CMD_ADD, [tmpl, cfg], [cfg.node_id]);
 };
 
-NodeManager.prototype.createNode = function(tmpl, config) {
+NodeManager.prototype.createNode = function(tmpl, cfg) {
     var that = this;
-    var node = tmpl.createNode(config, this.diagram).init();
-    if(!config.preventDrag) {
+    var node = tmpl.createNode(cfg, this.diagram).init();
+    if(!cfg.preventDrag) {
         node.draggable();
         node.on('select', function() {
             that.event.trigger(EVT_SELECTED, node);

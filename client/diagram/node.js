@@ -105,7 +105,7 @@ Node.prototype.initEventFunctions = function() {
     }
 
     this.on('dblclick', function(evt) {
-        that.exec('dbclick', [evt], true);
+        that.exec('dblclick', [evt], true);
     }).on('mousedown', function(evt) {
         if(!evt.ctrlKey && that.isVisible()) {
             evt.stopPropagation();
@@ -134,7 +134,6 @@ Node.prototype.index = function() {
 };
 
 Node.prototype.firstChild = function() {
-    //TODO: this should be cached to reduce dom calls !
     return this.root.firstChild();
 };
 
@@ -179,7 +178,7 @@ Node.prototype.position = function() {
 };
 
 Node.prototype.getInnerSVG = function(prefix) {
-    return $.qCache().svg(this.getNodeSelector(prefix));
+    return $.svg(this.getNodeSelector(prefix));
 };
 
 Node.prototype.updateAdditions = function(type) {

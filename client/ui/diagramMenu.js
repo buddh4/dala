@@ -1,5 +1,6 @@
 var event = require('../core/event');
 var config = require('../core/config');
+var nodeMenu = require('./nodeMenu');
 var transitionMenu = require('./transitionMenu');
 
 exports.init = function() {
@@ -20,19 +21,11 @@ exports.init = function() {
         $('#diagram-align').toggleClass('active');
     }
 
-    $('#diagram-align').on('click', function() {
-        event.trigger('view_toggle_setting_align');
-        $(this).toggleClass('active');
-    });
-
-    if(config.is('dragAlign', true)) {
-        $('#diagram-align').toggleClass('active');
-    }
-
     $('.nav-toggle').on('click', function() {
         var navId = $(this).data('nav-id');
         $(this).siblings('.'+navId).animate({width: 'toggle'});
     });
 
+    nodeMenu.init();
     transitionMenu.init();
 };

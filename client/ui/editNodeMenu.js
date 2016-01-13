@@ -28,7 +28,7 @@ var init = function() {
 var initForm = function() {
     $form = dom.create('form', {id : ID_FORM, action :  'javascript:void(0);'});
     section.$content.append($form);
-}
+};
 
 var clear = function() {
     delete editNode;
@@ -67,6 +67,9 @@ var createForm = function(node) {
             case 'textarea':
                 appendTextareaFieldSet(key, editConfigItem);
                 break;
+            case 'color':
+                appendColorFieldSet(key, editConfigItem);
+                break;
         }
     });
 };
@@ -77,26 +80,42 @@ var focus = function() {
 
 var appendTextFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
-    appendInput($fieldSet, editConfigItem, 'Text', editKey+'_text', {type : 'text'});
-    appendInput($fieldSet, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
+    var $divContainer = appendDivContainer($fieldSet);
+    appendInput($divContainer, editConfigItem, 'Content', editKey+'_text', {type : 'text'});
+    appendInput($divContainer, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
     $form.append($fieldSet);
 };
 
 var appendTextareaFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
-    appendInput($fieldSet, editConfigItem, 'Text', editKey+'_textarea', {rows: 5}, 'textarea');
-    appendInput($fieldSet, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
+    var $divContainer = appendDivContainer($fieldSet);
+    appendInput($divContainer, editConfigItem, 'Content', editKey+'_textarea', {rows: 5}, 'textarea');
+    appendInput($divContainer, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
+    $form.append($fieldSet);
+};
+
+var appendColorFieldSet = function(editKey, editConfigItem) {
+    var $fieldSet = initFieldSet(editConfigItem);
+    var $divContainer = appendDivContainer($fieldSet);
+    appendInput($divContainer, editConfigItem, 'Color', editKey, {type : 'color'});
     $form.append($fieldSet);
 };
 
 var appendStrokeFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
-    appendInput($fieldSet, editConfigItem, 'Color', editKey+'_stroke', {type : 'color'});
-    appendInput($fieldSet, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
-    appendInput($fieldSet, editConfigItem, 'Dash', editKey+'_stroke-dash', {type : 'range', min : DASH_SETTING_MIN, max : DASH_SETTING_MAX}, undefined, true);
+    var $divContainer = appendDivContainer($fieldSet);
+    appendInput($divContainer, editConfigItem, 'Color', editKey+'_stroke', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
+    appendInput($divContainer, editConfigItem, 'Dash', editKey+'_stroke-dash', {type : 'range', min : DASH_SETTING_MIN, max : DASH_SETTING_MAX}, undefined, true);
     $form.append($fieldSet);
+};
+
+var appendDivContainer = function($fieldSet) {
+    var $divContainer = dom.create('div', {'class': 'editSectionContainer'});
+    $fieldSet.append($divContainer);
+    return $divContainer;
 };
 
 var appendInput = function($fieldSet, editConfigItem, label, key, attributes, overwriteElementName, output, outputUnit) {
@@ -129,7 +148,7 @@ var appendInput = function($fieldSet, editConfigItem, label, key, attributes, ov
 
 var initFieldSet = function(editConfigItem) {
     var $fieldSet = dom.create('fieldSet');
-    var $legend = dom.create('legend', undefined, editConfigItem.label);
+    var $legend = dom.create('legend', {'class':'editLegend'}, editConfigItem.label);
     return $fieldSet.append($legend);
 };
 

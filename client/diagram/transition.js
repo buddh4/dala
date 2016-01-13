@@ -14,9 +14,9 @@ var pathManagerFactory = require('./pathManagerFactory');
 var COLOR_ACTIVE = "blue";
 var COLOR_INACTIVE = "black";
 var DEFAULT_ENDMARKER = 'trianglefill';
-var DEFAULT_WIDTH = '1';
-
 var STYLE_AREA = "stroke:grey;stroke-opacity:0.0;stroke-width:11;fill:none;";
+
+var DEFAULT_WIDTH = '1';
 
 var object = util.object;
 var dom = util.dom;
@@ -191,14 +191,6 @@ Transition.prototype.dragEndOrientation = function(dx, dy) {
     this.dockingManager.dragEndOrientation(dx, dy);
 };
 
-Transition.prototype.strokeWidth = function(value) {
-    var result = this.line.strokeWidth(value);
-    if(value) {
-        this.lineArea.strokeWidth(value + 11);
-    }
-    return result;
-};
-
 Transition.prototype.getInnerSVG = function(prefix) {
     return $.svg(this.getTransitionSelector(prefix));
 };
@@ -212,14 +204,13 @@ Transition.prototype.initTransitionSVG = function() {
         id : 'line_'+this.id,
     }));
 
-    this._setInitStyle();
-
     this._setLineArea(this.svg.path({
         d : path,
         id: 'lineArea_'+this.id,
         style  : STYLE_AREA
     }));
 
+    this._setInitStyle();
     this.group.prepend(this.lineArea, this.line);
 };
 
@@ -230,10 +221,19 @@ Transition.prototype._setInitStyle = function() {
 
     this.line.fill('none');
     this.activeStyle();
-    this.line.strokeWidth(this.cfg['stroke-width'] || DEFAULT_WIDTH);
+    this.strokeWidth(this.cfg['stroke-width'] || DEFAULT_WIDTH);
     this.line.strokeDasharray(this.cfg['stroke-dasharray']);
     this.startMarker(this.cfg['marker-start']);
     this.endMarker(this.cfg['marker-end'] || DEFAULT_ENDMARKER);
+};
+
+Transition.prototype.strokeWidth = function(value) {
+    this.line.strokeWidth(value);
+    if(value > 11) {
+        this.lineArea.strokeWidth(value);
+    } else {
+        this.lineArea.strokeWidth(11);
+    }
 };
 
 Transition.prototype.initEvents = function() {

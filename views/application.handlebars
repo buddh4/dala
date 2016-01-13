@@ -70,37 +70,114 @@
                                             <li><a href="#" id="dragAlign">Drag Alignment</a></li>
                                         </ul>
                                     </li>
+
+                                    <!-- Diagram Menu -->
                                     <li id="nav-toggle-diagram" class="nav-toggle" data-nav-id="diagram-nav" title="diagram menu">&nbsp;</li>
                                     <li class="diagram-nav"><a href="#" id="diagram-zoomOut" title="zoom out (Ctrl + - (minus sign)"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
                                     <li class="diagram-nav"><a href="#" id="diagram-zoomIn" title="zoom in (Ctrl + + (plus sign)"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
                                     <li class="diagram-nav"><a href="#" id="diagram-move" title="move diagram (Shift + Drag)"><span class="glyphicon glyphicon-move"></span></a></li>
                                     <li class="diagram-nav"><a href="#" id="viewXML" style="font-size:0.8em;" title="svg view">{SVG}</a></li>
+                                    <li class="menu-seperator">&nbsp;</li>
 
+                                    <!-- Node Menu -->
                                     <li id="nav-toggle-node" class="nav-toggle" data-nav-id="node-nav" title="node menu">&nbsp;</li>
+                                    <li class="node-nav"><a href="#" id="node-align" title="node alignment"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
                                     <li class="node-nav" style="display:flex;">
                                         <div>
-                                            <label for="node-default-bgcolor" style="margin:0px;height:15px;background:url('images/icons/icon-node-back.png')"></label>
-                                            <input id="node-default-bgcolor" type="color" title="background color" />
+                                            <label for="node-default-fill" style="margin:0px;height:15px;background:url('images/icons/icon-node-back.png')"></label>
+                                            <input id="node-default-fill" type="color" title="background color" />
                                         </div>
                                     </li>
                                     <li class="node-nav" style="display:flex;">
                                         <div style="flex-wrap:wrap;">
-                                            <label for="node-default-bordercolor" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
-                                            <input id="node-default-bordercolor" type="color" title="border color" />
+                                            <label for="node-stroke" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
+                                            <input id="node-stroke" type="color" title="stroke color" />
                                         </div>
                                     </li>
-                                    <li class="node-nav"><a href="#" id="diagram-align" title="node alignment"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
+                                    <li id="node-dash" class="node-nav" title="node dash" style="padding-top:2px;">
+                                        <select id="node-dash-select" style="width:85px;">
+                                            <option value="none" title="images/icons/icon-dash-none.png"></option>
+                                            <option value="5,5" title="images/icons/icon-dash-1.png"></option>
+                                            <option value="10,10" title="images/icons/icon-dash-2.png"></option>
+                                            <option value="3,5" title="images/icons/icon-dash-3.png"></option>
+                                            <option value="5,2" title="images/icons/icon-dash-4.png"></option>
+                                            <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
+
+                                        </select>
+                                    </li>
+                                    <li id="node-stroke-width" class="node-nav" title="stroke width" style="padding-right:1px;">
+                                        <label for="node-stroke-width-input" style="margin:0px;height:20px;background:url('images/icons/icon-stroke-width.png')"></label>
+                                        <select id="node-stroke-width-input" style="width:34px;">
+                                            <option value='1'>1</option>
+                                            <option value='2'>2</option>
+                                            <option value='3'>3</option>
+                                            <option value='4'>4</option>
+                                            <option value='5'>5</option>
+                                            <option value='6'>6</option>
+                                            <option value='7'>7</option>
+                                            <option value='8'>8</option>
+                                            <option value='9'>9</option>
+                                            <option value='10'>10</option>
+                                            <option value='11'>11</option>
+                                            <option value='12'>12</option>
+                                            <option value='13'>13</option>
+                                            <option value='14'>14</option>
+                                            <option value='15'>15</option>
+                                        </select>
+                                    </li>
+                                    <li class="menu-seperator">&nbsp;</li>
+
+                                    <!-- Node Transition -->
                                     <li id="nav-toggle-transition" class="nav-toggle" data-nav-id="transition-nav" title="transition menu">&nbsp;</li>
+                                    <li id="transition-type-straight" class="nav-button transition-nav menu-box transitionTypeOption" data-type="straight" title="straight transition">&nbsp;</li>
+                                    <li id="transition-type-round" class="nav-button transition-nav menu-box transitionTypeOption" data-type="round" title="round transition">&nbsp;</li>
+                                    <li id="transition-type-curved" class="nav-button transition-nav menu-box transitionTypeOption" data-type="curved" title="curved transition">&nbsp;</li>
                                     <li class="transition-nav">
                                         <div>
                                             <label for="transition-default-stroke" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
                                             <input id="transition-default-stroke" type="color" title="color" />
                                         </div>
                                     </li>
-                                    <li id="transition-type-straight" class="transition-nav menu-box transitionTypeOption" data-type="straight" title="straight transition">&nbsp;</li>
-                                    <li id="transition-type-round" class="transition-nav menu-box transitionTypeOption" data-type="round" title="round transition">&nbsp;</li>
-                                    <li id="transition-type-curved" class="transition-nav menu-box transitionTypeOption" data-type="curved" title="curved transition">&nbsp;</li>
-                                    <li class="seperator-big">&nbsp;</li>
+                                    <li id="transition-marker-start" class="transition-nav" title="start marker" style="padding-top:2px;">
+                                        <select name="transion-marker-start-select" id="transion-marker-start-select" data-type="start" style="width:60px;" class="transition-marker-select">
+                                            <option value="none" title="images/icons/icon-marker-none.png"></option>
+                                            <option value="arrow_s" title="images/icons/icon-marker-arrow-rtl.png" value="none"></option>
+                                            <option value="triangle_s" title="images/icons/icon-marker-triangle-rtl.png" value="none"></option>
+                                            <option value="trianglefill_s" title="images/icons/icon-marker-trianglefill-rtl.png" value="none"></option>
+                                            <option value="aggr_s" title="images/icons/icon-marker-aggr.png" value="none"></option>
+                                            <option value="comp_s" title="images/icons/icon-marker-comp.png" value="none"></option>
+                                        </select>
+                                    </li>
+                                    <li id="transition-dash" class="transition-nav" title="transition dash" style="padding-top:2px;">
+                                        <select name="transition-dash-select" id="transition-dash-select" style="width:85px;">
+                                            <option value="none" title="images/icons/icon-dash-none.png"></option>
+                                            <option value="5,5" title="images/icons/icon-dash-1.png"></option>
+                                            <option value="10,10" title="images/icons/icon-dash-2.png"></option>
+                                            <option value="3,5" title="images/icons/icon-dash-3.png"></option>
+                                            <option value="5,2" title="images/icons/icon-dash-4.png"></option>
+                                            <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
+
+                                        </select>
+                                    </li>
+                                    <li id="transition-marker-end" class="transition-nav" title="end marker" style="padding-top:2px;">
+                                        <select name="transion-marker-end-select" id="transion-marker-end-select" data-type="end" style="width:60px;" class="transition-marker-select">
+                                            <option value="none" title="images/icons/icon-marker-none.png"></option>
+                                            <option value="arrow" title="images/icons/icon-marker-arrow.png" value="none"></option>
+                                            <option value="triangle" title="images/icons/icon-marker-triangle.png" value="none"></option>
+                                            <option value="trianglefill" title="images/icons/icon-marker-trianglefill.png" value="none"></option>
+                                            <option value="aggr" title="images/icons/icon-marker-aggr.png" value="none"></option>
+                                            <option value="comp" title="images/icons/icon-marker-comp.png" value="none"></option>
+                                        </select>
+                                    </li>
+                                    <li id="transition-stroke-width" class="transition-nav" title="stroke width" style="padding-right:1px;">
+                                        <label for="transition-stroke-width-input" style="margin:0px;height:20px;margin-bottom:1px;background:url('images/icons/icon-stroke-width.png')"></label>
+                                        <select id="transition-stroke-width-input" style="width:34px;">
+                                            <option value='1'>1</option>
+                                            <option value='2'>2</option>
+                                            <option value='3'>3</option>
+                                        </select>
+                                    </li>
+                                    <li class="menu-seperator">&nbsp;</li>
                                 </ul>
                                 <ul class="nav navbar-nav navbar-right">
                                     <li><a id="downloadDiagram" href="#" download="diagram.xml"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>

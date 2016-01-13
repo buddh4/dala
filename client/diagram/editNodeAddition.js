@@ -5,6 +5,7 @@ var editFunctions = {
     stroke : 'stroke',
     'stroke-width' : 'strokeWidth',
     'stroke-dash' : 'strokeDashType',
+    fill : 'fill',
     color : 'fill',
     text : {
         get : function(editItem) {
@@ -25,13 +26,10 @@ var editFunctions = {
     },
     'text-size' : {
         get : function(editItem) {
-            var definition = this.node.getInnerSVG(editItem.bind).style('font-size');
-            if(definition) {
-                return definition.substring(0, definition.length - 2);
-            }
+            return this.node.getInnerSVG(editItem.bind).fontSize();
         },
         set : function(editItem, value) {
-            this.node.getInnerSVG(editItem.bind).style('font-size', value+'px');
+            this.node.getInnerSVG(editItem.bind).fontSize(value);
         }
     }
 };

@@ -165,8 +165,13 @@ h3 {
  }
 
  .toolTipSection {
+     padding:0px !important;
      background-color:#F2F2F2;
      background-image:none !important;
+ }
+
+ .editSectionContainer {
+     padding:4px;
  }
 
  .toolTipPanel .ui-widget-content {
@@ -178,6 +183,7 @@ h3 {
      font-weight: bold;
      margin-bottom:0px;
      margin-top:2px;
+     padding: 2px 0px 2px 2px;
      background-color:#A0A0A0;
  }
 
@@ -366,6 +372,7 @@ h3 {
 #stageNav .seperator-big {
     height:40px;
     border-left:2px solid #777777;
+    margin-left:1px;
 }
 
 #stageNav .nav-toggle {
@@ -405,9 +412,50 @@ h3 {
     width: 25px;
     height:25px;
     background-color:#F8F8F8;
-    -moz-box-sizing: border-box;
     outline:none;
     cursor:pointer;
+}
+
+#stageNav input[type=number] {
+    background-color:#F8F8F8;
+    outline:none;
+    width:40px;
+}
+
+#stageNav select {
+    background-color:#F8F8F8;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    border:1px solid #C3C3C3;
+}
+
+#stageNav .nav-button {
+    cursor: pointer;
+}
+
+#stageNav select option {
+    background-color:#F8F8F8;
+}
+
+#stageNav .dd {
+    margin-right:1px;
+}
+
+#stageNav .ddTitle {
+    background:none;
+    border-radius:none;
+    margin-left:1px;
+}
+
+#stageNav .menu-seperator {
+    width:11px;
+    height:40px;
+    background: url("/images/layout/diagram-nav-seperator.png") 0 0 no-repeat;
+}
+
+.nav-toggle {
+    margin-left:1px;
 }
 
 #nav-toggle-diagram {

@@ -1,21 +1,6 @@
 // Init initial browser dependencies
 // Global jQuery
 $ = jQuery = require('jquery');
-require('jquery-ui');
-
-require('./ui/jqueryPlugins');
-
-//jquery-ui / bootstrap conflicts
-$.widget.bridge('uibutton', $.ui.button);
-$.widget.bridge('uitooltip', $.ui.tooltip);
-
-require('jstree');
-
-require('bootstrap');
-
-if($.fn.button.noConflict) {
-    $.fn.bootstrapBtn = $.fn.button.noConflict();
-}
 
 //INIT GLOBAL DALA
 dala = {};

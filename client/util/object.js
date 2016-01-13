@@ -83,6 +83,10 @@ module.exports = {
         return typeof obj === 'string';
     },
 
+    isNumber: function(n) {
+        return !isNaN(parseFloat(n)) && isFinite(n);
+    },
+
     isBoolean: function(obj) {
         return typeof obj === 'boolean';
     },

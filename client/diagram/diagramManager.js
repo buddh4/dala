@@ -13,7 +13,18 @@ var activeDiagramId;
 
 config.setVal('transition_settings', {
     type: 'straight',
-    color: 'black'
+    stroke: 'black',
+    'stroke-width': '1',
+    'marker-start': 'none',
+    'marker-end' : 'trianglefill',
+    'stroke-dasharray' : 'none'
+});
+
+config.setVal('node_settings', {
+    stroke: 'black',
+    'stroke-width': '1',
+    'stroke-dasharray' : 'none',
+    fill: 'white'
 });
 
 var initListener = function() {

@@ -58,7 +58,7 @@ TransitionAddition.prototype.moveUp = function() {
 /**
  * Node dbclick triggers the creation of a transition.
  */
-TransitionAddition.prototype.dbclick = function(evt) {
+TransitionAddition.prototype.dblclick = function(evt) {
     this.startNewTransition(undefined, this.diagram.getStagePosition(evt));
 };
 

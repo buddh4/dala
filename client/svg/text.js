@@ -38,6 +38,9 @@ SVGText.prototype.fontFamily = function(value) {
 };
 
 SVGText.prototype.fontSize = function(value) {
+    if(value) {
+        value = object.isNumber(value) ? value+'px' : value;
+    }
     var result = this.attrNumber('font-size', value);
     if(value) {
         this.setSpanAttr('dy', value);

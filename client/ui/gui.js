@@ -1,3 +1,20 @@
+require('jquery-ui');
+
+require('./jqueryPlugins');
+
+//jquery-ui / bootstrap conflicts
+$.widget.bridge('uibutton', $.ui.button);
+$.widget.bridge('uitooltip', $.ui.tooltip);
+
+require('jstree');
+var a = require('ms-Dropdown');
+
+require('bootstrap');
+
+if($.fn.button.noConflict) {
+    $.fn.bootstrapBtn = $.fn.button.noConflict();
+}
+
 require('./templateNav').init();
 require('./toolTip').init();
 require('./editNav').init();

@@ -13,6 +13,27 @@ var SVGTSpan = function(svgRoot, cfg) {
 
 util.inherits(SVGTSpan, SVGText);
 
+SVGTSpan.prototype.getContainerText = function() {
+    var parent = this.parent();
+    if(parent.tagName === 'text') {
+        return parent;
+    }
+};
+
+SVGTSpan.prototype.fontSize = function(value) {
+    if(value) {
+        return SVGTSpan.super_.prototype.fontSize.apply(this, [value]);
+    } else {
+        var result = SVGTSpan.super_.prototype.fontSize.apply(this);
+        if(!result) {
+            var containerText = this.getContainerText();
+            return (containerText) ? containerText.fontSize() : 0;
+        } else {
+            return result;
+        }
+    }
+};
+
 SVGTSpan.prototype.content = function(value) {
     if(value) {
         this.$().text(value);

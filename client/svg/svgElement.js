@@ -82,7 +82,11 @@ SVGElement.prototype.find = function(selector) {
 };
 
 SVGElement.prototype.firstChild = function() {
-    return $.qCache().svg(this.$().children().first());
+    return $.svg(this.$().children().first());
+};
+
+SVGElement.prototype.parent = function() {
+    return $.svg(this.$().parent());
 };
 
 SVGElement.prototype.down = function() {

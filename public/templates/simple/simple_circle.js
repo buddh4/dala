@@ -3,7 +3,6 @@
         description : "Simple Circle with text.",
         dockingType : "CIRCLE",
         title : "circle",
-        color_main : "#FFFFFF",
         docking : {
             type: 'circle',
             orientation: 'center'
@@ -21,7 +20,7 @@
             },
             mainColor : {
                 type : "color",
-                label : "Main Color",
+                label : "Fill",
                 bind : "#body_back"
             },
             stroke : {

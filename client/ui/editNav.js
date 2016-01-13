@@ -20,11 +20,19 @@ var init = function() {
 
 var initListener = function() {
     event.listen('node_selected', nodeSelectListener);
-    event.listen('node_edit', noteEditListener);
+    event.listen('node_edit', nodeEditListener);
     event.listen('transition_edit_undo', transitionEditListener);
     event.listen('node_removed', nodeRemovedListener);
     event.listen('selection_clear', clearInfo);
     event.listen('transition_selected', transitionSelectListener);
+
+    $(document).on('click','.editLegend', function() {
+        $(this).siblings().slideToggle({
+            step:  function() {
+            editNodeMenu.update();
+        }
+        });
+    });
 };
 
 var transitionEditListener = function(evt) {
@@ -33,7 +41,7 @@ var transitionEditListener = function(evt) {
     }
 };
 
-var noteEditListener = function(evt) {
+var nodeEditListener = function(evt) {
     if(editNodeMenu.getEditNode() === evt.data) {
         nodeSelectListener(evt);
     }
