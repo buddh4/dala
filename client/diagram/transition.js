@@ -463,8 +463,17 @@ Transition.prototype.hoverOut = function() {
     this.exec('hoverOut');
 };
 
+Transition.prototype.stroke = function(value) {
+    if(value) {
+        this.colorInactive = value;
+    }
+    return this.line.stroke(value);
+}
+
 Transition.prototype.activeStyle = function() {
-    this.line.stroke(this.colorActive);
+    //this.line.stroke(this.colorActive);
+    //active style was removed
+    this.inactiveStyle();
 };
 
 Transition.prototype.deselect = function() {

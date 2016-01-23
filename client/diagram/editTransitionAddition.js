@@ -11,10 +11,10 @@ util.inherits(EditTransitionAddition, AbstractEditAddition );
 var editFunctions = {
     stroke : {
         get : function(editItem) {
-            return this.transition.line.stroke();
+            return this.transition.stroke();
         },
         set : function(binding, value) {
-            this.transition.line.stroke(value);
+            this.transition.stroke(value);
         }
     },
     'stroke-width' : {
@@ -27,10 +27,10 @@ var editFunctions = {
     },
     'stroke-dash' : {
         get : function(editItem) {
-            return this.transition.line.strokeDashType();
+            return this.transition.line.strokeDasharray();
         },
         set : function(editItem, value) {
-            this.transition.line.strokeDashType(value);
+            this.transition.line.strokeDasharray(value);
         }
     },
     text : {
@@ -98,7 +98,8 @@ var config = {
     'text4' : {type : 'text', bind : 'text4', trigger : 'text4'},
     'text5' : {type : 'text', bind : 'text5', trigger : 'text5'},
     'type'  : {type : 'type', bind : 'line'},
-    'transition' : { type : 'stroke', bind : 'line'},
+    'stroke' : { type : 'stroke', bind : 'line'},
+    'stroke-dash' : { type : 'stroke-dash', bind : 'line'},
     'startMarker' : { type : 'startMarker', bind : 'line'},
     'endMarker' : { type : 'endMarker', bind : 'line'}
 };

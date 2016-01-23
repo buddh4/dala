@@ -4,7 +4,7 @@ var AbstractEditAddition = require('./abstractEditAddition');
 var editFunctions = {
     stroke : 'stroke',
     'stroke-width' : 'strokeWidth',
-    'stroke-dash' : 'strokeDashType',
+    'stroke-dash' : 'strokeDasharray',
     fill : 'fill',
     color : 'fill',
     text : {

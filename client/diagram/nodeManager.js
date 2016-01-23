@@ -74,11 +74,43 @@ var NodeManager = function(diagram) {
     });
 };
 
-NodeManager.prototype.importCopy = function(copyResults, cfg) {
+util.inherits(NodeManager, AbstractManager);
 
+NodeManager.prototype.size = function() {
+    return object.size(this.nodes);
 };
 
-util.inherits(NodeManager, AbstractManager);
+NodeManager.prototype.getTopNode = function() {
+    var result;
+    $.each(this.nodes, function(index, node) {
+        result = (!result || result.y() > node.y()) ? node : result;
+    });
+    return result;
+};
+
+NodeManager.prototype.getLeftNode = function() {
+    var result;
+    $.each(this.nodes, function(index, node) {
+        result = (!result || result.x() > node.x()) ? node : result;
+    });
+    return result;
+};
+
+NodeManager.prototype.getBottomNode = function() {
+    var result;
+    $.each(this.nodes, function(index, node) {
+        result = (!result || result.getBottomY() < node.getBottomY()) ? node : result;
+    });
+    return result;
+};
+
+NodeManager.prototype.getRightNode = function() {
+    var result;
+    $.each(this.nodes, function(index, node) {
+        result = (!result || result.getRightX() < node.getRightX()) ? node : result;
+    });
+    return result;
+};
 
 NodeManager.prototype.importCopyNodes = function() {
     var promises = [];

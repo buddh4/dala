@@ -94,6 +94,9 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     //This is used by the eventable addition in case there are event restrictions (move mode...)
     this.excludeEventRestrictions = true;
 
+    this.background = this.svg.createPart('background');
+    this.svg.rect({width:'100%', height:'100%', fill:'#FFFFFF'}, 'background');
+
     var that = this;
     this.initDefs()
         .then(function() {
@@ -149,9 +152,7 @@ Diagram.prototype.initEvents = function() {
     // template type. Only if we do not dbclick another node in this case
     // we start a transition drag.
     this.on('dblclick', function(evt) {
-        if (!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
-            that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
-        }
+        that.createNode(evt);
     });
 
     this.on('mousedown', function(evt) {
@@ -197,8 +198,44 @@ Diagram.prototype.initEvents = function() {
     });
 };
 
+Diagram.prototype.createNode = function(evt) {
+    if (!this.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
+        this.event.trigger('node_create', this.templateMgr.getSelectedTemplate(), evt);
+    }
+};
+
 Diagram.prototype.part = function(id) {
     return this.svg.part(id);
+};
+
+Diagram.prototype.height = function(id) {
+    return (this.nodeMgr.size()) ? this.nodeMgr.getBottomNode().getBottomY() : 0;
+};
+
+Diagram.prototype.width = function(id) {
+    return (this.nodeMgr.size()) ? this.nodeMgr.getRightNode().getRightX() : 0;
+};
+
+Diagram.prototype.dimensions = function(id) {
+    if(this.nodeMgr.size()) {
+        var leftNode = this.nodeMgr.getLeftNode();
+        var topNode = this.nodeMgr.getTopNode();
+        var rightNode = this.nodeMgr.getRightNode();
+        var bottomNode = this.nodeMgr.getBottomNode();
+        return {
+            width: rightNode.getRightX(),
+            height: bottomNode.getBottomY(),
+            x: leftNode.x(),
+            y: bottomNode.y(),
+        }
+    } else {
+        return {
+            width: 0,
+            height: 0,
+            x: 0,
+            y: 0,
+        }
+    }
 };
 
 Diagram.prototype.import = function(svg, part, prepend) {
@@ -361,6 +398,10 @@ Diagram.prototype.getNodeByPosition = function(position) {
 
 Diagram.prototype.asString = function() {
     return this.svg.asString();
+};
+
+Diagram.prototype.clone = function() {
+    return this.svg.clone();
 };
 
 Diagram.prototype.undoCommand = function() {

@@ -11,6 +11,8 @@ var nodeAdditions = require('./nodeAdditions');
 var object = util.object;
 var dom = util.dom;
 
+var ROOT_CLASS = 'element_root';
+
 /**
  * The constructor does not render a node to the stage. To render a node
  * the init method has to be called.
@@ -64,6 +66,7 @@ Node.prototype.getCorners = function() {
  */
 Node.prototype.activate = function(nodeID) {
 
+    var cssClass = this.config['cssClass'] || ROOT_CLASS;
     if(nodeID) {
         this.id = this.config.node_id = nodeID;
     }
@@ -81,7 +84,7 @@ Node.prototype.activate = function(nodeID) {
         //We set the dala namespace because in case the nodes are imported/exported/parsed...
         this.root.attr('id', this.id);
         this.root.attr(this.diagram.ns());
-        this.root.attr('class', 'element_root');
+        this.root.attr('class', cssClass);
         if(this.config.x && this.config.y) {
             this.moveTo(this.config);
         }
@@ -104,7 +107,11 @@ Node.prototype.initEventFunctions = function() {
         this.root.hoverable();
     }
 
+    this.on('click', function(evt) {
+        console.log('bla');
+    });
     this.on('dblclick', function(evt) {
+        evt.stopPropagation();
         that.exec('dblclick', [evt], true);
     }).on('mousedown', function(evt) {
         if(!evt.ctrlKey && that.isVisible()) {
@@ -130,28 +137,25 @@ Node.prototype.show = function(opacity) {
 };
 
 Node.prototype.index = function() {
-    return this.root.$().index();
+    return this.$().index();
 };
 
 Node.prototype.firstChild = function() {
     return this.root.firstChild();
 };
 
-Node.prototype.moveUp = function() {
-    //We switch UP/Down here because the first node in the dom tree is the
-    //last node (back) in the svg view.
+Node.prototype.$ = function() {
+    return this.root.$();
+}
 
-    //TODO: as command event !
-    this.root.up();
+Node.prototype.moveUp = function() {
+    var selector = '.'+ROOT_CLASS;
+    this.root.moveUp(selector);
     this.exec('moveUp');
 };
 
 Node.prototype.moveDown = function() {
-    //We switch UP/Down here because the first node in the dom tree is the
-    //last node (back) in the svg view.
-
-    //TODO: as command event !
-    this.root.down();
+    var selector = '.'+ROOT_CLASS;
     this.exec('moveDown');
 };
 

@@ -71,6 +71,7 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
             that.dx = 0;
             that.dy = 0;
             that.dragKnob = knob;
+            that.knobs[knob].fill('green');
         })
         .dragMove(function(evt, dx, dy) {
             //We keep track of the total drag movement
@@ -84,6 +85,7 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
         })
         .dragEnd(function(evt) {
             that.event.trigger('node_resized', that.node);
+            that.knobs[knob].fill('black');
         })
         .getScale(function() {
             return that.diagram.scale;
@@ -92,7 +94,7 @@ Resize.prototype.createKnob = function(knob, p, dragCfg) {
     dragHook.preventAlignment = true;
 
     // Render the knob on stage
-    this.knobs[knob] = new Knob(this.diagram, p, {type:'rect', fill:'black', stroke:'none', selectable:false, 'stroke-width':0, size:SIZE, 'fill-opacity':1}, this.group)
+    this.knobs[knob] = new Knob(this.diagram, p, {type:'rect', fill:'black', 'fill-active':'black', stroke:'none', selectable:false, 'stroke-width':0, size:SIZE, 'fill-opacity':1}, this.group)
         .draggable(dragHook).hoverable();
 };
 

@@ -16,6 +16,8 @@ var STROKE_WIDTH_MAX = 20;
 var DASH_SETTING_MIN = 0;
 var DASH_SETTING_MAX = 3;
 
+var imageDropDowns =[];
+
 var section, panel, editNode, $form;
 
 var init = function() {
@@ -108,8 +110,20 @@ var appendStrokeFieldSet = function(editKey, editConfigItem) {
     var $divContainer = appendDivContainer($fieldSet);
     appendInput($divContainer, editConfigItem, 'Color', editKey+'_stroke', {type : 'color'});
     appendInput($divContainer, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
-    appendInput($divContainer, editConfigItem, 'Dash', editKey+'_stroke-dash', {type : 'range', min : DASH_SETTING_MIN, max : DASH_SETTING_MAX}, undefined, true);
+
     $form.append($fieldSet);
+    var that = this;
+    var options = {
+        'none': 'images/icons/icon-dash-none.png',
+        '5,5': 'images/icons/icon-dash-1.png',
+        '10,10' : 'images/icons/icon-dash-2.png',
+        '3,5': 'images/icons/icon-dash-3.png',
+        '5,2': 'images/icons/icon-dash-4.png',
+        '20,10,5,5,5,10' : 'images/icons/icon-dash-5.png'
+    };
+
+    var $strokeSelect = appendImageDropDown($divContainer, editConfigItem, 'Dash', editKey+'_stroke-dash', {id:'nodeStrokeDashSelect', style:'width:85px;'}, options);
+    $('#nodeStrokeDashSelect').msDropDown();
 };
 
 var appendDivContainer = function($fieldSet) {
@@ -144,6 +158,22 @@ var appendInput = function($fieldSet, editConfigItem, label, key, attributes, ov
         $fieldSet.append($label, $input);
     }
     return $input;
+};
+
+var appendImageDropDown = function($fieldSet, editConfigItem, label, key, attributes, options) {
+    var $select = dom.create('select', attributes);
+    $.each(options, function(value, imageLink) {
+        $select.append(dom.create('option', {value: value, title: imageLink}));
+    });
+    var currentVal = editNode.additions.edit.getValue(key);
+    currentVal = (object.isString(currentVal)) ? currentVal.trim() : currentVal;
+    $select.val(currentVal);
+    $select.on('change', function() {
+        //We set the value trough the diagram/nodeMgr since we need to fire command events
+        editNode.additions.edit.setValue(key, $(this).val());
+    });
+    $fieldSet.append($select);
+    return $select;
 };
 
 var initFieldSet = function(editConfigItem) {

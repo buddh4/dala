@@ -309,6 +309,10 @@ SVG.prototype.asString = function() {
     return this.root.toString();
 };
 
+SVG.prototype.clone = function() {
+    return this.root.clone();
+}
+
 /**
  * This function creates an SVGElement out of the given id selector element.
  * @param selector

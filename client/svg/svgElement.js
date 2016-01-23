@@ -89,12 +89,14 @@ SVGElement.prototype.parent = function() {
     return $.svg(this.$().parent());
 };
 
-SVGElement.prototype.down = function() {
-    dom.moveDown(this.instance());
+SVGElement.prototype.moveDown = function(selector) {
+    var $node = this.$();
+    $node.after($node.prev(selector));
 };
 
-SVGElement.prototype.up = function() {
-    dom.moveUp(this.instance());
+SVGElement.prototype.moveUp = function(selector) {
+    var $node = this.$();
+    $node.before($node.next(selector));
 };
 
 SVGElement.prototype.back = function() {
@@ -132,10 +134,14 @@ SVGElement.prototype.getBBox = function() {
 
 SVGElement.prototype.getBoundingClientRect = function() {
     return this.instance().getBoundingClientRect();
-}
+};
 
 SVGElement.prototype.toString = function() {
     return util.xml.serializeToString(this.instance());
+};
+
+SVGElement.prototype.clone = function() {
+    return this.$().clone();
 };
 
 module.exports = SVGElement;

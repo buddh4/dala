@@ -34,4 +34,15 @@ exports.init = function() {
     $('#node-stroke-width-input').on('change', function() {
         config.val('node_settings')['stroke-width'] = $(this).val();
     });
+
+    /**
+     * TODO: move to selectionmenu
+     */
+    $('#node-moveup').on('click', function() {
+        event.trigger('node_moveup');
+    });
+
+    $('#node-movedown').on('click', function() {
+        event.trigger('node_movedown');
+    });
 };

@@ -15,6 +15,8 @@ var SelectionManager = function(diagram) {
     this.hoverElement;
 
     event.listen('key_up_press', this.upListener, this);
+    event.listen('node_moveup', this.moveUpListener, this);
+    event.listen('node_movedown', this.moveDownListener, this);
     event.listen('key_down_press', this.downListener, this);
     event.listen('key_del_press', this.deleteListener, this);
     event.listen('tab_activated', this.clear, this);
@@ -117,30 +119,45 @@ SelectionManager.prototype.transitionAddedListener = function(evt) {
     }).select(evt.shiftKey);
 };
 
-SelectionManager.prototype.copyListener = function(mouse) {
+//TODO: COMMANDS + Move to NodeManager!
+SelectionManager.prototype.moveUpListener = function() {
+    var selection = this.selectedNodes.slice(0);
+    selection.sort(function(a,b) {
+        return (a.index() < b.index())? 1 : -1;
+    });
 
+    object.each(selection, function(index, node) {
+        if(object.isDefined(node)) {
+            node.moveUp();
+        }
+    });
 };
 
 SelectionManager.prototype.upListener = function(evt) {
     if(evt.ctrlKey) {
         evt.preventDefault();
-        object.each(this.selectedNodes, function(index, node) {
-            if(object.isDefined(node)) {
-                node.moveUp();
-            }
-        });
+        this.moveUpListener();
     }
 };
 
 SelectionManager.prototype.downListener = function(evt) {
     if(evt.ctrlKey) {
         evt.preventDefault();
-        object.each(this.selectedNodes, function(index, node) {
-            if(object.isDefined(node)) {
-                node.moveDown();
-            }
-        });
+        this.moveDownListener();
     }
+};
+
+SelectionManager.prototype.moveDownListener = function() {
+    var selection = this.selectedNodes.slice(0);
+    selection.sort(function(a,b) {
+        return (a.index() < b.index())? -1 : 1;
+    });
+
+    object.each(selection, function(index, node) {
+        if(object.isDefined(node)) {
+            node.moveDown();
+        }
+    });
 };
 
 SelectionManager.prototype.hoverInElementListener = function(evt) {

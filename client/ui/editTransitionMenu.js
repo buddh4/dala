@@ -16,6 +16,15 @@ var init = function() {
     initMarkerDropDown('startMarker');
     initTypeDropDown();
     initTransitionTextInput();
+
+    $('#editTransitionColor').on('change', function() {
+        triggerEdit('stroke', $(this).val());
+    });
+
+    $('#transitionDashSelect').msDropdown({reverseMode:true}).on('change', function() {
+        triggerEdit('stroke-dash', $(this).val());
+    });
+
     clear();
 };
 
@@ -103,6 +112,11 @@ var fillForm = function(transition) {
     $('#edit_MB').val(textAddition.getText(3));
     $('#edit_ET').val(textAddition.getText(4));
     $('#edit_EB').val(textAddition.getText(5));
+
+    $('#transitionDashSelect').val(transition.line.strokeDasharray());
+    $('#transitionDashSelect').msDropdown().data('dd').refresh();
+
+    $('#editTransitionColor').val(transition.line.stroke());
 
     //Focus first input
     $('#startMarker-button').focus();

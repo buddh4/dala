@@ -96,7 +96,8 @@ module.exports.init = function() {
 
     $CONTAINER_NODE.droppable({
         drop: function( event, ui ) {
-            console.log('DROPPPPPPED');
+            //Since the template was selected before we just can use the default creation mechanism
+            diagramManager.getActiveDiagram().createNode(event);
         }
     });
 

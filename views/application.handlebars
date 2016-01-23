@@ -1,6 +1,6 @@
 <div class="container-fluid">
     <div class="row">
-        <div class="col-sm-2 col-md-2 sidebar" style="padding:2px;">
+        <div id="side-menu" class="col-sm-2 col-md-2 sidebar" style="padding:2px;">
             <div id="overviewBox">
                 <h3>Overview</h3>
                 <div style="width:100%;height:250px;background-color:#ffffff;">
@@ -53,11 +53,11 @@
                                         <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
                                             <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span class="caret"></span></a>
                                         <ul class="dropdown-menu" role="menu">
-                                            <li><a href="#" id="file_new">New</a></li>
-                                            <!-- TODO: move this to filehandler -->
-                                            <li><a href="#" onclick="$('#openSVG').click()">Open</a></li>
-                                            <li><a href="#" id="saveButton">Save</a></li>
-                                            <li><a href="#">!Export!</a></li>
+                                            <li><a href="#" id="file-menu-new">New...</a></li>
+                                            <li><a href="#" id="file-menu-open">Open...</a></li>
+                                            <li><a href="#" id="file-menu-open">Import...</a></li>
+                                            <li><a href="#" id="file-menu-download-as">Download as...</a></li>
+                                            <li><a href="#" id="file-menu-save">Save</a></li>
                                         </ul>
                                     </li>
                                     <li class="seperator">&nbsp;</li>
@@ -82,15 +82,17 @@
                                     <!-- Node Menu -->
                                     <li id="nav-toggle-node" class="nav-toggle" data-nav-id="node-nav" title="node menu">&nbsp;</li>
                                     <li class="node-nav"><a href="#" id="node-align" title="node alignment"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
+                                    <li class="node-nav"><a href="#" id="node-moveup" title="move node up"><span class="glyphicon glyphicon-collapse-up"></span></a></li>
+                                    <li class="node-nav"><a href="#" id="node-movedown" title="move node down"><span class="glyphicon glyphicon-collapse-down"></span></a></li>
                                     <li class="node-nav" style="display:flex;">
                                         <div>
-                                            <label for="node-default-fill" style="margin:0px;height:15px;background:url('images/icons/icon-node-back.png')"></label>
+                                            <label for="node-default-fill" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-back.png')"></label>
                                             <input id="node-default-fill" type="color" title="background color" />
                                         </div>
                                     </li>
                                     <li class="node-nav" style="display:flex;">
                                         <div style="flex-wrap:wrap;">
-                                            <label for="node-stroke" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
+                                            <label for="node-stroke" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
                                             <input id="node-stroke" type="color" title="stroke color" />
                                         </div>
                                     </li>
@@ -102,11 +104,10 @@
                                             <option value="3,5" title="images/icons/icon-dash-3.png"></option>
                                             <option value="5,2" title="images/icons/icon-dash-4.png"></option>
                                             <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
-
                                         </select>
                                     </li>
                                     <li id="node-stroke-width" class="node-nav" title="stroke width" style="padding-right:1px;">
-                                        <label for="node-stroke-width-input" style="margin:0px;height:20px;background:url('images/icons/icon-stroke-width.png')"></label>
+                                        <label for="node-stroke-width-input" style="margin:0px;height:20px;display:block;background:url('images/icons/icon-stroke-width.png')"></label>
                                         <select id="node-stroke-width-input" style="width:34px;">
                                             <option value='1'>1</option>
                                             <option value='2'>2</option>
@@ -134,7 +135,7 @@
                                     <li id="transition-type-curved" class="nav-button transition-nav menu-box transitionTypeOption" data-type="curved" title="curved transition">&nbsp;</li>
                                     <li class="transition-nav">
                                         <div>
-                                            <label for="transition-default-stroke" style="margin:0px;height:15px;background:url('images/icons/icon-node-border.png')"></label>
+                                            <label for="transition-default-stroke" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
                                             <input id="transition-default-stroke" type="color" title="color" />
                                         </div>
                                     </li>
@@ -170,7 +171,7 @@
                                         </select>
                                     </li>
                                     <li id="transition-stroke-width" class="transition-nav" title="stroke width" style="padding-right:1px;">
-                                        <label for="transition-stroke-width-input" style="margin:0px;height:20px;margin-bottom:1px;background:url('images/icons/icon-stroke-width.png')"></label>
+                                        <label for="transition-stroke-width-input" style="margin:0px;height:20px;display:block;margin-bottom:1px;background:url('images/icons/icon-stroke-width.png')"></label>
                                         <select id="transition-stroke-width-input" style="width:34px;">
                                             <option value='1'>1</option>
                                             <option value='2'>2</option>
@@ -180,7 +181,7 @@
                                     <li class="menu-seperator">&nbsp;</li>
                                 </ul>
                                 <ul class="nav navbar-nav navbar-right">
-                                    <li><a id="downloadDiagram" href="#" download="diagram.xml"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>
+                                    <li><a id="downloadDiagram" href="#"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>
                                 </ul>
                             </div><!-- /.navbar-collapse -->
                         </div><!-- /.container-fluid -->
@@ -198,8 +199,7 @@
                     </div>
                 </div>
                 <div id="tabs-3">
-                    <p>Mauris eleifend est et turpis. Duis id erat. Suspendisse potenti. Aliquam vulputate, pede vel vehicula accumsan, mi neque rutrum erat, eu congue orci lorem eget lorem. Vestibulum non ante. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Fusce sodales. Quisque eu urna vel enim commodo pellentesque. Praesent eu risus hendrerit ligula tempus pretium. Curabitur lorem enim, pretium nec, feugiat nec, luctus a, lacus.</p>
-                    <p>Duis cursus. Maecenas ligula eros, blandit nec, pharetra at, semper at, magna. Nullam ac lacus. Nulla facilisi. Praesent viverra justo vitae neque. Praesent blandit adipiscing velit. Suspendisse potenti. Donec mattis, pede vel pharetra blandit, magna ligula faucibus eros, id euismod lacus dolor eget odio. Nam scelerisque. Donec non libero sed nulla mattis commodo. Ut sagittis. Donec nisi lectus, feugiat porttitor, tempor ac, tempor vitae, pede. Aenean vehicula velit eu tellus interdum rutrum. Maecenas commodo. Pellentesque nec elit. Fusce in lacus. Vivamus a libero vitae lectus hendrerit hendrerit.</p>
+                    <canvas id="convertCanvas"></canvas>
                 </div>
 
                 <!-- File Open Input  -->
@@ -247,6 +247,17 @@
                         <option value="curved">curved</option>
                         <option value="round">round</option>
                     </select>
+                    <label for="transitionColor">Color:</label>
+                    <input id="editTransitionColor" type="color" />
+                    <label for="transitionDash">Dash:</label>&nbsp;
+                    <select id="transitionDashSelect" style="width:85px;">
+                        <option value="none" title="images/icons/icon-dash-none.png"></option>
+                        <option value="5,5" title="images/icons/icon-dash-1.png"></option>
+                        <option value="10,10" title="images/icons/icon-dash-2.png"></option>
+                        <option value="3,5" title="images/icons/icon-dash-3.png"></option>
+                        <option value="5,2" title="images/icons/icon-dash-4.png"></option>
+                        <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
+                    </select>
                 </fieldset>
                 <fieldset>
                     <legend>Text</legend>
@@ -277,6 +288,21 @@
     </div>
 
     <div id="infoBox" class="ui-corner-all ui-widget-content">&nbsp</div>
+</div>
+
+
+<!-- Download As Dialog -->
+<div id="download-as-dialog" title="Download as">
+    <form>
+        <fieldset>
+            <label for="download-as-fileName">Name:</label>
+            <input type="text" name="fileName" id="download-as-fileName" class="text ui-widget-content ui-corner-all" /><span id="download-as-suffix" style="margin-left:5px;"></span><br />
+            <input type="radio" id="format-svg" name="download-format" value="image/svg+xml" style="margin-left:55px;" /><label for="format-svg">svg</label>
+            <input type="radio" id="format-jpg" name="download-format" value="image/jpeg" /><label for="format-jpg">jpg</label>
+            <input type="radio" id="format-gif" name="download-format" value="image/gif" /><label for="format-gif">gif</label>
+            <input type="radio" id="format-png" name="download-format" value="image/png" /><label for="format-png">png</label>
+        </fieldset>
+    </form>
 </div>
 
 <!-- XML View Dialog -->

@@ -1,8 +1,10 @@
 var Diagram = require('./diagram');
 var event = require('../core/event');
 var client = require('../core/client');
+var util = require('../util/util');
 
 var userManager = require('../user/userManager');
+var fileManager = require('../core/fileManager');
 
 var config = require('../core/config');
 
@@ -28,6 +30,8 @@ config.setVal('node_settings', {
 });
 
 var initListener = function() {
+    event.listen('diagram_download_as', downloadDiagramAsListener);
+
     event.listen('diagram_new', newDiagramListener);
     event.listen('tab_activated', activeTabListener);
     event.listen('key_save_press', saveDiagram);
@@ -41,6 +45,26 @@ var initListener = function() {
 
     event.listen('key_redo_press', redoCommand);
     event.listen('key_undo_press', undoCommand);
+};
+
+var downloadDiagramAsListener = function(evt) {
+    var diagram = getActiveDiagram();
+    var content = getPlainDiagramString();
+    var fileName = evt.data.fileName || diagram.title;
+    var mime = evt.data.mime || 'image/svg+xml';
+    fileManager.downloadAs(content, fileName, diagram.width(), diagram.height(), mime);
+};
+
+var getPlainDiagramString = function() {
+    var diagram = getActiveDiagram();
+    var $diagramXml = diagram.clone();
+    $diagramXml.find('.knob').remove();
+    //TODO: Diagram dimension settings
+    $diagramXml.attr('height', diagram.height() + 10);
+    $diagramXml.attr('width', diagram.width() + 10);
+    $diagramXml.find('.orientationKnob').hide();
+    $diagramXml.find('#'+diagram.mainPart.attr('id')).attr('transform', '');
+    return util.xml.serializeToString($diagramXml[0]);
 };
 
 var toggleModeMove = function() {

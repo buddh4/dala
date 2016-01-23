@@ -16,9 +16,8 @@ var initListener = function() {
     event.listen('node_selected', nodeSelectListener);
     event.listen('template_panel_loaded', panelAddedListener);
 
-    $CONTAINER_NODE.on('click', '.tmpl_select' , function(evt) {
-        var id = $(this).attr('id');
-        var tmplId = id.substring(ID_PREFIX_TMPL_SELECT.length, id.length);
+    $CONTAINER_NODE.on('mousedown', '.tmpl_select' , function(evt) {
+        var tmplId = $(this).data('tmplid');
         event.trigger(EVT_TMPL_SELECT, tmplId);
         setActiveTemplate(tmplId);
     });
@@ -43,10 +42,12 @@ var sortPanel = function() {
         getPanelHeadNode(panelId).after($node);
     });
     refresh();
-}
+};
 
 var createPanel = function(panel) {
-    $CONTAINER_NODE.append(_createPanelHeadHTML(panel)+_createPanelBodyHTML(panel));
+    var $panelBody = $(_createPanelBodyHTML(panel));
+    $panelBody.find('.tmpl_select').draggable({helper: "clone", appendTo: "body" ,zIndex: 1004});
+    $CONTAINER_NODE.append(_createPanelHeadHTML(panel)).append($panelBody);
 };
 
 var _createPanelHeadHTML = function(panel) {
@@ -73,7 +74,7 @@ var _createPanelBodyHTML = function(panel) {
 
         var iconUrl = (tmplDefinition.icon) ? tmplDefinition.icon : '/templates/'+panel.id+'/icons/'+tmplDefinition.id+".png";
 
-        content +=  '<td id="'+ID_PREFIX_TMPL_SELECT+this.id+'" class="tmpl_select">'+
+        content +=  '<td id="'+ID_PREFIX_TMPL_SELECT+this.id+'" data-tmplid="'+this.id+'" class="tmpl_select">'+
             '<img src="'+iconUrl+'" />'+
             '<br />'+
             '<span class="tmplName">'+tmplDefinition.label+'</span>';
@@ -82,15 +83,6 @@ var _createPanelBodyHTML = function(panel) {
     });
 
     return content += ((templateArr.length-1) % 3 !== 0) ? '</tr></table></div>' : '</table></div>';
-}
-
-var templateLoadedListener = function(evt) {
-    var panel = evt.data;
-    if(getPanelHeadNode(panel.id).length) {
-        appendTemplateContent(panel);
-    } else {
-        //todo: create panel
-    }
 };
 
 var getPanelHeadNode = function(panelId) {
@@ -99,36 +91,6 @@ var getPanelHeadNode = function(panelId) {
 
 var getPanelContentNode = function(panelId) {
     return $('#tmpl_panel_content_'+panelId);
-};
-
-var appendTemplateContent = function(panel) {
-    var $contentNode = getPanelContentNode(panel.id);
-    var index = 0;
-    var content = '<table>';
-    $.each(panel.definition, function() {
-
-        if(index % 3 === 0) {
-            content += (index !== 0) ? '</tr><tr>' : '<tr>';
-        }
-
-        content +=  '<td id="tmpl_select_'+this.id+'" class="tmpl_select">'+
-                    '<img src="images/icons/'+this.id+'.png" />'+
-                    '<br />'+
-                    '<span class="tmplName">'+this.label+'</span>';
-
-        index++;
-    });
-
-    content += (index % 3 !== 0) ? '</tr></table>' : '</table>';
-
-    $contentNode.fadeOut(300, function() {
-        $contentNode.empty();
-        $contentNode.append(content);
-        $contentNode.fadeIn(300, function() {
-            refresh();
-            $('.tmpl_select').draggable({helper: "clone", appendTo: "body" ,zIndex: 1004});
-        });
-    });
 };
 
 var refresh = function() {

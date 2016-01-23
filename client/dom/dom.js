@@ -50,14 +50,14 @@ var getJQueryNode = function(node) {
     }
 };
 
-var moveDown = function(node) {
+var moveDown = function(node, selector) {
     var $node = getJQueryNode(node);
-    $node.before($node.next());
+    $node.before($node.next(selector));
 };
 
-var moveUp = function(node) {
+var moveUp = function(node, selector) {
     var $node = getJQueryNode(node);
-    $node.after($node.prev());
+    $node.after($node.prev(selector));
 };
 
 var insertAfterIndex = function(node, index) {
