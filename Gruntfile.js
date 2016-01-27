@@ -18,7 +18,7 @@ module.exports = function(grunt) {
                 livereload: true
             },
             scripts: {
-                files: ['client/**/*.js'],
+                files: ['client/**/*.js','test/**/*.js'],
                 tasks: ['build_dev'],
                 options: {
                     spawn: false
@@ -41,8 +41,8 @@ module.exports = function(grunt) {
                     './public/js/client.js' : './client/client.all.js',
                     './public/js/svg.js' : './client/client.svg.js',
                     './public/js/dala.diagram.js' : './client/client.diagram.js',
-                    './public/js/test.js' : './client/test.svg.js',
-                    './public/js/test_diagram.js' : './client/test.diagram.js'
+                    './public/js/test.js' : './test/test.svg.js',
+                    './public/js/test_diagram.js' : './test/test.diagram.js'
                 }
             }
         }

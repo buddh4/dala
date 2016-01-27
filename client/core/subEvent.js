@@ -3,11 +3,15 @@ var object = require('../util/object');
 var SubEvent = function(context, event) {
     this.context = context;
     this.event = event;
-}
+};
+
+SubEvent.prototype.mouse = function() {
+    return this.event.mouse();
+};
 
 SubEvent.prototype.getSubType = function(type) {
     return this.context+':'+type;
-}
+};
 
 SubEvent.prototype.listen = function(type, handler, module) {
     //TODO: implement bubble

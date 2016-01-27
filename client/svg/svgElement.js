@@ -81,8 +81,12 @@ SVGElement.prototype.find = function(selector) {
     return util.object.isArray(result) ? result : [result];
 };
 
-SVGElement.prototype.firstChild = function() {
-    return $.svg(this.$().children().first());
+SVGElement.prototype.firstChild = function(selector) {
+    return $.svg(this.$().children(selector).first());
+};
+
+SVGElement.prototype.children = function(selector) {
+    return $.svg(this.$().children(selector));
 };
 
 SVGElement.prototype.parent = function() {
@@ -91,12 +95,12 @@ SVGElement.prototype.parent = function() {
 
 SVGElement.prototype.moveDown = function(selector) {
     var $node = this.$();
-    $node.after($node.prev(selector));
+    $node.prevAll(selector).first().before($node);
 };
 
 SVGElement.prototype.moveUp = function(selector) {
     var $node = this.$();
-    $node.before($node.next(selector));
+    $node.nextAll(selector).first().after($node);
 };
 
 SVGElement.prototype.back = function() {

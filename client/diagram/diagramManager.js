@@ -49,22 +49,10 @@ var initListener = function() {
 
 var downloadDiagramAsListener = function(evt) {
     var diagram = getActiveDiagram();
-    var content = getPlainDiagramString();
+    var content = diagram.asPlainString();
     var fileName = evt.data.fileName || diagram.title;
     var mime = evt.data.mime || 'image/svg+xml';
     fileManager.downloadAs(content, fileName, diagram.width(), diagram.height(), mime);
-};
-
-var getPlainDiagramString = function() {
-    var diagram = getActiveDiagram();
-    var $diagramXml = diagram.clone();
-    $diagramXml.find('.knob').remove();
-    //TODO: Diagram dimension settings
-    $diagramXml.attr('height', diagram.height() + 10);
-    $diagramXml.attr('width', diagram.width() + 10);
-    $diagramXml.find('.orientationKnob').hide();
-    $diagramXml.find('#'+diagram.mainPart.attr('id')).attr('transform', '');
-    return util.xml.serializeToString($diagramXml[0]);
 };
 
 var toggleModeMove = function() {

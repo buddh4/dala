@@ -322,7 +322,7 @@ SVG.get = function(selector) {
     if(selector.SVGElement) {
         return selector;
     }
-
+    //TODO:
     if(object.isString(selector)) {
         $node = $(dom.getIdSelector(selector));
     } else {
@@ -344,7 +344,12 @@ SVG.get = function(selector) {
         var $svgRootNode = $($node.get(0).ownerSVGElement);
         if($svgRootNode.length) {
             var svgInstance = instances[$svgRootNode.attr('id')];
-            return SVG._svgInstance($node, svgInstance);
+            var result = SVG._svgInstance($node, svgInstance);
+            //This enables $.each for single results.
+            result[0] = result;
+            result.length = 1;
+            result.splice = function() {};
+            return result;
         } else {
             console.warn('Call SVG.get on node with no svg root');
         }

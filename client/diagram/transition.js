@@ -60,12 +60,9 @@ Transition.prototype.activate = function(domGroup) {
 
     transitionAdditions.init(this);
 
-    //Remove all existing knobs (except orientation knobs)
-    this.group.$().children('.knob').remove();
-
     //Get line and linearea from dom
     this.getLine();
-    COLOR_INACTIVE = this.line.stroke();
+    this.colorInactive = this.line.stroke();
 
     this.getLineArea();
     this.lineArea.d(this.line.d());
@@ -76,6 +73,14 @@ Transition.prototype.activate = function(domGroup) {
     this.knobManager = new TransitionKnobManager(this).activate();
     this.initEvents();
     return this;
+};
+
+Transition.prototype.children = function(selector) {
+    return this.group.children(selector);
+};
+
+Transition.prototype.firstChild = function(selector) {
+    return this.group.firstChild(selector);
 };
 
 Transition.prototype.getLine = function() {
@@ -131,6 +136,8 @@ Transition.prototype.init = function(node, mouse) {
     this.initTransitionSVG();
     this.initEvents();
     this.update(mouse);
+    this.group.pointerEvents('none');
+
     return this;
 };
 
@@ -246,29 +253,48 @@ Transition.prototype.initEvents = function() {
             that.hoverOut();
         }
     });
-
-    this.on('mousedown', function(evt) {
+    this.on('click', function(evt) {
+        if(evt.shiftKey) {
+            that.selectInnerKnobs();
+            return;
+        }
+    }).on('mousedown', function(evt) {
         evt.preventDefault();
         evt.stopPropagation();
+
+        var dragInitiated = false;
+        var startPosition = that.diagram.getStagePosition(evt);
+        var pathPartIndex = that.pathManager.getIndexForPosition(startPosition);
+
+        if(evt.shiftKey) {
+            var knobsByIndex = that.knobManager.getKnobsByIndex(pathPartIndex);
+            if(pathPartIndex === 1) {
+                knobsByIndex[1].select(true).initDrag();
+                that.dockingManager.startDocking.knob.initDrag();
+                //TODO: implement same behaviour for last index + check do / undo
+            } else {
+                knobsByIndex[0].select(true);
+                knobsByIndex[1].select(true).initDrag();
+            }
+            return;
+        }
 
         if(!that.selected) {
             that.select();
         }
 
-        var dragInitiated = false;
-        var startPosition = that.diagram.getStagePosition(evt);
-        var knobIndex = that.pathManager.getIndexForPosition(startPosition);
 
-        if (knobIndex) {
+
+        if (pathPartIndex) {
             event.once(document, "mouseup", function(evt) {
                 that.diagram.off('mousemove');
             });
             that.diagram.on("mousemove", function(event) {
-                var movePosition = that.diagram.getStagePosition(event.pageX, event.pageY);
+                var movePosition = that.diagram.getStagePosition(event);
 
                 //We just start the drag event in case we move more thant 5px away
                 if(!dragInitiated && util.app.isMinDist(startPosition, movePosition, 5)) {
-                    var knob = that.knobManager.addKnob(startPosition, knobIndex);
+                    var knob = that.knobManager.addKnob(startPosition, pathPartIndex);
                     knob.initDrag();
                     dragInitiated = true;
                 }
@@ -278,7 +304,7 @@ Transition.prototype.initEvents = function() {
         var startPosition = that.diagram.getStagePosition(evt);
         var pointOnLine = that.pathManager.getNearestPoint(startPosition);
         var knobIndex = that.pathManager.getIndexForPosition(startPosition);
-        var knob = that.knobManager.addKnob(pointOnLine, knobIndex);
+        that.addKnob(pointOnLine, knobIndex);
     });
 };
 
@@ -353,6 +379,7 @@ Transition.prototype.setEndNode = function(node, mousePosition) {
     this.exec('setEndNode', [node, mousePosition]);
     this.checkDomPosition();
     this.update();
+    this.group.pointerEvents('all');
 };
 
 Transition.prototype.checkDomPosition = function() {
@@ -362,6 +389,14 @@ Transition.prototype.checkDomPosition = function() {
     if(transitionIndex < maxNodeIndex) {
         dom.insertAfterIndex(this.group.instance(), maxNodeIndex);
     }
+};
+
+Transition.prototype.moveInnerKnobs = function(distance) {
+    this.knobManager.moveInnerKnobs(distance);
+};
+
+Transition.prototype.selectInnerKnobs = function() {
+    this.knobManager.selectInnerKnobs();
 };
 
 Transition.prototype.remove = function() {
@@ -486,8 +521,8 @@ Transition.prototype.inactiveStyle = function() {
     this.line.stroke(this.colorInactive);
 };
 
+module.exports = Transition;
+
 Transition.prototype.toString = function() {
     return this.group.toString();
 };
-
-module.exports = Transition;

@@ -206,7 +206,11 @@ Resize.prototype.updateNodes = function(dx,dy) {
     var alignX = object.isOneOf(this.dragKnob, KNOB_NW, KNOB_W, KNOB_SW) ? dx * -1 : 0;
     var alignY = object.isOneOf(this.dragKnob, KNOB_NW, KNOB_N, KNOB_NE) ? dy * -1 : 0;
     this.node.root.move(alignX, alignY);
-    this.group.move(alignX, alignY);
+
+    //For API calls the group was not rendered if the node is not selected
+    if(this.group) {
+        this.group.move(alignX, alignY);
+    }
 };
 
 Resize.prototype.updateNode = function(index, element, dx, dy) {

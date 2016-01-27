@@ -39,6 +39,7 @@ AbstractEditAddition.prototype.addEditTextTrigger = function(key) {
     //TODO: evtl move this to text.editable();
     this.editable.root.$().on('click', selector,  function(evt) {
         if(that.isTriggerAllowed()) {
+            //TODO: remove UI dependency and handle it trough trigger event
             switch(editItem.type) {
                 case 'textarea':
                     editPanel.createTextAreaEdit(evt.pageX, evt.pageY,
@@ -96,8 +97,8 @@ AbstractEditAddition.prototype.setValue = function(key, value) {
 AbstractEditAddition.prototype.getEditItem = function(key) {
     var type;
     var editItem;
-    if(key.indexOf('_') > -1) {
-        var splitted = key.split('_');
+    if(key.indexOf(':') > -1) {
+        var splitted = key.split(':');
         editItem = object.cloneObject(this.config[splitted[0]]);
         editItem.type = splitted[1];
     } else {

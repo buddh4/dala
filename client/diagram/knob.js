@@ -95,15 +95,14 @@ Knob.prototype.show = function(opacity) {
     this.node.root.attr('r', this.config['radius']);
 };
 
-Knob.prototype.select = function() {
-    this.selected = true;
-    this.node.trigger('select');
+Knob.prototype.select = function(shifted) {
+    this.activeStyle();
+    this.node.select(shifted);
     return this;
 };
 
 Knob.prototype.deselect = function() {
-    this.selected = false;
-    this.node.trigger('deselect');
+    this.node.deselect();
     return this;
 };
 

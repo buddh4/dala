@@ -1,22 +1,23 @@
 var SVG = require('../svg/svg');
+var string = require('../util/string');
 var queryCache = require('../core/cache');
 
 $.fn.svg = function(selector) {
     if(selector && selector.SVGElement) {
         return selector;
-    }else if(selector) {
+    } else if(selector) {
         return $(selector).svg();
     }
 
     if(!this.length) {
-        return;
+        return [];
     } else if(this.length === 1) {
         return SVG.get(this);
     } else if(this.length > 1) {
         var result =  [];
         this.each(function() {
             result.push(SVG.get(this));
-        })
+        });
         return result;
     }
 

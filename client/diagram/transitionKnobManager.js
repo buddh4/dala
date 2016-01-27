@@ -54,17 +54,32 @@ var TransitionKnobManager = function(transition) {
     };
 };
 
+
 TransitionKnobManager.prototype.init = function() {
     this.knobs = [];
 };
 
 TransitionKnobManager.prototype.activate = function() {
-    var polynoms = this.transition.getLine().d().polynoms();
-    for(var i = 0; i < polynoms.length; i++) {
-        var to = polynoms[i];
-        this.addKnob(to, i, true, (i === 0 || i === polynoms.length - 1));
-    }
+    var that = this;
+
+    var oldStartKnob = this.transition.firstChild('.startKnob');
+    this._activateKnob(oldStartKnob, 0, true);
+
+    var oldInnerKnobs = this.transition.children('.innerKnob');
+    $.each(oldInnerKnobs, function(i, oldInnerKnob) {
+        that._activateKnob(oldInnerKnob, (i + 1));
+    });
+
+    var oldEndKnob = this.transition.firstChild('.endKnob');
+    this._activateKnob(oldStartKnob, this.knobs.length, true);
+
     return this;
+};
+
+TransitionKnobManager.prototype._activateKnob = function(knob, index, isBoundaryKnob) {
+    var position = knob.getCenter();
+    knob.remove();
+    this.addKnob(position, index, true, isBoundaryKnob);
 };
 
 TransitionKnobManager.prototype.addKnob = function(position, index, activate, isBoundaryKnob) {
@@ -95,7 +110,8 @@ TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBound
     var knobConfig = {
         radius:5,
         selectable: !isBoundaryKnob,
-        fill:       isBoundaryKnob ? 'green' : 'silver'
+        fill: isBoundaryKnob ? 'green' : 'silver',
+        cssClass: (knobIndex === 0) ? 'startKnob' : (isBoundaryKnob) ? 'endKnob' : 'innerKnob'
     };
     var knob = new Knob(this.transition.diagram, position, knobConfig, this.transition.group);
     knob.transition = this.transition;
@@ -188,6 +204,18 @@ TransitionKnobManager.prototype.moveKnob = function(knob, dx, dy) {
     this.transition.exec('knob_drop', [index, newPostion]);
 };
 
+TransitionKnobManager.prototype.moveInnerKnobs = function(distance) {
+    $.each(this.getInnerKnobs(), function(i, knob) {
+        knob.triggerDrag(distance.x, distance.y);
+    });
+};
+
+TransitionKnobManager.prototype.selectInnerKnobs = function() {
+    $.each(this.getInnerKnobs(), function(i, knob) {
+        knob.select(true);
+    });
+};
+
 TransitionKnobManager.prototype.getSelectedKnobs = function() {
     var result = [];
     $.each(this.getInnerKnobs(), function(index, knob) {
@@ -273,9 +301,8 @@ TransitionKnobManager.prototype.isBoundaryIndex = function(knobIndex) {
     return knobIndex === 0 || knobIndex === this.lastIndex();
 };
 
-TransitionKnobManager.prototype.getJoiningDockings = function(docking) {
-    var index = this.getIndexForKnob(docking);
-    return [this.knobs[index - 1], this.knobs[index + 1]];
+TransitionKnobManager.prototype.getKnobsByIndex = function(index) {
+    return [this.knobs[index - 1], this.knobs[index]];
 };
 
 TransitionKnobManager.prototype.getJoiningOrientation = function(knob) {

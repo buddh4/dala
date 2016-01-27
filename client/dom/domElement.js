@@ -162,6 +162,9 @@ Element.prototype.attrNumber = function(key, value) {
     return (object.isDefined(value)) ? this : val;
 };
 
+Element.prototype.pointerEvents = function(value) {
+    return this.attr('pointer-events', value);
+};
 Element.prototype.attr = function(attribute) {
     if(arguments.length > 1 && object.isDefined(arguments[1])) {
         //TODO: implement for mor thant 2

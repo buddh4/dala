@@ -9,8 +9,6 @@ var SelectionManager = function(diagram) {
     this.diagram = diagram;
     this.event = diagram.event;
     this.selectedNodes = [];
-    this.selectedTransitions = [];
-    this.copyNodes = [];
     this.selectedTransition;
     this.hoverElement;
 
@@ -28,34 +26,6 @@ var SelectionManager = function(diagram) {
     //These are currently global events not diagram context events
     event.listen('element_hoverIn', this.hoverInElementListener, this);
     event.listen('element_hoverOut', this.hoverOutElementListener, this);
-
-    var that = this;
-    this.diagram.on('copy', function(evt) {
-        var copyNodes = {};
-        var copyTransitions = {};
-        $.each(that.selectedNodes, function(index, node) {
-            if(!node.knob) {
-                copyNodes[node.id] =  {svg : node.toString(), position: node.position()};
-                $.each(node.additions.transition.outgoingTransitions, function(index, transition) {
-                    if(transition.getEndNode().selected) {
-                        copyTransitions[transition.id] ={svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
-                    }
-                });
-
-                $.each(node.additions.transition.incomingTransitions, function(index, transition) {
-                    if(!copyTransitions[transition.id] && transition.getStartNode().selected) {
-                        copyTransitions[transition.id] = {svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
-                    }
-                })
-            }
-        });
-
-        that.lastCopy = {
-            mouse : evt.mouse,
-            nodes : copyNodes,
-            transitions : copyTransitions
-        };
-    });
 };
 
 SelectionManager.prototype.getSelectedNodes = function() {
@@ -75,8 +45,8 @@ SelectionManager.prototype.knobAddedListener = function(evt) {
     var that = this;
     this.addNodeEvents(knob.node);
     if(knob.node.selectable) {
-        knob.node.on('select', function () {
-            if (that.dragSelection || evt.shiftKey && knob.transition) {
+        knob.node.on('select', function (selectEvt, shifted) {
+            if (that.dragSelection || evt.shiftKey || shifted && knob.transition) {
                 if (knob.transition.selected) {
                     knob.transition.deselect();
                 }
@@ -380,6 +350,7 @@ SelectionManager.prototype.clearNodes = function(filter) {
             node.deselect();
         }
     });
+    this.selectedNodes = [];
 };
 
 SelectionManager.prototype.clearTransition = function(node, force) {

@@ -12,9 +12,8 @@ var dom = util.dom;
 var config = require('../core/config');
 
 var EVT_CREATE = 'node_create';
+//TODO: implement like copy paste by diagram event
 var EVT_DELETE = 'node_delete';
-var EVT_COPY = 'node_copy';
-var EVT_PAST = 'key_paste_press';
 
 var EVT_RESIZED = 'node_resized';
 var EVT_ADDED = 'node_added';
@@ -39,7 +38,6 @@ var NodeManager = function(diagram) {
 
     this.listen(EVT_CREATE, this.createNodeListener);
     this.listen(EVT_DELETE, this.deleteNodeListener);
-    this.listen(EVT_COPY, this.copyNodeListener);
     this.listen(EVT_RESIZED, this.resizeNodeListener);
 
     this.command(CMD_ADD, this.createNode, this.deleteNode);
@@ -50,14 +48,50 @@ var NodeManager = function(diagram) {
     this.command(CMD_EDIT, this.editNode, this.undoEdit);
 
     var that = this;
+    this.diagram.on('copy', function(evt) {
+        var copyNodes = {};
+        var copyTransitions = {};
+        $.each(that.selectionMgr.selectedNodes, function(index, node) {
+            if(!node.knob) {
+                copyNodes[node.id] =  {svg : node.toString(), position: node.position()};
+                $.each(node.additions.transition.outgoingTransitions, function(index, transition) {
+                    if(transition.getEndNode().selected) {
+                        copyTransitions[transition.id] ={svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
+                    }
+                });
+
+                $.each(node.additions.transition.incomingTransitions, function(index, transition) {
+                    if(!copyTransitions[transition.id] && transition.getStartNode().selected) {
+                        copyTransitions[transition.id] = {svg : transition.toString(), start: transition.getStartNode().id, end: transition.getEndNode().id};
+                    }
+                })
+            }
+        });
+
+
+        var topNode = that.getTopNode(that.selectionMgr.selectedNodes);
+        var leftNode = that.getLeftNode(that.selectionMgr.selectedNodes);
+
+        that.lastCopy = {
+            x : leftNode.x(),
+            y: topNode.y(),
+            nodes : copyNodes,
+            transitions : copyTransitions
+        };
+    });
+
     this.diagram.on('paste', function(evt) {
+        var mouse = that.diagram.getStagePosition(event.mouse());
+        var d = {x:(mouse.x - that.lastCopy.x), y:(mouse.y - that.lastCopy.y)};
         that.importCopyNodes()
             .then(function(result) {
                 var ids = [];
                 var svgStrings = [];
                 var nodeMapping = {};
+                var nodes = [];
                 that.selectionMgr.clear();
                 $.each(result, function(index, node) {
+                    nodes.push(node);
                     node.select(true);
                     nodeMapping[node.config.oldId] = node.config.newId;
                     ids.push(node.id);
@@ -66,6 +100,15 @@ var NodeManager = function(diagram) {
 
                 that.importCopyTransitions(nodeMapping).then(function(transitions) {
                     //that.addCmd('cmd_group', [[CMD_COPY, [svgStrings], [ids]], []])
+
+                    $.each(nodes, function(index, node) {
+                        node.triggerDrag(d.x, d.y);
+                        node.select(true);
+                    });
+                    $.each(transitions, function(index, transition) {
+                        transition.moveInnerKnobs(d);
+                        transition.selectInnerKnobs();
+                    });
 
                     that.addCmd(CMD_COPY, [svgStrings], [ids]);
                 });
@@ -80,46 +123,58 @@ NodeManager.prototype.size = function() {
     return object.size(this.nodes);
 };
 
-NodeManager.prototype.getTopNode = function() {
-    var result;
-    $.each(this.nodes, function(index, node) {
-        result = (!result || result.y() > node.y()) ? node : result;
-    });
-    return result;
+NodeManager.prototype.getTopNode = function(nodes) {
+    return this.sorted(nodes, function(a,b) {
+        return (a.y() > b.y()) ? 1 : -1;
+    })[0];
 };
 
-NodeManager.prototype.getLeftNode = function() {
-    var result;
-    $.each(this.nodes, function(index, node) {
-        result = (!result || result.x() > node.x()) ? node : result;
-    });
-    return result;
+NodeManager.prototype.getLeftNode = function(nodes) {
+    return this.sorted(nodes, function(a,b) {
+        return (a.x() > b.x()) ? 1 : -1;
+    })[0];
 };
 
-NodeManager.prototype.getBottomNode = function() {
-    var result;
-    $.each(this.nodes, function(index, node) {
-        result = (!result || result.getBottomY() < node.getBottomY()) ? node : result;
-    });
-    return result;
+NodeManager.prototype.getBottomNode = function(nodes) {
+    return this.sorted(nodes, function(a,b) {
+        return (a.getBottomY() < b.getBottomY()) ? 1 : -1;
+    })[0];
 };
 
-NodeManager.prototype.getRightNode = function() {
-    var result;
-    $.each(this.nodes, function(index, node) {
-        result = (!result || result.getRightX() < node.getRightX()) ? node : result;
-    });
-    return result;
+NodeManager.prototype.getRightNode = function(nodes) {
+    return this.sorted(nodes, function(a,b) {
+        return (a.getRightX() < b.getRightX()) ? 1 : -1;
+    })[0];
 };
+
+NodeManager.prototype.sorted = function(nodes, compare) {
+    if(object.isFunction(nodes)) {
+        compare = nodes;
+        nodes = undefined;
+    }
+    nodes = this.getNodesAsArray(nodes);
+    return nodes.sort(compare);
+};
+
+NodeManager.prototype.getNodesAsArray = function(nodes) {
+    nodes = nodes || this.nodes;
+    if(!object.isArray(nodes)) {
+        return $.map(nodes, function(val) {
+            return val;
+        })
+    } else {
+        return nodes;
+    }
+}
 
 NodeManager.prototype.importCopyNodes = function() {
     var promises = [];
     var that = this;
-    $.each(that.selectionMgr.lastCopy.nodes, function(key, value) {
+    $.each(that.lastCopy.nodes, function(key, value) {
         promises.push(that.importNode(value.svg, {
             oldId : key,
-            x : value.position.x + 20,
-            y : value.position.y + 20,
+            x : value.position.x,
+            y : value.position.y,
             newId : that.diagram.uniqueId()
         }));
     });
@@ -130,7 +185,7 @@ NodeManager.prototype.importCopyTransitions = function(nodeIdMapping) {
     var that = this;
     return new Promise(function(resolve, reject) {
         var result = [];
-        $.each(that.selectionMgr.lastCopy.transitions, function(key, value) {
+        $.each(that.lastCopy.transitions, function(key, value) {
             var svg = value.svg;
             svg = svg.replace(new RegExp(value.start, 'g'), nodeIdMapping[value.start]);
             svg = svg.replace(new RegExp(value.end, 'g'), nodeIdMapping[value.end]);
@@ -182,6 +237,13 @@ NodeManager.prototype.createNode = function(tmpl, cfg) {
         }).on('dragEnd', function() {
             var selection = that.selectionMgr.getSelectedNodes();
             //We just add the command since we don't want to execute the drag twice
+
+            //For API calls where the node is not necessarily selected
+            if($(selection).filter(function(i) { return this.id === node.id;}).length < 1) {
+                selection.push(node);
+            }
+
+
             that.addCmd(CMD_DROP,
                 [selection, node.dragContext.dxSum, node.dragContext.dySum],
                 [selection, (-1 * node.dragContext.dxSum), (-1 * node.dragContext.dySum)]);
@@ -243,6 +305,12 @@ NodeManager.prototype.deleteNodeListener = function(evt) {
     }
 };
 
+NodeManager.prototype.clear = function(nodes) {
+    $.each(this.nodes, function(id, node) {
+        node.remove();
+    });
+};
+
 NodeManager.prototype.deleteNode = function(node) {
     if(object.isArray(node)) {
         var that = this;
@@ -272,9 +340,6 @@ NodeManager.prototype.importNode = function(nodeStr, cfg) {
 
         return new Promise(function(resolve, reject) {
             Promise.all(promises).then(function(nodes) {
-                $.each(nodes, function(index, node) {
-                    node.select(true);
-                });
                 resolve(nodes);
             });
         });
@@ -296,25 +361,6 @@ NodeManager.prototype.importNode = function(nodeStr, cfg) {
 NodeManager.prototype.getNodeAsString = function(node) {
     node = this.getNode(node);
     return node.toString();
-};
-
-NodeManager.prototype.copyNodeListener = function(evt) {
-    try {
-        var node = this.getNode(evt.data);
-        if(object.isDefined(node)) {
-            var nodeStr = node.toString();
-            var newNodeId = Date.now();
-            return this.exec(CMD_COPY, [nodeStr,
-                {
-                    mouse : evt.mouse,
-                    oldId : node.id,
-                    newId : newNodeId
-                }], [newNodeId]);
-        }
-    } catch(err) {
-        console.log(err);
-        event.trigger('error', 'Could not copy node !');
-    }
 };
 
 NodeManager.prototype.moveNode = function(node, dxSum, dySum) {
@@ -393,10 +439,6 @@ NodeManager.prototype.editNode = function(node, editKey, newValue) {
 NodeManager.prototype.undoEdit = function(node, editKey, newValue) {
     node = this.getNode(node);
     node.additions.edit.setValue(editKey, newValue);
-};
-
-NodeManager.prototype.clear = function() {
-    this.nodes = {};
 };
 
 module.exports = NodeManager;

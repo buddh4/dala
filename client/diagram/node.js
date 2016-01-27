@@ -107,9 +107,6 @@ Node.prototype.initEventFunctions = function() {
         this.root.hoverable();
     }
 
-    this.on('click', function(evt) {
-        console.log('bla');
-    });
     this.on('dblclick', function(evt) {
         evt.stopPropagation();
         that.exec('dblclick', [evt], true);
@@ -156,6 +153,7 @@ Node.prototype.moveUp = function() {
 
 Node.prototype.moveDown = function() {
     var selector = '.'+ROOT_CLASS;
+    this.root.moveDown(selector);
     this.exec('moveDown');
 };
 
@@ -169,9 +167,14 @@ Node.prototype.rotate = function(a) {
     return this.root.rotate(a);
 };
 
+Node.prototype.move = function(dx, dy) {
+    this.root.move(dx, dy);
+    this.exec('move', [dx,dy]);
+};
+
 Node.prototype.moveTo = function(x, y) {
     this.root.moveTo(x, y);
-    this.exec('moveTo');
+    this.exec('moveTo', [x,y]);
 };
 
 Node.prototype.position = function() {
@@ -275,12 +278,12 @@ Node.prototype.extractNodeId = function(rawId) {
     return splitted[splitted.length - 1];
 };
 
-Node.prototype.x = function() {
-    return this.root.x();
+Node.prototype.x = function(withStroke) {
+    return this.root.x(withStroke);
 };
 
-Node.prototype.y = function() {
-    return this.root.y();
+Node.prototype.y = function(withStroke) {
+    return this.root.y(withStroke);
 };
 
 Node.prototype.height = function() {
@@ -291,12 +294,12 @@ Node.prototype.width = function() {
     return this.root.width();
 };
 
-Node.prototype.getRightX = function() {
-    return this.root.getRightX();
+Node.prototype.getRightX = function(withStroke) {
+    return this.root.getRightX(withStroke);
 };
 
-Node.prototype.getBottomY = function() {
-    return this.root.getBottomY();
+Node.prototype.getBottomY = function(withStroke) {
+    return this.root.getBottomY(withStroke);
 };
 
 Node.prototype.isLeftOf = function(mousePosition) {
@@ -323,21 +326,6 @@ Node.prototype.getCenter = function() {
     return this.root.getCenter();
 };
 
-Node.prototype.getRelativeCenter = function() {
-    return {
-        x: this.width() / 2,
-        y: this.height() / 2
-    }
-};
-
-Node.prototype.getRelativePosition = function(pageX,pageY) {
-    var p = util.math.getPoint(pageX,pageY);
-    return {
-        x: p.x - this.x(),
-        y: p.y - this.y()
-    };
-};
-
 /**
  * Determines the location of a given position relative to the node node.
  *
@@ -351,17 +339,6 @@ Node.prototype.getRelativeLocation = function(position) {
 
 Node.prototype.toString = function(position) {
     return this.root.toString();
-};
-
-Node.prototype.getOrientation = function(relative) {
-    if(!object.isDefined(relative)) {
-        return this.getCenter();
-    } else {
-        return {
-            x : this.x() + relative.x,
-            y : this.y() + relative.y
-        };
-    }
 };
 
 module.exports = Node;

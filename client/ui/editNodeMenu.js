@@ -83,18 +83,18 @@ var focus = function() {
 var appendTextFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     var $divContainer = appendDivContainer($fieldSet);
-    appendInput($divContainer, editConfigItem, 'Content', editKey+'_text', {type : 'text'});
-    appendInput($divContainer, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($divContainer, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
+    appendInput($divContainer, editConfigItem, 'Content', editKey+':text', {type : 'text'});
+    appendInput($divContainer, editConfigItem, 'Color', editKey+':color', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Size', editKey+':text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
     $form.append($fieldSet);
 };
 
 var appendTextareaFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     var $divContainer = appendDivContainer($fieldSet);
-    appendInput($divContainer, editConfigItem, 'Content', editKey+'_textarea', {rows: 5}, 'textarea');
-    appendInput($divContainer, editConfigItem, 'Color', editKey+'_color', {type : 'color'});
-    appendInput($divContainer, editConfigItem, 'Size', editKey+'_text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
+    appendInput($divContainer, editConfigItem, 'Content', editKey+':textarea', {rows: 5}, 'textarea');
+    appendInput($divContainer, editConfigItem, 'Color', editKey+':color', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Size', editKey+':text-size', {type : 'range', min : TEXT_SIZE_MIN, max : TEXT_SIZE_MAX}, undefined, true, 'px');
     $form.append($fieldSet);
 };
 
@@ -108,8 +108,8 @@ var appendColorFieldSet = function(editKey, editConfigItem) {
 var appendStrokeFieldSet = function(editKey, editConfigItem) {
     var $fieldSet = initFieldSet(editConfigItem);
     var $divContainer = appendDivContainer($fieldSet);
-    appendInput($divContainer, editConfigItem, 'Color', editKey+'_stroke', {type : 'color'});
-    appendInput($divContainer, editConfigItem, 'Width', editKey+'_stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
+    appendInput($divContainer, editConfigItem, 'Color', editKey+':stroke', {type : 'color'});
+    appendInput($divContainer, editConfigItem, 'Width', editKey+':stroke-width', {type : 'range', min : STROKE_WIDTH_MIN, max : STROKE_WIDTH_MAX}, undefined, true, 'px');
 
     $form.append($fieldSet);
     var that = this;
@@ -122,7 +122,7 @@ var appendStrokeFieldSet = function(editKey, editConfigItem) {
         '20,10,5,5,5,10' : 'images/icons/icon-dash-5.png'
     };
 
-    var $strokeSelect = appendImageDropDown($divContainer, editConfigItem, 'Dash', editKey+'_stroke-dash', {id:'nodeStrokeDashSelect', style:'width:85px;'}, options);
+    var $strokeSelect = appendImageDropDown($divContainer, editConfigItem, 'Dash', editKey+':stroke-dash', {id:'nodeStrokeDashSelect', style:'width:85px;'}, options);
     $('#nodeStrokeDashSelect').msDropDown();
 };
 

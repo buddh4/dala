@@ -65,5 +65,15 @@ module.exports = {
             canvas.remove();
             a.remove();
         }
+    },
+    makeScreenShot : function(container, svgStr, width, height) {
+        var img = new Image();
+        img.src = "data:image/svg+xml;base64," + btoa(svgStr);
+        if(width && height) {
+            img.width = width;
+            img.height = height;
+        }
+        $(container).append(img);
     }
+
 };

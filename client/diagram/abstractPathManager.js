@@ -6,7 +6,7 @@ var AbstractPathManager = function(transition) {
 };
 
 AbstractPathManager.prototype.activate = function() {
-    this.path =  this.transition.getLine().d();
+    this.path = this.transition.getLine().d();
     return this;
 };
 
