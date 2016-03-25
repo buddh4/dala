@@ -12,6 +12,22 @@ var TransitionDocking = function(dockingManager, node, mouse, type) {
         }
 };
 
+TransitionDocking.prototype.freeze = function() {
+    if(this.knob) {
+        this.knob.freeze();
+        this.knob.config['fill-opacity'] = 0;
+        this.knob.show();
+    }
+};
+
+TransitionDocking.prototype.unfreeze = function() {
+    if(this.knob) {
+        this.knob.unfreeze();
+        this.knob.config['fill-opacity'] = 0.5;
+        this.knob.show();
+    }
+};
+
 TransitionDocking.prototype.initOrientation = function(startPosition) {
     var orientationPosition = _getStartOrientationPosition(this.node, startPosition);
     this.knob = new Knob(this.transition.diagram, orientationPosition, {'cssClass':'orientationKnob', 'fill-active':'orange', fill:'orange', selectable:false}, this.transition.group);
@@ -147,6 +163,26 @@ TransitionDockingManager.prototype.activate = function() {
         svgNode.remove();
     });
     return this;
+};
+
+TransitionDockingManager.prototype.freeze = function() {
+    if(this.startDocking) {
+        this.startDocking.freeze();
+    }
+
+    if(this.endDocking) {
+        this.endDocking.freeze();
+    }
+};
+
+TransitionDockingManager.prototype.unfreeze = function() {
+    if(this.startDocking) {
+        this.startDocking.unfreeze();
+    }
+
+    if(this.endDocking) {
+        this.endDocking.unfreeze();
+    }
 };
 
 TransitionDockingManager.prototype.setStartNode = function(node, mousePosition) {

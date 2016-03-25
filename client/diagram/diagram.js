@@ -23,8 +23,11 @@ var fileManager = require('../core/fileManager');
 
 var Eventable = require('./../dom/eventableNode');
 
+var Knob = require('./knob');
+
 var KnobManager = require('./knobManager');
 require('./knobTemplate');
+require('./imageTemplate');
 var xml = require('../util/xml');
 
 var Promise = require('bluebird');
@@ -58,6 +61,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.id = cfg.id || 'not specified';
     this.projectId = cfg.projectId || 'default';
     this.title = cfg.title || 'new';
+    this.config = config;
 
     //Diagram intern event context
     this.event = event.sub(this.id);
@@ -145,7 +149,10 @@ Diagram.prototype.initEvents = function() {
     // template type. Only if we do not dbclick another node in this case
     // we start a transition drag.
     this.on('dblclick', function(evt) {
-        if (!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
+        if(config.is('diagram_mode_draw_transition')) {
+            var position = that.getStagePosition(evt);
+            that.createFreeTransition(position, position, true);
+        } else if(!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
             that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
         }
     });
@@ -191,6 +198,39 @@ Diagram.prototype.initEvents = function() {
             return false;
         }
     });
+};
+
+Diagram.prototype.createFreeTransition = function(start, end, initDrag, group) {
+    var startKnob = new Knob(this, start, {radius:10}, group).draggable();
+    var endKnob = new Knob(this, end, {radius:10}, group).draggable();
+    var transition = this.createTransition(startKnob.node, endKnob.node);
+
+    if(group) {
+        group.append(transition);
+    }
+
+    if(initDrag) {
+        endKnob.initDrag();
+    }
+
+    transition.on('remove', function() {
+        startKnob.remove();
+        endKnob.remove();
+    });
+
+    startKnob.on('remove', function() {
+        transition.remove();
+    });
+
+    endKnob.on('remove', function() {
+       transition.remove();
+    });
+
+    return {
+        startKnob : startKnob,
+        endKnob : endKnob,
+        transition : transition
+    }
 };
 
 Diagram.prototype.part = function(id) {
@@ -322,12 +362,14 @@ Diagram.prototype.getTransitionById = function(id) {
 Diagram.prototype.zoomIn = function() {
     this.scale += 0.1;
     this.part('main').scale(this.scale);
+    this.exec('zoomIn', [this.scale]);
 };
 
 Diagram.prototype.zoomOut = function() {
     if(this.scale > 0) {
         this.scale -= 0.1;
         this.part('main').scale(this.scale);
+        this.exec('zoomOut', [this.scale]);
     }
 };
 

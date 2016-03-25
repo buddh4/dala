@@ -1,5 +1,6 @@
 var xml = require('../util/xml');
 var object = require('../util/object');
+var string = require('../util/string');
 
 var elementCache = {};
 
@@ -108,7 +109,11 @@ var addSVGElement = function(container, element, prepend, text, insertAfter) {
     if(!element.instance || !object.isDefined(element.instance())) {
         instance = document.createElementNS("http://www.w3.org/2000/svg", element.tagName);
         $.each(element.attributes, function(key, value) {
-            instance.setAttribute(key, value.toString());
+            if(string.startsWith(key, 'xlink:')) {
+                instance.setAttributeNS('http://www.w3.org/1999/xlink',string.cutprefix(key, 'xlink:'), value);
+            } else {
+                instance.setAttribute(key, value.toString());
+            }
         });
     } else {
         instance = element.instance();

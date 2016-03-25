@@ -7,6 +7,10 @@ exports.endsWith = function(val, suffix) {
     return val.indexOf(suffix, val.length - suffix.length) !== -1;
 };
 
+exports.cutprefix = function(val, suffix) {
+   return val.substring('suffix'.length, val.length);
+};
+
 exports.startsWith = function(val, prefix) {
     if(!object.isDefined(val) || !object.isDefined(prefix)) {
         return false;

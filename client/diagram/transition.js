@@ -6,7 +6,6 @@ var Eventable = require('./../dom/eventableNode');
 
 var TransitionKnobManager = require('./transitionKnobManager');
 var TransitionDockingManager = require('./transitionDockingManager');
-var TransitionPathManager = require('./curvedPathManager');
 var transitionAdditions = require('./transitionAdditions');
 
 var pathManagerFactory = require('./pathManagerFactory');
@@ -78,6 +77,10 @@ Transition.prototype.activate = function(domGroup) {
 Transition.prototype.children = function(selector) {
     return this.group.children(selector);
 };
+
+Transition.prototype.length = function() {
+    return this.getPath().getDistance();
+}
 
 Transition.prototype.firstChild = function(selector) {
     return this.group.firstChild(selector);
@@ -283,6 +286,10 @@ Transition.prototype.initEvents = function() {
             that.select();
         }
 
+        if(that.freezed) {
+            return;
+        }
+
 
 
         if (pathPartIndex) {
@@ -306,6 +313,20 @@ Transition.prototype.initEvents = function() {
         var knobIndex = that.pathManager.getIndexForPosition(startPosition);
         that.addKnob(pointOnLine, knobIndex);
     });
+};
+
+Transition.prototype.freeze = function() {
+    this.freezed = true;
+    this.dockingManager.freeze();
+    this.knobManager.freeze();
+    this.update();
+};
+
+Transition.prototype.unfreeze = function() {
+    this.freezed = false;
+    this.dockingManager.unfreeze();
+    this.knobManager.unfreeze();
+    this.update();
 };
 
 Transition.prototype.addKnob = function(position, index) {

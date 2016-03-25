@@ -37,6 +37,10 @@ SVGText.prototype.fontFamily = function(value) {
     return this.attr('font-family', value);
 };
 
+SVGText.prototype.fontWeight = function(value) {
+    return this.style('font-weight', value);
+};
+
 SVGText.prototype.fontSize = function(value) {
     if(value) {
         value = object.isNumber(value) ? value+'px' : value;
@@ -85,6 +89,8 @@ SVGText.prototype.content = function(text) {
     if(!text) {
         return this.getText();
     }
+
+    text = text.toString();
 
     var that = this;
     var height;

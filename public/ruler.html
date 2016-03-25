@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title></title>
+</head>
+<body>
+<div id="menu">
+    <input id="openImage" name="files[]" type="file" size="50" accept="image/*" style="display:none;">
+    <button id="import">Open Image</button>
+    <button id="zoomIn">ZoomIn</button>
+    <button id="zoomOut">ZoomOut</button>
+    <button id="alignmentTrigger">alignment Off</button>
+    <input id="textColor" type="color" />
+</div>
+<div id="messages"></div>
+<div id="fixtures"></div>
+<div id="stage" style="width:100%;height:800px;border:1px solid black;"></div>
+<script src="/js/jquery.js"></script>
+<script src="/js/dala.diagram.js" data-cover></script>
+<script>
+
+    var ratioTransition, color;
+    var event = dala.require('event');
+    var diagramManager = dala.require('diagramManager');
+
+    diagram = new dala.Diagram({id:'rulerStage', container:'#stage', title: 'RulerStage'});
+
+    diagram.config.setVal('diagram_mode_draw_transition', true);
+    //diagram.config.setVal('dragAlign', true);
+
+
+    var updateColor = function() {
+        $.each($('text').svg(), function(index, text) {
+            text.fill(color);
+        });
+
+        $.each(diagram.transitionMgr.transitions, function(index, transition) {
+            if(transition.id !== ratioTransition.id) {
+                transition.stroke(color);
+            }
+        });
+    };
+
+    diagram.config.setVal('transition_settings', {
+        type: 'straight',
+        stroke: 'black',
+        'stroke-width': '1',
+        'marker-start': 'ruler',
+        'marker-end' : 'ruler',
+        'stroke-dasharray' : 'none'
+    });
+
+    diagram.on('initialized', function() {
+        var dimPart = diagram.svg.createPart('dimension');
+        ratioTransition = diagram.createFreeTransition({x:600, y:50}, {x:600, y:150}, false, dimPart).transition;
+        ratioTransition.freeze();
+        ratioTransition.stroke('red');
+        ratioTransition.line.strokeDasharray('5,5');
+        diagramManager.register(diagram, true);
+    }).on('zoomIn', function(scale) {
+        diagram.part('dimension').scale(diagram.scale);
+    }).on('zoomOut', function(scale) {
+        diagram.part('dimension').scale(diagram.scale);
+    });
+
+    diagram.event.listen('transition_added', function(evt) {
+        evt.data.freeze();
+    });
+
+    var ratio = 1;
+
+    var RulerAddition = function(transition) {
+        this.transition = transition;
+    };
+
+    RulerAddition.prototype.update = function() {
+        try {
+            if(!this.transition.isInitState()) {
+                this.transition.additions.text.setText(2,this.transition.length() * ratio);
+                this.transition.additions.text.setColor(color);
+                //this.transition.additions.text.setSize(13);
+                //this.transition.additions.text.setWeight('bold');
+            }
+        } catch(e) {console.warn('could not set text',e)}
+    };
+
+    RulerAddition.prototype.edit = function(key , value , oldval) {
+        if(key === 'text2' && ratioTransition.id === this.transition.id) {
+            ratio = parseFloat(value) / this.transition.length();
+            $.each(this.transition.diagram.transitionMgr.transitions, function(index, transition) {
+                transition.exec('update');
+            });
+        }
+        this.update();
+    };
+
+    var additions = dala.require('additions');
+    additions.registerTransitionAddition('rulerAddition', RulerAddition);
+
+    var fileManager = dala.require('fileManager');
+
+    $('#openImage').on('change', function(evt) {
+        var files = evt.target.files; // FileList object
+        $.each(files, function(index, file) {
+            fileManager.readAsDataUrl(file).then(function(result) {
+                var image  = new Image();
+                image.addEventListener("load", function () {
+                    diagram.createNode('image', {x:0,y:0, height:image.height, width:image.width, data:result}).then(function(node) {
+                        node.freeze();
+                        node.prevAlign = true;
+                    });
+                    // Concatenate our HTML image info
+                    var imageInfo = file.name    +' '+ // get the value of `name` from the `file` Obj
+                            image.width  +'×'+ // But get the width from our `image`
+                            image.height +' '+
+                            file.type    +' '+
+                            Math.round(file.size/1024) +'KB';
+
+                    // Finally append our created image and the HTML info string to our `#preview`
+                    console.log(imageInfo);
+                });
+
+                image.src = result;
+            });
+        });
+    });
+
+    $('#import').on('click', function() {
+        $('#openImage').trigger('click');
+    });
+
+    $('#zoomIn').on('click', function() {
+        diagram.zoomIn();
+    });
+
+    $('#zoomOut').on('click', function() {
+        diagram.zoomOut();
+    });
+
+    $('#alignmentTrigger').on('click', function() {
+        var value = !diagram.config.is('dragAlign', true);
+        diagram.config.setVal('dragAlign', value);
+        var text = value ? 'alignment Off' : 'alignment On';
+        $(this).text(text);
+    });
+
+    $('#textColor').on('change', function() {
+        color =  $(this).val();
+        updateColor();
+    });
+
+</script>
+</body>
+</html>

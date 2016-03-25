@@ -125,7 +125,7 @@ Node.prototype.getNodeAlignmentTargets = function() {
     var that = this;
 
     object.each(this.diagram.getNodes(), function(key, node) {
-        if(node.id !== that.id && !node.knob) {
+        if(node.id !== that.id && !node.knob && !node.prevAlign) {
             result.push(node.getCenter());
         }
     });

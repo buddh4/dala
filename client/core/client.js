@@ -89,7 +89,6 @@ module.exports = {
         var cfg = cfg || {};
         var async = cfg.async || true;
         var dataType = cfg.dataType || "json";
-
         var error = function(xhr,type,errorThrown, errorCode) {
             errorHandler(cfg, xhr,type,errorThrown, errorCode);
         };
@@ -114,7 +113,7 @@ module.exports = {
 
         var that = this;
         $.ajax({
-            url: that.getUrl(path),
+            url: path,
             //crossDomain: true, //TODO: read from config
             type : cfg.type,
             processData : cfg.processData,

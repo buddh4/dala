@@ -59,7 +59,6 @@ var toggleModeMove = function() {
     var  val = config.is('diagram_mode_move', false);
     config.setVal('diagram_mode_move', !val);
     config.setVal('events_restricted', !val);
-
 };
 
 var toggleSettingAlign = function() {
@@ -123,24 +122,33 @@ var newDiagramListener = function(evt) {
     var projectId = evt.data.projectId;
     var title = evt.data.title;
     evt.data.diagramId = diagramId;
-    diagrams[diagramId] = new Diagram({id:diagramId, container:'#'+stageId, projectId: projectId, title: title});
+    register(new Diagram({id:diagramId, container:'#'+stageId, projectId: projectId, title: title}));
     event.trigger('diagram_initialized', evt.data);
+};
+
+var register = function(diagram, activate) {
+    diagrams[diagram.id] = diagram;
+    diagrams[diagram.id].on('activate', function() {
+        activeDiagramId = diagram.id;
+    });
+    if(activate) {
+        diagram.trigger('activate');
+    }
 };
 
 var activeTabListener = function(evt) {
     activeDiagramId = evt.data;
-    console.log('AcitveDiagramId: '+activeDiagramId);
 };
 
 var zoomIn = function() {
     getActiveDiagram().zoomIn();
     event.trigger('view_zoomedIn');
-}
+};
 
 var zoomOut = function() {
     getActiveDiagram().zoomOut();
     event.trigger('view_zoomedOut');
-}
+};
 
 var getActiveDiagram = function() {
     return diagrams[activeDiagramId];
@@ -150,5 +158,6 @@ initListener();
 
 module.exports = {
     getActiveDiagram: getActiveDiagram,
-    createDiagramId : createDiagramId
+    createDiagramId : createDiagramId,
+    register : register
 };

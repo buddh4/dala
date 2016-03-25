@@ -90,8 +90,9 @@ Knob.prototype.hide = function() {
 };
 
 Knob.prototype.show = function(opacity) {
-    opacity = opacity || this.config['fill-opcaity'] || 1;
-    this.node.root.show(DEFAULT_OPACITY);
+    opacity = object.isDefined(opacity) ? opacity : this.config['fill-opacity'];
+    opacity = object.isDefined(opacity) ? opacity : DEFAULT_OPACITY;
+    this.node.root.show(opacity);
     this.node.root.attr('r', this.config['radius']);
 };
 

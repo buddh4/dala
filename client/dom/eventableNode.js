@@ -17,6 +17,9 @@ Eventable.prototype.exec = function(func, args, prevDomEvent) {
 };
 
 Eventable.prototype.executeAddition = function(func, args) {
+    if(!this.additions) {
+        return;
+    }
     object.each(this.additions, function(key, addition) {
         if(object.isDefined(addition) && object.isFunction(addition[func])) {
             addition[func].apply(addition, args);
@@ -50,11 +53,24 @@ Eventable.prototype.wrap = function(eventType, handler) {
 };
 
 Eventable.prototype.isExecutionAllowed = function(eventType) {
-    if(config.is('events_restricted', false) && !this.excludeEventRestrictions) {
+    if(this.freezed) {
+        return false;
+    } else if(config.is('events_restricted', false) && !this.excludeEventRestrictions) {
         return false;
     } else {
         return true;
     }
+};
+
+Eventable.prototype.freeze = function() {
+    this.freezed = true;
+    this.eventBase.freezed = true;
+};
+
+
+Eventable.prototype.unfreeze = function() {
+    this.freezed = false;
+    this.eventBase.freezed = true;
 };
 
 Eventable.prototype.trigger = function(evt, args) {

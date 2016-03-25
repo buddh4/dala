@@ -34,5 +34,10 @@ module.exports = {
     registerNodeAddition : function(key, addition) {nodeAdditions.register(key,addition)},
     initNodeAddition : function(key, host) {nodeAdditions.initAddition(key, host)},
     registerTransitionAddition : function(key, addition) {transitionAdditions.register(key,addition)},
-    initTransitionAddition : function(key, host) {transitionAdditions.initAddition(key, host)}
+    initTransitionAddition : function(key, host) {transitionAdditions.initAddition(key, host)},
+    initTransitionAdditions : function(host) {
+        $.each(transitionAdditions.additions, function(key, addition) {
+            transitionAdditions.initAddition(key, host);
+        });
+    }
 };

@@ -189,7 +189,7 @@ SVGShape.prototype.hide = function() {
 };
 
 SVGShape.prototype.show = function(opacity) {
-    opacity = opacity || 1;
+    opacity = object.isDefined(opacity) ? opacity : 1;
     this.fillOpacity(opacity);
     this.strokeOpacity(opacity);
 };

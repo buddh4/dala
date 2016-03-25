@@ -1,5 +1,5 @@
 var string = require('../util/string');
-
+var Promise = require('bluebird');
 var currentUrl;
 
 var suffixMapping = {
@@ -74,6 +74,56 @@ module.exports = {
             img.height = height;
         }
         $(container).append(img);
-    }
+    },
+    handleOpenSVG: function(file) {
+        //var files = evt.target.files; // FileList object
+        var that = this;
+        // Loop through the FileList and render image files as thumbnails.
+        for (var i = 0, f; f = files[i]; i++) {
 
+            // Only process image files.
+            if (!f.type.match('image.*')) {
+                continue;
+            }
+
+            var reader = new FileReader();
+
+            // Closure to capture the file information.
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    // Render thumbnail.
+                    that.diagram.loadDiagram(e.target.result);
+                };
+            })(f);
+
+            // Read in the image file as a data URL.
+            reader.readAsText(f);
+        }
+    },
+    readAsText: function(f) {
+        return new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    resolve(e.target.result);
+                };
+            })(f);
+
+            reader.readAsText(f);
+        });
+    },
+    readAsDataUrl: function(f) {
+        return new Promise(function(resolve, reject) {
+            var reader = new FileReader();
+
+            reader.onload = (function (theFile) {
+                return function (e) {
+                    resolve(e.target.result);
+                };
+            })(f);
+
+            reader.readAsDataURL(f);
+        });
+    }
 };

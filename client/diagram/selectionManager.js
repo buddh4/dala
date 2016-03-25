@@ -46,14 +46,10 @@ SelectionManager.prototype.knobAddedListener = function(evt) {
     this.addNodeEvents(knob.node);
     if(knob.node.selectable) {
         knob.node.on('select', function (selectEvt, shifted) {
-            if (that.dragSelection || evt.shiftKey || shifted && knob.transition) {
-                if (knob.transition.selected) {
-                    knob.transition.deselect();
-                }
-            } else {
-                if (!knob.transition.selected) {
-                    knob.transition.select();
-                }
+            if (that.dragSelection || evt.shiftKey || shifted && (knob.transition && knob.transition.selected)) {
+                knob.transition.deselect();
+            } else if(knob.transition && !knob.transition.selected) {
+                knob.transition.select();
             }
         });
     }

@@ -46,6 +46,29 @@ TransitionTextAddition.prototype.setText = function(pos, text) {
     this.updateTextPosition(pos);
 };
 
+TransitionTextAddition.prototype.setColor = function(value) {
+    $.each(this.textNodes, function(index, text) {
+        if(text) {
+            text.fill(value);
+        }
+    });
+};
+
+TransitionTextAddition.prototype.setSize = function(value) {
+    $.each(this.textNodes, function(index, text) {
+        if(text) {
+            text.fontSize(value);
+        }
+    });
+};
+
+TransitionTextAddition.prototype.setWeight = function(value) {
+    $.each(this.textNodes, function(index, text) {
+        if(text) {
+            text.fontWeight(value);
+        }
+    });
+};
 /**
  * Updates the textnode position and anchor for the given position by means of the current
  * transition settings.

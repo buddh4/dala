@@ -82,6 +82,23 @@ TransitionKnobManager.prototype._activateKnob = function(knob, index, isBoundary
     this.addKnob(position, index, true, isBoundaryKnob);
 };
 
+TransitionKnobManager.prototype.freeze = function() {
+    $.each(this.knobs, function(index, knob) {
+        knob.freeze();
+        knob.config['fill-opacity'] = 0;
+        knob.show();
+    });
+};
+
+TransitionKnobManager.prototype.unfreeze = function() {
+    $.each(this.knobs, function(index, knob) {
+        knob.unfreeze();
+        //TODO: we should use the old config value instead.
+        knob.config['fill-opacity'] = 0.5;
+        knob.show();
+    });
+};
+
 TransitionKnobManager.prototype.addKnob = function(position, index, activate, isBoundaryKnob) {
     var index = index || this.size();
     var isBoundaryKnob = (!activate)? this.isInitState() : isBoundaryKnob;

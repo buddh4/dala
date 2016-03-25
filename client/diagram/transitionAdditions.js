@@ -6,7 +6,6 @@ additions.registerTransitionAddition('edit', require('./editTransitionAddition')
 
 module.exports = {
     init : function(transition) {
-        additions.initTransitionAddition('text', transition);
-        additions.initTransitionAddition('edit', transition);
+        additions.initTransitionAdditions(transition);
     }
 };
