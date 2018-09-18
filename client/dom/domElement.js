@@ -42,6 +42,7 @@ util.inherits(Element, Eventable);
 Element.prototype.instance = function(instance) {
     if(object.isDefined(instance)) {
         this.domInstance = instance;
+        this.$domInstance = null;
         this.tagName = instance.tagName;
         this.loadAttributes(instance);
         return this;

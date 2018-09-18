@@ -231,7 +231,7 @@ var getSelectedTemplate = function() {
 
 var getPanel = function(panelId) {
     return panels[panelId];
-}
+};
 
 module.exports = {
     registerPanel : registerPanel,

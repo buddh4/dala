@@ -36,6 +36,11 @@ var TransitionManager = function(diagram) {
 
 util.inherits(TransitionManager, AbstractManager);
 
+
+TransitionManager.prototype.size = function() {
+    return object.size(this.transitions);
+};
+
 TransitionManager.prototype.editTransitionListener = function(evt) {
     var transition = this.getTransition(evt.data.transition);
     var key = evt.data.key;
@@ -70,8 +75,27 @@ TransitionManager.prototype.importTransition = function(transitionStr, cfg) {
     return this.activateTransition(transitionElement);
 };
 
+var _sortActivationTransition = function(a, b) {
+    var $tA = $(a);
+    var $tB = $(b);
+
+    var startA = $tA.attr('dala:start');
+    var startB = $tB.attr('dala:start');
+
+    var endA = $tA.attr('dala:end');
+    var endB = $tB.attr('dala:end');
+
+    if($tA.find('#'+startB).length || $tA.find('#'+endB).length) {
+        return -1;
+    } else if($tB.find('#'+startA).length || $tB.find('#'+endA).length) {
+        return 1;
+    }
+    return 0;
+}
+
 TransitionManager.prototype.activateTransition = function(toActivate) {
-    if(object.isArray(toActivate)) {
+    if(object.isArray(toActivate) || object.isJQuery(toActivate)) {
+        toActivate.sort(_sortActivationTransition);
         var result = [];
         var that = this;
         object.each(toActivate, function() {
@@ -182,6 +206,22 @@ TransitionManager.prototype.getTransition = function(id) {
     } else {
         console.warn('getTransition call with no result for :'+id);
     }
+};
+
+TransitionManager.prototype.dump = function() {
+    var result = '<b>TransitionManager</b> - '+this.size()+' Transitions<br />\n';
+    $.each(this.transitions, function(index, transition) {
+        result += transition.dump()+'<br />\n';
+    });
+    return result;
+};
+
+TransitionManager.prototype.validate = function() {
+    var result = {};
+    $.each(this.transitions, function(index, transition) {
+        result['transition'+transition.id] = transition.validate();
+    });
+    return result;
 };
 
 module.exports = TransitionManager;

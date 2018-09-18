@@ -95,7 +95,7 @@ var triggerCreateNewDiagram = function() {
     var settings = {
         title : $('#new-diagram-title').val(),
         projectId : $('#new-diagram-project').val()
-    }
+    };
     event.trigger('tab_new', settings);
 };
 

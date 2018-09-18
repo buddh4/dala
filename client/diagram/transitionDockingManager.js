@@ -8,7 +8,7 @@ var TransitionDocking = function(dockingManager, node, mouse, type) {
         this.transition = dockingManager.transition;
         this.dockingManager = dockingManager;
         if(!node.knob) {
-            this.initOrientation(mouse);
+            this.initOrientation(mouse, type);
         }
 };
 
@@ -28,9 +28,9 @@ TransitionDocking.prototype.unfreeze = function() {
     }
 };
 
-TransitionDocking.prototype.initOrientation = function(startPosition) {
+TransitionDocking.prototype.initOrientation = function(startPosition, type) {
     var orientationPosition = _getStartOrientationPosition(this.node, startPosition);
-    this.knob = new Knob(this.transition.diagram, orientationPosition, {'cssClass':'orientationKnob', 'fill-active':'orange', fill:'orange', selectable:false}, this.transition.group);
+    this.knob = new Knob(this.transition.diagram, orientationPosition, {'cssClass':'orientationKnob '+type, 'fill-active':'orange', fill:'orange', selectable:false}, this.transition.group);
     this.initKnobEvents();
 };
 
@@ -78,6 +78,12 @@ TransitionDocking.prototype.position = function(withStroke) {
         return this.knob.position();
     } else {
         return this.node.getCenter();
+    }
+};
+
+TransitionDocking.prototype.moveTo = function(p) {
+    if(this.knob) {
+        return this.knob.moveTo(p);
     }
 };
 
@@ -147,21 +153,23 @@ var TransitionDockingManager = function(transition, startNode, mouse) {
 };
 
 TransitionDockingManager.prototype.activate = function() {
-    var currentOrientationNodes = this.transition.group.$().children('.orientationKnob');
     this.setStartNode(this.diagram.getNodeById(this.getStartNodeFeature()));
     this.setEndNode(this.diagram.getNodeById(this.getEndNodeFeature()));
-    var that = this;
-    $.each(currentOrientationNodes, function(index, orientationNode) {
-        var svgNode = $.svg(orientationNode);
-        if(that.startNode.overlays(svgNode.position())) {
-            that.startDocking.knob.moveTo(svgNode.position());
-        } else if(that.endNode.overlays(svgNode.position())) {
-            that.endDocking.knob.moveTo(svgNode.position());
-        } else {
-            console.warn('Detected orientation knob not hovering a start/end node.');
-        }
-        svgNode.remove();
-    });
+
+    //TODO activate knobs instead of replace !
+    var startOrientationSvg = this.transition.group.$().children('.orientationKnob.start').svg()[0];
+    if(startOrientationSvg) {
+        this.startDocking.moveTo(startOrientationSvg.position());
+        startOrientationSvg.remove();
+    }
+
+    var endOrientationSvg = this.transition.group.$().children('.orientationKnob.end').svg()[0];
+    if(endOrientationSvg) {
+        this.endDocking.moveTo(endOrientationSvg.position());
+        startOrientationSvg.remove();
+    }
+
+    //TODO: add error handler what todo if we cannot activate the transition ? remove ?
     return this;
 };
 
@@ -276,6 +284,71 @@ TransitionDockingManager.prototype.remove = function() {
         this.endNode.removeIncomingTransition(this.transition);
         this.endDocking.remove();
     }
+};
+
+TransitionDockingManager.prototype.dump = function() {
+    var result = 'DockingManager<br />\n';
+    if(this.startNode) {
+        result += 'StartNode:'+this.startNode.id+'<br />\n';
+    } else {
+        result += 'No StartNode<br />\n';
+    }
+
+    if(this.startDocking) {
+        result += 'StartDocking:'+this.startDocking.position()+'<br />\n';
+    } else {
+        result += 'No StartDocking<br />\n';
+    }
+
+    if(this.endNode) {
+        result += 'EndNode:'+this.endNode.id+'<br />\n';
+    } else {
+        result += 'No EndNode<br />\n';
+    }
+
+    if(this.endDocking) {
+        result += 'EndDocking:'+this.endDocking.position()+'<br />\n';
+    } else {
+        result += 'No EndDocking<br />\n';
+    }
+    return result;
+};
+
+TransitionDockingManager.prototype.validate = function() {
+    var $transitionGroup = this.transition.group.$();
+    var $svgRoot = this.transition.diagram.getRootSVG().$();
+    var result = [];
+
+    if(this.startNode) {
+        result['startNode'] = this.transition.diagram.nodeMgr.validateNode(this.startNode);
+    }
+    
+    if(!this.startDocking) {
+        result['startDocking'] = 'Error: No startDocking set!';
+    } else if(this.startDocking.knob) {
+        var startDocking = $transitionGroup.find('#'+this.startDocking.knob.node.id);
+        if(!startDocking.length) {
+            result['startDocking'] = 'Error: startDocking not found in transition group';
+        } else if($transitionGroup.children('.orientationKnob.start').length != 1) {
+            result['startDocking'] = 'Error: found invalid amount of startdocking nodes';
+        }
+    }
+
+    if(this.endNode) {
+        result['endNode'] = this.transition.diagram.nodeMgr.validateNode(this.endNode);
+    }
+
+    if(!this.endDocking) {
+        result['endDocking'] = 'Error: No endDocking set!';
+    } else if(this.endDocking.knob) {
+        var endDocking = $transitionGroup.find('#'+this.endDocking.knob.node.id);
+        if(!endDocking.length) {
+            result['endDocking'] = 'Error: endDocking not found in transition group';
+        } else if($transitionGroup.children('.orientationKnob.start').length != 1) {
+            result['endDocking'] = 'Error: found invalid amount of endDocking nodes';
+        }
+    }
+    return result;
 };
 
 module.exports = TransitionDockingManager;

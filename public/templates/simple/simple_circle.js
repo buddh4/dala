@@ -2,7 +2,7 @@
     dala.require('templateManager').registerTemplate('simple_circle', {
         description : "Simple Circle with text.",
         dockingType : "CIRCLE",
-        title : "circle",
+        title : "",
         docking : {
             type: 'circle',
             orientation: 'center'

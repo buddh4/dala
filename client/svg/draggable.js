@@ -108,8 +108,6 @@ ShiftDrag.prototype.getRestrictionY = function() {
 SVGShape.prototype.draggable = function(cfg, dragElement) {
     var cfg = cfg || {};
 
-
-
     if(dragElement) {
         dragElement = this.svg.get(dragElement);
     } else {
@@ -124,7 +122,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
         }
 
         if(!evt.triggerEvent) {
-            that.attr('pointer-events', 'none');
+            //that.attr('pointer-events', 'none');
         }
 
         var actualdx = (object.isDefined(evt.dx)) ? evt.dx : evt.clientX - that.dragCurrentX;
@@ -201,7 +199,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
             cfg.dragEnd.apply(that, [evt]);
         }
 
-        that.attr('pointer-events', 'all');
+        //that.attr('pointer-events', 'all');
     };
 
     if(dragElement) {
@@ -209,6 +207,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
             if(e.ctrlKey || !that.isVisible()) {
                 return;
             }
+
             e.preventDefault();
             // We stop the event propagation to prevent the document mousedown handler to fire
             e.stopPropagation();
@@ -227,6 +226,7 @@ SVGShape.prototype.draggable = function(cfg, dragElement) {
             that.drag = true;
             event.on(that.getRootNode(), 'mousemove', dragMove);
             event.on(document, 'mouseup', dragEnd);
+
         };
 
         if(cfg.once) {

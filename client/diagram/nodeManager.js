@@ -47,12 +47,27 @@ var NodeManager = function(diagram) {
     this.command(CMD_RESIZE, this.resizeNode, this.resizeNode);
     this.command(CMD_EDIT, this.editNode, this.undoEdit);
 
+    this.initCopyPasteHandler();
+};
+
+util.inherits(NodeManager, AbstractManager);
+
+NodeManager.prototype.initCopyPasteHandler = function() {
     var that = this;
+
     this.diagram.on('copy', function(evt) {
         var copyNodes = {};
         var copyTransitions = {};
+        var nodeCount = 0;
+
+        if(!that.selectionMgr.selectedNodes.length) {
+            that.lastCopy = null;
+            return;
+        }
+
         $.each(that.selectionMgr.selectedNodes, function(index, node) {
             if(!node.knob) {
+                nodeCount++;
                 copyNodes[node.id] =  {svg : node.toString(), position: node.position()};
                 $.each(node.additions.transition.outgoingTransitions, function(index, transition) {
                     if(transition.getEndNode().selected) {
@@ -76,48 +91,54 @@ var NodeManager = function(diagram) {
             x : leftNode.x(),
             y: topNode.y(),
             nodes : copyNodes,
+            count : nodeCount,
             transitions : copyTransitions
         };
     });
 
     this.diagram.on('paste', function(evt) {
+        if(!that.lastCopy || !that.lastCopy.count) {
+            return;
+        }
+
         var mouse = that.diagram.getStagePosition(event.mouse());
         var d = {x:(mouse.x - that.lastCopy.x), y:(mouse.y - that.lastCopy.y)};
-        that.importCopyNodes()
-            .then(function(result) {
-                var ids = [];
-                var svgStrings = [];
-                var nodeMapping = {};
-                var nodes = [];
-                that.selectionMgr.clear();
-                $.each(result, function(index, node) {
-                    nodes.push(node);
+
+        that.importCopyNodes().then(function(result) {
+            var ids = [];
+            var svgStrings = [];
+            var nodeIdMapping = {};
+            var nodes = [];
+            that.selectionMgr.clear();
+
+            $.each(result, function(index, node) {
+                nodes.push(node);
+                node.select(true);
+                nodeIdMapping[node.config.oldId] = node.config.newId;
+                ids.push(node.id);
+                svgStrings.push(node.toString());
+            });
+
+            that.importCopyTransitions(nodeIdMapping).then(function(transitions) {
+                //that.addCmd('cmd_group', [[CMD_COPY, [svgStrings], [ids]], []])
+                $.each(nodes, function(index, node) {
+                    node.triggerDrag(d.x, d.y);
+                    //We have to deselect because its already selected after creation and we shift select it
+                    //for multiple node copies. If not deselected this would deselect the node in selectionmgr
+                    node.deselect();
                     node.select(true);
-                    nodeMapping[node.config.oldId] = node.config.newId;
-                    ids.push(node.id);
-                    svgStrings.push(node.toString());
+                });
+                $.each(transitions, function(index, transition) {
+                    transition.moveInnerKnobs(d);
+                    transition.selectInnerKnobs();
                 });
 
-                that.importCopyTransitions(nodeMapping).then(function(transitions) {
-                    //that.addCmd('cmd_group', [[CMD_COPY, [svgStrings], [ids]], []])
+                that.addCmd(CMD_COPY, [svgStrings], [ids]);
+            });
 
-                    $.each(nodes, function(index, node) {
-                        node.triggerDrag(d.x, d.y);
-                        node.select(true);
-                    });
-                    $.each(transitions, function(index, transition) {
-                        transition.moveInnerKnobs(d);
-                        transition.selectInnerKnobs();
-                    });
-
-                    that.addCmd(CMD_COPY, [svgStrings], [ids]);
-                });
-
-            }, function(err) {});
+        }, function(err) {});
     });
 };
-
-util.inherits(NodeManager, AbstractManager);
 
 NodeManager.prototype.size = function() {
     return object.size(this.nodes);
@@ -165,7 +186,7 @@ NodeManager.prototype.getNodesAsArray = function(nodes) {
     } else {
         return nodes;
     }
-}
+};
 
 NodeManager.prototype.importCopyNodes = function() {
     var promises = [];
@@ -226,6 +247,9 @@ NodeManager.prototype.createNode = function(tmpl, cfg) {
     var node = tmpl.createNode(cfg, this.diagram).init();
     if(!cfg.preventDrag) {
         node.draggable();
+        node.on('dblclick', function() {
+           console.log('yeessssss');
+        });
         node.on('select', function() {
             that.event.trigger(EVT_SELECTED, node);
         }).on('deselect', function() {
@@ -439,6 +463,33 @@ NodeManager.prototype.editNode = function(node, editKey, newValue) {
 NodeManager.prototype.undoEdit = function(node, editKey, newValue) {
     node = this.getNode(node);
     node.additions.edit.setValue(editKey, newValue);
+};
+
+NodeManager.prototype.dump = function() {
+    var result = '<b>Nodemanager</b> - '+this.size()+' Nodes<br /><br />';
+    $.each(this.nodes, function(index, node) {
+        result += node.dump()+'<br />';
+    });
+    return result;
+};
+
+NodeManager.prototype.validateNode = function(node) {
+    if(!node) {
+        return ['Error: Undefined Node!'];
+    }
+
+    var result = {};
+    if(!node.id) {
+        result['NodeId'] = 'Error: Node has no Id!';
+    } else {
+        if(!this.getNode(node.id)) {
+            result['NodeId'] = 'Error: Node '+node.id+' not registered!';
+        }
+        if(!this.diagram.svg.get('#'+node.id).length) {
+            result['NodeId'] = 'Error: Node'+node.id+' not part of SVG!';
+        }
+    }
+    return result;
 };
 
 module.exports = NodeManager;

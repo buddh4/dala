@@ -9,10 +9,26 @@ var KnobManager = function(diagram) {
     diagram.event.listen('knob_delete', this.deleteKnobListener, this);
 };
 
+KnobManager.prototype.getKnobNode = function(id) {
+    var result;
+    $.each(this.knobs, function(i, knob) {
+        if(knob.node.id == id) {
+            result = knob.node;
+            return false; //Leave loop
+        }
+    });
+    return result;
+};
+
 KnobManager.prototype.addKnobListener = function(evt) {
     if(evt.data) {
         this.knobs.push(evt.data);
     }
+};
+
+KnobManager.prototype.activateKnobNode = function(svgNode, cfg) {
+    var tmplId = svgNode.dala('tmpl');
+    return this.templateMgr.getTemplateSync(tmplId).createNode(cfg, this.diagram).activate(svgNode.attr('id'));
 };
 
 KnobManager.prototype.createKnobNode = function(p, group, cfg) {

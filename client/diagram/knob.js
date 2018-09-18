@@ -16,6 +16,12 @@ var Knob = function(diagram, p, cfg, group) {
     this.init(p, cfg);
 };
 
+Knob.activate = function(node, cfg) {
+    
+    this.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
+    this.diagram.nodeMgr.activateNode(node);
+};
+
 util.inherits(Knob, Eventable);
 
 Knob.prototype.clearRelativeOrientation = function() {
@@ -39,7 +45,13 @@ Knob.prototype.relativeOrientation = function(position) {
 Knob.prototype.init = function(position, cfg) {
     this.config = object.extend({radius : DEFAULT_KNOB_RADIUS}, cfg);
     this.config.cssClass = this.config.cssClass || 'knob';
-    this.node = this.diagram.createKnobNode(position, this.group, this.config);
+
+    if(cfg.activate){
+        this.node = this.diagram.activateKnobNode(cfg.activate, this.config);
+    } else {
+        this.node = this.diagram.createKnobNode(position, this.group, this.config);
+    }
+
     this.eventBase = this.node.eventBase;
     this.config = this.node.config;
     this.root = this.node.root;

@@ -80,7 +80,7 @@ Transition.prototype.children = function(selector) {
 
 Transition.prototype.length = function() {
     return this.getPath().getDistance();
-}
+};
 
 Transition.prototype.firstChild = function(selector) {
     return this.group.firstChild(selector);
@@ -542,8 +542,28 @@ Transition.prototype.inactiveStyle = function() {
     this.line.stroke(this.colorInactive);
 };
 
-module.exports = Transition;
+Transition.prototype.dump = function() {
+    var result = '<b>Transition</b> - <b>'+this.id+'</b><br />\n';
+    result += this.knobManager.dump();
+    result += this.dockingManager.dump();
+    result += this.pathManager.dump();
+    $.each(this.additions, function(key, value) {
+        if(value.dump) {
+            result += value.dump()+'<br />\n';
+        }
+    });
+    return result;
+};
+
+Transition.prototype.validate = function() {
+    var result = {};
+    result['knobManager'] = this.knobManager.validate();
+    result['dockingManager'] = this.dockingManager.validate();
+    //result['pathManager'] = this.pathManager.validate();
+};
 
 Transition.prototype.toString = function() {
     return this.group.toString();
 };
+
+module.exports = Transition;

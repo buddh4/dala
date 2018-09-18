@@ -9,8 +9,8 @@
         },
         resize: [
             {bind:"#head_back", value:"default static"},
-            {bind:"#title_t", position: "center static"},
-            {bind:"#time_line", value:"vertical", position: "center static", alignto:"parent"},
+            {bind:"#title_t", position:"center static"},
+            {bind:"#time_line", value:"vertical", position:"center static", alignto:"parent"},
             {bind:"#time_line_area", value:"vertical", position: "center static", alignto:"parent"}
         ],
         edit: {

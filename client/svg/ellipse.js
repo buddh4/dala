@@ -10,7 +10,11 @@ var SVGEllipse = function(svgRoot, cfg) {
 util.inherits(SVGEllipse, SVGShape);
 
 SVGEllipse.prototype.x = function() {
-    return this.cx() - this.rx();
+    return this._getX();
+};
+
+SVGEllipse.prototype.y = function() {
+    return this._getY();
 };
 
 SVGEllipse.prototype._getHeight = function() {

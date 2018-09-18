@@ -7,8 +7,12 @@ exports.endsWith = function(val, suffix) {
     return val.indexOf(suffix, val.length - suffix.length) !== -1;
 };
 
-exports.cutprefix = function(val, suffix) {
-   return val.substring('suffix'.length, val.length);
+exports.cutprefix = function(val, prefix) {
+   return val.substring(prefix.length, val.length);
+};
+
+exports.cutsuffix = function(val, suffix) {
+    return val.slice(0, suffix.length * -1);
 };
 
 exports.startsWith = function(val, prefix) {

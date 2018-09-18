@@ -1,6 +1,6 @@
 // Init initial browser dependencies
 // Global jQuery
-$ = jQuery = require('jquery');
+//$ = jQuery = require('jquery');
 
 //INIT GLOBAL DALA
 dala = {};
@@ -28,7 +28,7 @@ require('./ui/gui');
 config.debug(true);
 
 
-require('./diagram/diagramManager');
+globalModules['diagramManager'] = require('./diagram/diagramManager');
 
 //TODO: move this to a controller !
 $(window).bind('mousewheel DOMMouseScroll', function(evt){

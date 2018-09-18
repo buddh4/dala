@@ -15,6 +15,7 @@ SVGShape.prototype.hoverable = function(handler) {
     var that = this;
 
     this.on('mouseenter', function(evt) {
+
         if(that.hoverFlag) {
             that.hovered = true;
             event.trigger('element_hoverIn', that);
@@ -25,6 +26,13 @@ SVGShape.prototype.hoverable = function(handler) {
     });
 
     this.on('mouseleave', function(evt) {
+
+        if(evt.originalEvent && evt.originalEvent.buttons) {
+            return;
+        }
+
+        var test = document.elementFromPoint(evt.clientX, evt.clientY);
+
         if(that.hoverFlag) {
             that.hovered = false;
             event.trigger('element_hoverOut', that);

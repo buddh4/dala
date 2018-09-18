@@ -107,11 +107,15 @@ Node.prototype.initEventFunctions = function() {
         this.root.hoverable();
     }
 
+    debugger;
+
     this.on('dblclick', function(evt) {
+        debugger;
         evt.stopPropagation();
         that.exec('dblclick', [evt], true);
     }).on('mousedown', function(evt) {
         if(!evt.ctrlKey && that.isVisible()) {
+
             evt.stopPropagation();
             that.exec('mousedown', [evt], true);
             if(!that.selected) {
@@ -265,6 +269,7 @@ Node.prototype.executeTemplateHook = function(hook, args) {
 
 Node.prototype.select = function(shifted) {
     this.selected = true;
+    console.log('select');
     this.exec('select', [shifted]);
 };
 
@@ -335,6 +340,17 @@ Node.prototype.getCenter = function() {
  */
 Node.prototype.getRelativeLocation = function(position) {
     return this.root.getRelativeLocation(position);
+};
+
+Node.prototype.dump = function() {
+    var result = '<b>Node</b> - <b>'+this.id+'</b><br />';
+    result += 'Template: '+this.template.id+'<br />';
+    $.each(this.additions, function(key, value) {
+        if(value.dump) {
+            result += value.dump()+'<br />';
+        }
+    });
+    return result;
 };
 
 Node.prototype.toString = function(position) {

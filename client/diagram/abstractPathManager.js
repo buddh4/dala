@@ -83,6 +83,10 @@ AbstractPathManager.prototype.getIndexForPosition = function(position) {
     return this.path.getPathIndexForPosition(position);
 };
 
+AbstractPathManager.prototype.dump = function() {
+    return '<b>Path:</b> '+this.path.toString()+'<br />';
+};
+
 AbstractPathManager.prototype.create = function(position) {/*Abstract*/};
 AbstractPathManager.prototype.update = function(position) {/*Abstract*/};
 AbstractPathManager.prototype.add = function(index, position) {/*Abstract*/};

@@ -34,8 +34,7 @@ module.exports = function(grunt) {
             },
             dev: {
                 options: {
-                    debug: true,
-                    transform: ['debowerify']
+                    debug: true
                 },
                 files: {
                     './public/js/client.js' : './client/client.all.js',

@@ -15,7 +15,7 @@ var activeDiagramId;
 
 config.setVal('transition_settings', {
     type: 'straight',
-    stroke: 'black',
+    stroke: '#474747',
     'stroke-width': '1',
     'marker-start': 'none',
     'marker-end' : 'trianglefill',
@@ -23,10 +23,10 @@ config.setVal('transition_settings', {
 });
 
 config.setVal('node_settings', {
-    stroke: 'black',
+    stroke: '#474747',
     'stroke-width': '1',
     'stroke-dasharray' : 'none',
-    fill: 'white'
+    fill: '#f2f2f2'
 });
 
 var initListener = function() {
@@ -122,8 +122,9 @@ var newDiagramListener = function(evt) {
     var projectId = evt.data.projectId;
     var title = evt.data.title;
     evt.data.diagramId = diagramId;
-    register(new Diagram({id:diagramId, container:'#'+stageId, projectId: projectId, title: title}));
+    var diagram = register(new Diagram({id:diagramId, container:'#'+stageId, projectId: projectId, title: title}));
     event.trigger('diagram_initialized', evt.data);
+    return diagram;
 };
 
 var register = function(diagram, activate) {
@@ -134,6 +135,7 @@ var register = function(diagram, activate) {
     if(activate) {
         diagram.trigger('activate');
     }
+    return diagram;
 };
 
 var activeTabListener = function(evt) {

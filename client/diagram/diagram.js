@@ -49,10 +49,10 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
  * @param {type} containerID The parent of the new SVG diagram
  * @param {type} cfg
  */
- var Diagram = function(cfg) {
+var Diagram = function (cfg) {
     cfg = cfg || {};
 
-    if(!cfg.id) {
+    if (!cfg.id) {
         console.warn('Created diagram without id');
     }
 
@@ -66,7 +66,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     //Diagram intern event context
     this.event = event.sub(this.id);
 
-    if(cfg.container) {
+    if (cfg.container) {
         this.$container = $(cfg.container);
     } else {
         this.$container = $CONTAINER_NODE;
@@ -77,7 +77,7 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.eventBase = this.svg.root;
 
     var that = this;
-    this.commandMgr = commandManager.sub(this.id, function(cmd) {
+    this.commandMgr = commandManager.sub(this.id, function (cmd) {
         that.triggerUpdate();
     });
 
@@ -101,40 +101,40 @@ var $CONTAINER_NODE = $(CONTAINER_SELECTOR);
     this.excludeEventRestrictions = true;
 
     this.background = this.svg.createPart('background');
-    this.svg.rect({width:'100%', height:'100%', fill:'#FFFFFF'}, 'background');
+    this.svg.rect({width: '100%', height: '100%', fill: '#FFFFFF'}, 'background');
 
     var that = this;
     this.initDefs()
-        .then(function() {
+        .then(function () {
             that.initialized = true;
             that.mainPart = that.svg.createPart('main', true);
             that.mainPart.excludeEventRestrictions = true;
             that.helper = that.svg.helper();
             that.trigger('initialized');
-        }, function(err) {
+        }, function (err) {
             console.error('Could not load defs initialisation failed!');
         });
 };
 
 util.inherits(Diagram, Eventable);
 
-Diagram.prototype.ns = function() {
-    return {"xmlns:dala" : "http://www.dala.com"};
+Diagram.prototype.ns = function () {
+    return {"xmlns:dala": "http://www.dala.com"};
 };
 
-Diagram.prototype.getRootSVG = function() {
+Diagram.prototype.getRootSVG = function () {
     return this.svg.root;
 };
 
-Diagram.prototype.triggerUpdate = function() {
+Diagram.prototype.triggerUpdate = function () {
     this.trigger('diagram_updated', this.id);
 };
 
-Diagram.prototype.getNodes = function(filter) {
+Diagram.prototype.getNodes = function (filter) {
     return this.nodeMgr.getNodes(filter);
 };
 
-Diagram.prototype.trigger = function(evt, args) {
+Diagram.prototype.trigger = function (evt, args) {
     //perhaps also listen to diagram intern events not only dom events.
     this.svg.root.trigger(evt, args);
     this.event.trigger(event, args);
@@ -143,41 +143,39 @@ Diagram.prototype.trigger = function(evt, args) {
 /*
  * Initializes Stage Mouse and Key events.
  */
-Diagram.prototype.initEvents = function() {
+Diagram.prototype.initEvents = function () {
     var that = this;
     // Double clicks on the stage area will create new nodes of the selected
     // template type. Only if we do not dbclick another node in this case
     // we start a transition drag.
-    this.on('dblclick', function(evt) {
-        if(config.is('diagram_mode_draw_transition')) {
+    this.on('dblclick', function (evt) {
+        if (config.is('diagram_mode_draw_transition')) {
             var position = that.getStagePosition(evt);
             that.createFreeTransition(position, position, true);
-        } else if(!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
+        } else if (!that.selectionMgr.isElementHover() && !config.is('diagram_mode_move')) {
             that.event.trigger('node_create', that.templateMgr.getSelectedTemplate(), evt);
         }
-    });
-
-    this.on('mousedown', function(evt) {
+    }).on('mousedown', function (evt) {
         var startPosition = that.getStagePosition(evt);
 
-        if(evt.ctrlKey || config.is('diagram_mode_move')) {
+        if (evt.ctrlKey || config.is('diagram_mode_move')) {
             //Move main part
             that.mainPart.draggable({
                 once: true,
                 cursor: 'all-scroll',
-                dragMove: function(event, dx, dy) {
+                dragMove: function (event, dx, dy) {
                     that.event.trigger('viewport_update', this.position());
                 },
-                dragEnd: function(event) {
+                dragEnd: function (event) {
                     that.event.trigger('viewport_updated', this.position());
                 },
-                restrictionX: function(event, dx, dy) {
-                  return (this.x() + dx <= 0)? dx : 0;
+                restrictionX: function (event, dx, dy) {
+                    return (this.x() + dx <= 0) ? dx : 0;
                 },
-                restrictionY: function(event, dx, dy) {
-                    return (this.y() + dy <= 0)? dy : 0;
+                restrictionY: function (event, dx, dy) {
+                    return (this.y() + dy <= 0) ? dy : 0;
                 },
-                getScale: function() {
+                getScale: function () {
                     return that.scale;
                 }
             });
@@ -188,11 +186,11 @@ Diagram.prototype.initEvents = function() {
 
     });
 
-    this.on('mouseup', function() {
+    this.on('mouseup', function () {
         that.selectionMgr.dragSelectionEnd();
     });
 
-    event.on(document, "dragstart", function(e) {
+    event.on(document, "dragstart", function (e) {
         if (e.target.nodeName.toUpperCase() === "POLYLINE" || e.target.nodeName.toUpperCase() === 'PATH' || e.target.nodeName.toUpperCase() === 'CIRCLE') {
             e.preventDefault();
             return false;
@@ -200,53 +198,53 @@ Diagram.prototype.initEvents = function() {
     });
 };
 
-Diagram.prototype.createFreeTransition = function(start, end, initDrag, group) {
-    var startKnob = new Knob(this, start, {radius:10}, group).draggable();
-    var endKnob = new Knob(this, end, {radius:10}, group).draggable();
+Diagram.prototype.createFreeTransition = function (start, end, initDrag, group) {
+    var startKnob = new Knob(this, start, {radius: 10}, group).draggable();
+    var endKnob = new Knob(this, end, {radius: 10}, group).draggable();
     var transition = this.createTransition(startKnob.node, endKnob.node);
 
-    if(group) {
+    if (group) {
         group.append(transition);
     }
 
-    if(initDrag) {
+    if (initDrag) {
         endKnob.initDrag();
     }
 
-    transition.on('remove', function() {
+    transition.on('remove', function () {
         startKnob.remove();
         endKnob.remove();
     });
 
-    startKnob.on('remove', function() {
+    startKnob.on('remove', function () {
         transition.remove();
     });
 
-    endKnob.on('remove', function() {
-       transition.remove();
+    endKnob.on('remove', function () {
+        transition.remove();
     });
 
     return {
-        startKnob : startKnob,
-        endKnob : endKnob,
-        transition : transition
+        startKnob: startKnob,
+        endKnob: endKnob,
+        transition: transition
     }
 };
 
-Diagram.prototype.part = function(id) {
+Diagram.prototype.part = function (id) {
     return this.svg.part(id);
 };
 
-Diagram.prototype.height = function() {
+Diagram.prototype.height = function () {
     return (this.nodeMgr.size()) ? this.nodeMgr.getBottomNode().getBottomY(true) : 0;
 };
 
-Diagram.prototype.width = function() {
+Diagram.prototype.width = function () {
     return (this.nodeMgr.size()) ? this.nodeMgr.getRightNode().getRightX(true) : 0;
 };
 
-Diagram.prototype.dimensions = function(id) {
-    if(this.nodeMgr.size()) {
+Diagram.prototype.dimensions = function (id) {
+    if (this.nodeMgr.size()) {
         var leftNode = this.nodeMgr.getLeftNode();
         var topNode = this.nodeMgr.getTopNode();
         var rightNode = this.nodeMgr.getRightNode();
@@ -267,17 +265,17 @@ Diagram.prototype.dimensions = function(id) {
     }
 };
 
-Diagram.prototype.import = function(svg, part, prepend) {
+Diagram.prototype.import = function (svg, part, prepend) {
     return this.svg.import(svg, part, prepend);
 };
 
-Diagram.prototype.part = function(id) {
+Diagram.prototype.part = function (id) {
     return this.svg.part(id);
 };
 
-Diagram.prototype.initDefs = function() {
+Diagram.prototype.initDefs = function () {
     var that = this;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         that.templateMgr.getTemplate('defs_marker')
             .then(function (tmpl) {
                 if (tmpl) {
@@ -292,11 +290,15 @@ Diagram.prototype.initDefs = function() {
     });
 };
 
-Diagram.prototype.createKnobNode = function(p, group, cfg) {
+Diagram.prototype.createKnobNode = function (p, group, cfg) {
     return this.knobMgr.createKnobNode(p, group, cfg);
 };
 
-Diagram.prototype.uniqueId = function() {
+Diagram.prototype.activateKnobNode = function (svgNode, cfg) {
+    return this.knobMgr.activateKnobNode(svgNode, cfg);
+};
+
+Diagram.prototype.uniqueId = function () {
     var newId = this.checkId(Date.now() + '');
     this.uniqueIds.push(newId);
     return newId;
@@ -305,68 +307,85 @@ Diagram.prototype.uniqueId = function() {
 /**
  * Prevent duplicates
  */
-Diagram.prototype.checkId = function(id) {
-    return ($.inArray(id, this.uniqueIds) > -1) ? this.checkId('u'+id) : id;
+Diagram.prototype.checkId = function (id) {
+    return ($.inArray(id, this.uniqueIds) > -1) ? this.checkId('u' + id) : id;
 };
 
-Diagram.prototype.isMultiSelection = function() {
+Diagram.prototype.isMultiSelection = function () {
     return this.selectionMgr.isMultiSelection();
 };
 
-/**
-Diagram.prototype.newDiagram = function() {
+
+Diagram.prototype.newDiagram = function () {
     //TODO: we should unify this with the constructor svg creation technique
     this.loadDiagram('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" id="svgStage_svg" xmlns:dala="http://www.dala.com" height="100%" width="100%"></svg>');
     this.initDefs();
 };
-
-Diagram.prototype.loadDiagram = function(svgString) {
-    //TODO: rather handle this per event
-    this.selectionMgr.clear();
-    this.nodeMgr.clear();
-    this.$container.empty();
+Diagram.prototype.loadDiagram = function (svgString, callback) {
+    //TODO: rather handle this per event or in constructor
+    this.clear();
     this.svg.setRoot(dom.importSVG(this.svg.$container, svgString));
-    this.activateNodes();
-    this.activateTransitions();
-    this.initEvents();
-};*/
+    this.getRootSVG().height('100%');
+    this.getRootSVG().width('100%');
+    var that = this;
+    this.activateNodes().then(function () {
+        that.activateTransitions();
+        that.initEvents();
+        if (object.isFunction(callback)) {
+            callback(that);
+        }
+        that.selectionMgr.clear();
+    });
+};
 
-Diagram.prototype.triggerDockingVisibility = function() {
-    if(this.knobMgr.hideDocking) {
+Diagram.prototype.clear = function () {
+    this.$container.empty();
+    this.nodeMgr.clear();
+    this.selectionMgr.clear();
+};
+
+Diagram.prototype.triggerDockingVisibility = function () {
+    if (this.knobMgr.hideDocking) {
         this.knobMgr.showKnobs();
     } else {
         this.knobMgr.hideKnobs();
     }
 };
 
-Diagram.prototype.activateNodes = function() {
+Diagram.prototype.activateNodes = function () {
     var that = this;
-    $('.element_root').each(function() {
-        this.nodeMgr.activateNode(this);
+    var promises = [];
+    this.getRootSVG().$().find('.element_root').each(function () {
+        promises.push(that.nodeMgr.activateNode(this));
     });
+    return Promise.all(promises);
 };
 
 //TODO: move to transitionmgr
-Diagram.prototype.activateTransitions = function() {
+Diagram.prototype.activateTransitions = function () {
     this.transitionMgr.activateTransition($('.transition'));
 };
 
-Diagram.prototype.getNodeById = function(nodeId) {
-    return this.nodeMgr.getNode(nodeId);
+Diagram.prototype.getNodeById = function (nodeId) {
+    var result =  this.nodeMgr.getNode(nodeId);
+    if(!result) {
+        result = this.knobMgr.getKnobNode(nodeId);
+    }
+    return result;
 };
 
-Diagram.prototype.getTransitionById = function(id) {
+Diagram.prototype.getTransitionById = function (id) {
     return this.transitionMgr.getNode(id);
 };
 
-Diagram.prototype.zoomIn = function() {
+Diagram.prototype.zoomIn = function () {
     this.scale += 0.1;
     this.part('main').scale(this.scale);
     this.exec('zoomIn', [this.scale]);
 };
 
-Diagram.prototype.zoomOut = function() {
-    if(this.scale > 0) {
+Diagram.prototype.zoomOut = function () {
+    if (this.scale > 0) {
         this.scale -= 0.1;
         this.part('main').scale(this.scale);
         this.exec('zoomOut', [this.scale]);
@@ -383,11 +402,11 @@ Diagram.prototype.zoomOut = function() {
  * @param {type} y the y coordinate is just mandatory if the fisrst arg is the plain x
  * @returns {Diagram_L13.Diagram.prototype.getStagePosition.DiagramAnonym$2}
  */
-Diagram.prototype.getStagePosition = function(x, y) {
-    if(object.isDefined(x.pageX)) {
+Diagram.prototype.getStagePosition = function (x, y) {
+    if (object.isDefined(x.pageX)) {
         y = x.pageY;
         x = x.pageX;
-    } else if(object.isDefined(x.x)) {
+    } else if (object.isDefined(x.x)) {
         y = x.y;
         x = x.x;
     }
@@ -397,8 +416,8 @@ Diagram.prototype.getStagePosition = function(x, y) {
 
     //TODO: viewbox alignement ?
     return {
-        x : parseInt((x  - stagePosition.left - viewPointAlignment.x) / this.scale),
-        y : parseInt((y  - stagePosition.top - viewPointAlignment.y) / this.scale)
+        x: parseInt((x - stagePosition.left - viewPointAlignment.x) / this.scale),
+        y: parseInt((y - stagePosition.top - viewPointAlignment.y) / this.scale)
     };
 };
 
@@ -408,9 +427,9 @@ Diagram.prototype.getStagePosition = function(x, y) {
  * @param {type} position
  * @returns {Boolean}
  */
-Diagram.prototype.getNodeByPosition = function(position) {
+Diagram.prototype.getNodeByPosition = function (position) {
     var result;
-    object.each(this.nodeMgr.nodes, function() {
+    object.each(this.nodeMgr.nodes, function () {
         if (this.overlays(position)) {
             result = this;
             return false;
@@ -420,97 +439,103 @@ Diagram.prototype.getNodeByPosition = function(position) {
     return result;
 };
 
-Diagram.prototype.createNode = function(tmplId, position) {
+Diagram.prototype.createNode = function (tmplId, position) {
     var that = this;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         that.loadTemplate(tmplId)
-            .then(function(template) {
+            .then(function (template) {
                 resolve(that.nodeMgr.createNodeCommand(template, position));
-            }, function(err) {
+            }, function (err) {
                 reject(err);
             });
     });
 };
 
-Diagram.prototype.clear = function() {
-    this.nodeMgr.clear();
-    this.selectionMgr.clear();
-};
-
-Diagram.prototype.getSelectedTransition = function(tmpl, position) {
+Diagram.prototype.getSelectedTransition = function (tmpl, position) {
     return this.selectionMgr.selectedTransition;
 };
 
-Diagram.prototype.loadTemplate = function(tmpl) {
+Diagram.prototype.loadTemplate = function (tmpl) {
     var that = this;
-    return new Promise(function(resolve, reject) {
+    return new Promise(function (resolve, reject) {
         that.templateMgr.getTemplate(tmpl)
-            .then(function(template) {
+            .then(function (template) {
                 resolve(template);
-            }, function(err) {
+            }, function (err) {
                 reject(err);
             });
     });
 };
 
-Diagram.prototype.screenShot = function(container, withadditions) {
+Diagram.prototype.screenShot = function (container, withadditions) {
     var stringVal = (withadditions) ? this.asString() : this.asPlainString();
     fileManager.makeScreenShot(container, stringVal, this.width(), this.height());
 };
 
-Diagram.prototype.getSelectedNodes = function(tmpl, position) {
+Diagram.prototype.getSelectedNodes = function (tmpl, position) {
     return this.selectionMgr.getSelectedNodes();
 };
 
-Diagram.prototype.getNodeById = function(id) {
-    return this.nodeMgr.getNode(id);
-};
-
-Diagram.prototype.createTransition = function(node1, node2) {
+Diagram.prototype.createTransition = function (node1, node2) {
     return node1.additions.transition.startNewTransition(node2);
 };
 
-Diagram.prototype.getTransitionById = function(id) {
+Diagram.prototype.getTransitionById = function (id) {
     return this.transitionMgr.getTransition(id);
 };
 
-Diagram.prototype.asString = function() {
+Diagram.prototype.asString = function () {
     return this.svg.asString();
 };
 
-Diagram.prototype.asPlainString = function() {
+Diagram.prototype.asPlainString = function () {
     var $diagramXml = this.clone();
     $diagramXml.find('.knob').remove();
     //TODO: Diagram dimension settings
     $diagramXml.attr('height', this.height() + 10);
     $diagramXml.attr('width', this.width() + 10);
     $diagramXml.find('.orientationKnob').hide();
-    $diagramXml.find('#'+this.mainPart.attr('id')).attr('transform', '');
+    $diagramXml.find('#' + this.mainPart.attr('id')).attr('transform', '');
     return util.xml.serializeToString($diagramXml[0]);
 };
 
-Diagram.prototype.clone = function() {
+Diagram.prototype.clone = function () {
     return this.svg.clone();
 };
 
-Diagram.prototype.undoCommand = function() {
+Diagram.prototype.undoCommand = function () {
     this.commandMgr.undo();
 };
 
-Diagram.prototype.redoCommand = function() {
+Diagram.prototype.redoCommand = function () {
     this.commandMgr.redo();
 };
 
-Diagram.prototype.registerCommand = function(cmdId, cmd) {
+Diagram.prototype.registerCommand = function (cmdId, cmd) {
     this.commandMgr.register(cmdId, cmd);
 };
 
-Diagram.prototype.executeCommand = function(cmdId, doArgs, undoArgs) {
+Diagram.prototype.executeCommand = function (cmdId, doArgs, undoArgs) {
     return this.commandMgr.exec(cmdId, doArgs, undoArgs);
 };
 
-Diagram.prototype.addCommand = function(cmdId, doArgs, undoArgs) {
+Diagram.prototype.addCommand = function (cmdId, doArgs, undoArgs) {
     this.commandMgr.add(cmdId, doArgs, undoArgs);
+};
+
+Diagram.prototype.dump = function() {
+    var result = '<hr />';
+    result += 'Diagram: '+this.id+'<br />';
+    result += this.nodeMgr.dump();
+    result += this.transitionMgr.dump()+'<br />';
+    result += '<hr />';
+    return result;
+};
+
+Diagram.prototype.validate = function() {
+    var result = {};
+    result['transitionManager'] = this.transitionMgr.validate();
+    return result;
 };
 
 module.exports = Diagram;

@@ -93,7 +93,7 @@ SVG.prototype.$ = function() {
  * @param element
  */
 SVG.prototype.setRoot = function(element) {
-    var newId = dom.getAttributes(element)['id'];
+    var newId = $(element).attr('id');
     this.root.instance(element);
     this.root.attr({id : newId});
     instances[newId] = this;

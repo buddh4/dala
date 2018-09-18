@@ -1,7 +1,7 @@
 (function() {
     dala.require('templateManager').registerTemplate('simple_rect', {
         description : "Simple rectangle with text",
-        title : "RECTANGLE",
+        title : "",
         fill: '#FFFFFF',
         stroke: '#000000',
         'stroke-width': '1',

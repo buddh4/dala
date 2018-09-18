@@ -43,19 +43,21 @@ var Resize = function(node, diagram) {
 Resize.prototype.activateKnobs = function() {
     var positions = this.calculateKnobPosition();
 
-    this.group = this.diagram.svg.g({}).translate(this.node.position()).rotate(this.node.rotate());
 
-    //Initialize the different knobs with different drag restricitons
-    this.createKnob(KNOB_NW,positions[KNOB_NW],new DragConfig());
-    this.createKnob(KNOB_N, positions[KNOB_N],new DragConfig().yOnly());
-    this.createKnob(KNOB_NE,positions[KNOB_NE],new DragConfig());
-    this.createKnob(KNOB_E, positions[KNOB_E],new DragConfig().xOnly());
-    this.createKnob(KNOB_SE,positions[KNOB_SE],new DragConfig());
-    this.createKnob(KNOB_S, positions[KNOB_S], new DragConfig().yOnly());
-    this.createKnob(KNOB_SW,positions[KNOB_SW],new DragConfig());
-    this.createKnob(KNOB_W, positions[KNOB_W],new DragConfig().xOnly());
+    if(!$('#resize_group_'+this.node.id).length) {
+        this.group = this.diagram.svg.g({id: 'resize_group_' + this.node.id}).translate(this.node.position()).rotate(this.node.rotate());
 
+        //Initialize the different knobs with different drag restricitons
+        this.createKnob(KNOB_NW, positions[KNOB_NW], new DragConfig());
+        this.createKnob(KNOB_N, positions[KNOB_N], new DragConfig().yOnly());
+        this.createKnob(KNOB_NE, positions[KNOB_NE], new DragConfig());
+        this.createKnob(KNOB_E, positions[KNOB_E], new DragConfig().xOnly());
+        this.createKnob(KNOB_SE, positions[KNOB_SE], new DragConfig());
+        this.createKnob(KNOB_S, positions[KNOB_S], new DragConfig().yOnly());
+        this.createKnob(KNOB_SW, positions[KNOB_SW], new DragConfig());
+        this.createKnob(KNOB_W, positions[KNOB_W], new DragConfig().xOnly());
 
+    }
 };
 
 /**
@@ -184,6 +186,8 @@ Resize.prototype.calculateKnobPosition = function() {
 Resize.prototype.removeKnobs = function() {
     if(object.isDefined(this.group)) {
         this.group.remove();
+    } else if($('#resize_group_'+this.node.id).length) {
+        $('#resize_group_'+this.node.id).remove();
     }
     delete this.group;
 };
@@ -258,6 +262,7 @@ Resize.prototype.setResize = function(svgElement, elementConfig, setting, d, dim
         case 'vertical':
             var newY = parseInt(svgElement.attr('y2')) + d;
             svgElement.attr('y2', newY);
+            break;
         case 'parent':
             //We could check the resize settings of the parent if this is static
             //we do not have to change anything when resizing.

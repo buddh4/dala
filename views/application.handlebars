@@ -5,7 +5,8 @@
                 <h3>Overview</h3>
                 <div style="width:100%;height:250px;background-color:#ffffff;">
                     <div id="viewbox" style="width:100%;height:125px;background-color:grey;opacity: 0.4;">
-                        <div id="viewport" style="background-color:#ffffff;border:1px solid black;position:relative;">&nbsp;</div>
+                        <div id="viewport" style="background-color:#ffffff;border:1px solid black;position:relative;">
+                            &nbsp;</div>
                     </div>
                 </div>
             </div>
@@ -18,7 +19,6 @@
         </div>
 
 
-
         <div class="col-sm-10 col-sm-offset-3  col-md-offset-2 main">
             <!-- Stage -->
             <!-- h5 class="page-header" style="padding-bottom: 0px;margin-bottom:10px">Document</h5 -->
@@ -26,7 +26,7 @@
                 <ul>
                     <li><a href="#tabs-stage">Stage</a></li>
                     <li><a href="#tabs-svgTester">SVG-Test</a></li>
-                    <li><a href="#tabs-3">Editor</a></li>
+                    <li><a href="#tabs-3">Debug</a></li>
                 </ul>
                 <div id="tabs-stage">
                     <!-- STAGE TAB -->
@@ -34,7 +34,8 @@
                         <div class="container-fluid">
                             <!-- Brand and toggle get grouped for better mobile display -->
                             <div class="navbar-header">
-                                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse"
+                                        data-target="#bs-example-navbar-collapse-1">
                                     <span class="sr-only">Toggle navigation</span>
                                     <span class="icon-bar"></span>
                                     <span class="icon-bar"></span>
@@ -50,8 +51,10 @@
                                 <ul class="nav navbar-nav">
                                     <li class="seperator">&nbsp;</li>
                                     <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                                            <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span class="caret"></span></a>
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                           aria-expanded="false">
+                                            <span class="glyphicon glyphicon-file" aria-hidden="true"></span> File <span
+                                                class="caret"></span></a>
                                         <ul class="dropdown-menu" role="menu">
                                             <li><a href="#" id="file-menu-new">New...</a></li>
                                             <li><a href="#" id="file-menu-open">Open...</a></li>
@@ -62,8 +65,10 @@
                                     </li>
                                     <li class="seperator">&nbsp;</li>
                                     <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-                                            <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span> Diagram <span class="caret"></span></a>
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button"
+                                           aria-expanded="false">
+                                            <span class="glyphicon glyphicon-th-large" aria-hidden="true"></span>
+                                            Diagram <span class="caret"></span></a>
                                         <ul class="dropdown-menu" role="menu">
                                             <li><a href="#">!Preferences!</a></li>
                                             <li><a href="#" id="hideDocking">Hide Dockings</a></li>
@@ -72,28 +77,42 @@
                                     </li>
 
                                     <!-- Diagram Menu -->
-                                    <li id="nav-toggle-diagram" class="nav-toggle" data-nav-id="diagram-nav" title="diagram menu">&nbsp;</li>
-                                    <li class="diagram-nav"><a href="#" id="diagram-zoomOut" title="zoom out (Ctrl + - (minus sign)"><span class="glyphicon glyphicon-zoom-out"></span></a></li>
-                                    <li class="diagram-nav"><a href="#" id="diagram-zoomIn" title="zoom in (Ctrl + + (plus sign)"><span class="glyphicon glyphicon-zoom-in"></span></a></li>
-                                    <li class="diagram-nav"><a href="#" id="diagram-move" title="move diagram (Shift + Drag)"><span class="glyphicon glyphicon-move"></span></a></li>
-                                    <li class="diagram-nav"><a href="#" id="viewXML" style="font-size:0.8em;" title="svg view">{SVG}</a></li>
+                                    <li id="nav-toggle-diagram" class="nav-toggle" data-nav-id="diagram-nav"
+                                        title="diagram menu">&nbsp;</li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-zoomOut"
+                                                               title="zoom out (Ctrl + - (minus sign)"><span
+                                            class="glyphicon glyphicon-zoom-out"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-zoomIn"
+                                                               title="zoom in (Ctrl + + (plus sign)"><span
+                                            class="glyphicon glyphicon-zoom-in"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="diagram-move"
+                                                               title="move diagram (Shift + Drag)"><span
+                                            class="glyphicon glyphicon-move"></span></a></li>
+                                    <li class="diagram-nav"><a href="#" id="viewXML" style="font-size:0.8em;"
+                                                               title="svg view">{SVG}</a></li>
                                     <li class="menu-seperator">&nbsp;</li>
 
                                     <!-- Node Menu -->
-                                    <li id="nav-toggle-node" class="nav-toggle" data-nav-id="node-nav" title="node menu">&nbsp;</li>
-                                    <li class="node-nav"><a href="#" id="node-align" title="node alignment"><span class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
-                                    <li class="node-nav"><a href="#" id="node-moveup" title="move node up"><span class="glyphicon glyphicon-collapse-up"></span></a></li>
-                                    <li class="node-nav"><a href="#" id="node-movedown" title="move node down"><span class="glyphicon glyphicon-collapse-down"></span></a></li>
+                                    <li id="nav-toggle-node" class="nav-toggle" data-nav-id="node-nav"
+                                        title="node menu">&nbsp;</li>
+                                    <li class="node-nav"><a href="#" id="node-align" title="node alignment"><span
+                                            class="glyphicon glyphicon-object-align-horizontal"></span></a></li>
+                                    <li class="node-nav"><a href="#" id="node-moveup" title="move node up"><span
+                                            class="glyphicon glyphicon-collapse-up"></span></a></li>
+                                    <li class="node-nav"><a href="#" id="node-movedown" title="move node down"><span
+                                            class="glyphicon glyphicon-collapse-down"></span></a></li>
                                     <li class="node-nav" style="display:flex;">
                                         <div>
-                                            <label for="node-default-fill" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-back.png')"></label>
-                                            <input id="node-default-fill" type="color" title="background color" />
+                                            <label for="node-default-fill"
+                                                   style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-back.png')"></label>
+                                            <input id="node-default-fill" type="color" title="background color"/>
                                         </div>
                                     </li>
                                     <li class="node-nav" style="display:flex;">
                                         <div style="flex-wrap:wrap;">
-                                            <label for="node-stroke" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
-                                            <input id="node-stroke" type="color" title="stroke color" />
+                                            <label for="node-stroke"
+                                                   style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
+                                            <input id="node-stroke" type="color" title="stroke color"/>
                                         </div>
                                     </li>
                                     <li id="node-dash" class="node-nav" title="node dash" style="padding-top:2px;">
@@ -103,11 +122,14 @@
                                             <option value="10,10" title="images/icons/icon-dash-2.png"></option>
                                             <option value="3,5" title="images/icons/icon-dash-3.png"></option>
                                             <option value="5,2" title="images/icons/icon-dash-4.png"></option>
-                                            <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
+                                            <option value="20,10,5,5,5,10"
+                                                    title="images/icons/icon-dash-5.png"></option>
                                         </select>
                                     </li>
-                                    <li id="node-stroke-width" class="node-nav" title="stroke width" style="padding-right:1px;">
-                                        <label for="node-stroke-width-input" style="margin:0px;height:20px;display:block;background:url('images/icons/icon-stroke-width.png')"></label>
+                                    <li id="node-stroke-width" class="node-nav" title="stroke width"
+                                        style="padding-right:1px;">
+                                        <label for="node-stroke-width-input"
+                                               style="margin:0px;height:20px;display:block;background:url('images/icons/icon-stroke-width.png')"></label>
                                         <select id="node-stroke-width-input" style="width:34px;">
                                             <option value='1'>1</option>
                                             <option value='2'>2</option>
@@ -129,49 +151,78 @@
                                     <li class="menu-seperator">&nbsp;</li>
 
                                     <!-- Node Transition -->
-                                    <li id="nav-toggle-transition" class="nav-toggle" data-nav-id="transition-nav" title="transition menu">&nbsp;</li>
-                                    <li id="transition-type-straight" class="nav-button transition-nav menu-box transitionTypeOption" data-type="straight" title="straight transition">&nbsp;</li>
-                                    <li id="transition-type-round" class="nav-button transition-nav menu-box transitionTypeOption" data-type="round" title="round transition">&nbsp;</li>
-                                    <li id="transition-type-curved" class="nav-button transition-nav menu-box transitionTypeOption" data-type="curved" title="curved transition">&nbsp;</li>
+                                    <li id="nav-toggle-transition" class="nav-toggle" data-nav-id="transition-nav"
+                                        title="transition menu">&nbsp;</li>
+                                    <li id="transition-type-straight"
+                                        class="nav-button transition-nav menu-box transitionTypeOption"
+                                        data-type="straight" title="straight transition">&nbsp;</li>
+                                    <li id="transition-type-round"
+                                        class="nav-button transition-nav menu-box transitionTypeOption"
+                                        data-type="round" title="round transition">&nbsp;</li>
+                                    <li id="transition-type-curved"
+                                        class="nav-button transition-nav menu-box transitionTypeOption"
+                                        data-type="curved" title="curved transition">&nbsp;</li>
                                     <li class="transition-nav">
                                         <div>
-                                            <label for="transition-default-stroke" style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
-                                            <input id="transition-default-stroke" type="color" title="color" />
+                                            <label for="transition-default-stroke"
+                                                   style="margin:0px;height:15px;display:block;background:url('images/icons/icon-node-border.png')"></label>
+                                            <input id="transition-default-stroke" type="color" title="color"/>
                                         </div>
                                     </li>
-                                    <li id="transition-marker-start" class="transition-nav" title="start marker" style="padding-top:2px;">
-                                        <select name="transion-marker-start-select" id="transion-marker-start-select" data-type="start" style="width:60px;" class="transition-marker-select">
+                                    <li id="transition-marker-start" class="transition-nav" title="start marker"
+                                        style="padding-top:2px;">
+                                        <select name="transion-marker-start-select" id="transion-marker-start-select"
+                                                data-type="start" style="width:60px;" class="transition-marker-select">
                                             <option value="none" title="images/icons/icon-marker-none.png"></option>
-                                            <option value="arrow_s" title="images/icons/icon-marker-arrow-rtl.png" value="none"></option>
-                                            <option value="triangle_s" title="images/icons/icon-marker-triangle-rtl.png" value="none"></option>
-                                            <option value="trianglefill_s" title="images/icons/icon-marker-trianglefill-rtl.png" value="none"></option>
-                                            <option value="aggr_s" title="images/icons/icon-marker-aggr.png" value="none"></option>
-                                            <option value="comp_s" title="images/icons/icon-marker-comp.png" value="none"></option>
+                                            <option value="arrow_s" title="images/icons/icon-marker-arrow-rtl.png"
+                                                    value="none"></option>
+                                            <option value="triangle_s" title="images/icons/icon-marker-triangle-rtl.png"
+                                                    value="none"></option>
+                                            <option value="trianglefill_s"
+                                                    title="images/icons/icon-marker-trianglefill-rtl.png"
+                                                    value="none"></option>
+                                            <option value="aggr_s" title="images/icons/icon-marker-aggr.png"
+                                                    value="none"></option>
+                                            <option value="comp_s" title="images/icons/icon-marker-comp.png"
+                                                    value="none"></option>
                                         </select>
                                     </li>
-                                    <li id="transition-dash" class="transition-nav" title="transition dash" style="padding-top:2px;">
-                                        <select name="transition-dash-select" id="transition-dash-select" style="width:85px;">
+                                    <li id="transition-dash" class="transition-nav" title="transition dash"
+                                        style="padding-top:2px;">
+                                        <select name="transition-dash-select" id="transition-dash-select"
+                                                style="width:85px;">
                                             <option value="none" title="images/icons/icon-dash-none.png"></option>
                                             <option value="5,5" title="images/icons/icon-dash-1.png"></option>
                                             <option value="10,10" title="images/icons/icon-dash-2.png"></option>
                                             <option value="3,5" title="images/icons/icon-dash-3.png"></option>
                                             <option value="5,2" title="images/icons/icon-dash-4.png"></option>
-                                            <option value="20,10,5,5,5,10" title="images/icons/icon-dash-5.png"></option>
+                                            <option value="20,10,5,5,5,10"
+                                                    title="images/icons/icon-dash-5.png"></option>
 
                                         </select>
                                     </li>
-                                    <li id="transition-marker-end" class="transition-nav" title="end marker" style="padding-top:2px;">
-                                        <select name="transion-marker-end-select" id="transion-marker-end-select" data-type="end" style="width:60px;" class="transition-marker-select">
+                                    <li id="transition-marker-end" class="transition-nav" title="end marker"
+                                        style="padding-top:2px;">
+                                        <select name="transion-marker-end-select" id="transion-marker-end-select"
+                                                data-type="end" style="width:60px;" class="transition-marker-select">
                                             <option value="none" title="images/icons/icon-marker-none.png"></option>
-                                            <option value="arrow" title="images/icons/icon-marker-arrow.png" value="none"></option>
-                                            <option value="triangle" title="images/icons/icon-marker-triangle.png" value="none"></option>
-                                            <option value="trianglefill" title="images/icons/icon-marker-trianglefill.png" value="none"></option>
-                                            <option value="aggr" title="images/icons/icon-marker-aggr.png" value="none"></option>
-                                            <option value="comp" title="images/icons/icon-marker-comp.png" value="none"></option>
+                                            <option value="arrow" title="images/icons/icon-marker-arrow.png"
+                                                    value="none"></option>
+                                            <option value="triangle" title="images/icons/icon-marker-triangle.png"
+                                                    value="none"></option>
+                                            <option value="trianglefill"
+                                                    title="images/icons/icon-marker-trianglefill.png"
+                                                    value="none"></option>
+                                            <option value="aggr" title="images/icons/icon-marker-aggr.png"
+                                                    value="none"></option>
+                                            <option value="comp" title="images/icons/icon-marker-comp.png"
+                                                    value="none"></option>
                                         </select>
                                     </li>
-                                    <li id="transition-stroke-width" class="transition-nav" title="stroke width" style="padding-right:1px;">
-                                        <label for="transition-stroke-width-input" style="margin:0px;height:20px;display:block;margin-bottom:1px;background:url('images/icons/icon-stroke-width.png')"></label>
+                                    <li id="transition-stroke-width" class="transition-nav" title="stroke width"
+                                        style="padding-right:1px;">
+                                        <label for="transition-stroke-width-input"
+                                               style="margin:0px;height:20px;display:block;margin-bottom:1px;background:url('images/icons/icon-stroke-width.png')"></label>
                                         <select id="transition-stroke-width-input" style="width:34px;">
                                             <option value='1'>1</option>
                                             <option value='2'>2</option>
@@ -181,7 +232,9 @@
                                     <li class="menu-seperator">&nbsp;</li>
                                 </ul>
                                 <ul class="nav navbar-nav navbar-right">
-                                    <li><a id="downloadDiagram" href="#"><span class="glyphicon glyphicon-floppy-save" aria-hidden="true"></span> Download</a></li>
+                                    <li><a id="downloadDiagram" href="#"><span class="glyphicon glyphicon-floppy-save"
+                                                                               aria-hidden="true"></span> Download</a>
+                                    </li>
                                 </ul>
                             </div><!-- /.navbar-collapse -->
                         </div><!-- /.container-fluid -->
@@ -199,7 +252,10 @@
                     </div>
                 </div>
                 <div id="tabs-3">
-                    <canvas id="convertCanvas"></canvas>
+                    <a id="dump_diagram" href="#">Dump</a>
+                    <a id="validate_diagram" href="#">Validate</a>
+                    <div id="dump_container"></div>
+                    <div id="validate_container"></div>
                 </div>
 
                 <!-- File Open Input  -->
@@ -248,7 +304,7 @@
                         <option value="round">round</option>
                     </select>
                     <label for="transitionColor">Color:</label>
-                    <input id="editTransitionColor" type="color" />
+                    <input id="editTransitionColor" type="color"/>
                     <label for="transitionDash">Dash:</label>&nbsp;
                     <select id="transitionDashSelect" style="width:85px;">
                         <option value="none" title="images/icons/icon-dash-none.png"></option>
@@ -262,22 +318,22 @@
                 <fieldset>
                     <legend>Text</legend>
                     <label id="editSTIco" class="ttextPositionLabel" for="edit_ST">&nbsp;</label>
-                    <input id="edit_ST" data-index="0" class="ttextPositionInput" type="text" >
-                    <br />
+                    <input id="edit_ST" data-index="0" class="ttextPositionInput" type="text">
+                    <br/>
                     <label id="editSBIco" class="ttextPositionLabel" for="edit_SB">&nbsp;</label>
-                    <input id="edit_SB" data-index="1" class="ttextPositionInput" type="text" >
-                    <br />
+                    <input id="edit_SB" data-index="1" class="ttextPositionInput" type="text">
+                    <br/>
                     <label id="editMTIco" class="ttextPositionLabel" for="edit_MT">&nbsp;</label>
-                    <input id="edit_MT" data-index="2" class="ttextPositionInput" type="text" >
-                    <br />
+                    <input id="edit_MT" data-index="2" class="ttextPositionInput" type="text">
+                    <br/>
                     <label id="editMBIco" class="ttextPositionLabel" for="edit_MB">&nbsp;</label>
-                    <input id="edit_MB" data-index="3" class="ttextPositionInput" type="text" >
-                    <br />
+                    <input id="edit_MB" data-index="3" class="ttextPositionInput" type="text">
+                    <br/>
                     <label id="editETIco" class="ttextPositionLabel" for="edit_ET">&nbsp;</label>
-                    <input id="edit_ET" data-index="4" class="ttextPositionInput" type="text" >
-                    <br />
+                    <input id="edit_ET" data-index="4" class="ttextPositionInput" type="text">
+                    <br/>
                     <label id="editEBIco" class="ttextPositionLabel" for="edit_EB">&nbsp;</label>
-                    <input id="edit_EB" data-index="5" class="ttextPositionInput" type="text" >
+                    <input id="edit_EB" data-index="5" class="ttextPositionInput" type="text">
                 </fieldset>
             </form>
         </div>
@@ -296,11 +352,17 @@
     <form>
         <fieldset>
             <label for="download-as-fileName">Name:</label>
-            <input type="text" name="fileName" id="download-as-fileName" class="text ui-widget-content ui-corner-all" /><span id="download-as-suffix" style="margin-left:5px;"></span><br />
-            <input type="radio" id="format-svg" name="download-format" value="image/svg+xml" style="margin-left:55px;" /><label for="format-svg">svg</label>
-            <input type="radio" id="format-jpg" name="download-format" value="image/jpeg" /><label for="format-jpg">jpg</label>
-            <input type="radio" id="format-gif" name="download-format" value="image/gif" /><label for="format-gif">gif</label>
-            <input type="radio" id="format-png" name="download-format" value="image/png" /><label for="format-png">png</label>
+            <input type="text" name="fileName" id="download-as-fileName"
+                   class="text ui-widget-content ui-corner-all"/><span id="download-as-suffix"
+                                                                       style="margin-left:5px;"></span><br/>
+            <input type="radio" id="format-svg" name="download-format" value="image/svg+xml" style="margin-left:55px;"/><label
+                for="format-svg">svg</label>
+            <input type="radio" id="format-jpg" name="download-format" value="image/jpeg"/><label
+                for="format-jpg">jpg</label>
+            <input type="radio" id="format-gif" name="download-format" value="image/gif"/><label
+                for="format-gif">gif</label>
+            <input type="radio" id="format-png" name="download-format" value="image/png"/><label
+                for="format-png">png</label>
         </fieldset>
     </form>
 </div>
@@ -352,7 +414,7 @@
             <input type="text" name="firstname" id="backendhost" class="text ui-widget-content ui-corner-all">
             <label for="backendport">Port</label>
             <input type="text" name="port" id="backendport" class="text ui-widget-content ui-corner-all">
-            <br /><br />
+            <br/><br/>
             <span>Status: <b id="backendConnectionTest"></b></span>
             <!-- Allow form submission with keyboard without duplicating the dialog button -->
             <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
@@ -366,7 +428,8 @@
             <label for="title">Title</label>
             <input type="text" name="title" id="new-project-title" class="text ui-widget-content ui-corner-all">
             <label for="description">Description</label>
-            <textarea name="description" id="new-project-description" class="ui-corner-all" style="width:100%;height:100px;"></textarea>
+            <textarea name="description" id="new-project-description" class="ui-corner-all"
+                      style="width:100%;height:100px;"></textarea>
             <!-- Allow form submission with keyboard without duplicating the dialog button -->
             <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
         </fieldset>
@@ -379,7 +442,8 @@
             <label for="title">Title</label>
             <input type="text" name="title" id="new-diagram-title" class="text ui-widget-content ui-corner-all">
             <label for="project">Project</label>
-            <input type="text" name="project" id="new-diagram-project" class="text ui-widget-content ui-corner-all" disabled="disabled">
+            <input type="text" name="project" id="new-diagram-project" class="text ui-widget-content ui-corner-all"
+                   disabled="disabled">
             <!-- Allow form submission with keyboard without duplicating the dialog button -->
             <input type="submit" tabindex="-1" style="position:absolute; top:-1000px">
         </fieldset>

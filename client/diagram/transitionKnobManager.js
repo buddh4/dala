@@ -54,7 +54,6 @@ var TransitionKnobManager = function(transition) {
     };
 };
 
-
 TransitionKnobManager.prototype.init = function() {
     this.knobs = [];
 };
@@ -71,15 +70,13 @@ TransitionKnobManager.prototype.activate = function() {
     });
 
     var oldEndKnob = this.transition.firstChild('.endKnob');
-    this._activateKnob(oldStartKnob, this.knobs.length, true);
+    this._activateKnob(oldEndKnob, this.knobs.length, true);
 
     return this;
 };
 
-TransitionKnobManager.prototype._activateKnob = function(knob, index, isBoundaryKnob) {
-    var position = knob.getCenter();
-    knob.remove();
-    this.addKnob(position, index, true, isBoundaryKnob);
+TransitionKnobManager.prototype._activateKnob = function(knobSvg, index, isBoundaryKnob) {
+    this.addKnob(knobSvg.getCenter(), index, true, isBoundaryKnob, knobSvg);
 };
 
 TransitionKnobManager.prototype.freeze = function() {
@@ -99,10 +96,10 @@ TransitionKnobManager.prototype.unfreeze = function() {
     });
 };
 
-TransitionKnobManager.prototype.addKnob = function(position, index, activate, isBoundaryKnob) {
+TransitionKnobManager.prototype.addKnob = function(position, index, activate, isBoundaryKnob, svgInstance) {
     var index = index || this.size();
     var isBoundaryKnob = (!activate)? this.isInitState() : isBoundaryKnob;
-    var knob = this.initKnob(index, position, isBoundaryKnob);
+    var knob = this.initKnob(index, position, isBoundaryKnob, svgInstance);
     this.knobs.splice(index, 0, knob);
 
     if(index === 0) {
@@ -122,14 +119,17 @@ TransitionKnobManager.prototype.addKnob = function(position, index, activate, is
     return knob;
 };
 
-TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBoundaryKnob) {
+TransitionKnobManager.prototype.initKnob = function(knobIndex, position, isBoundaryKnob, svgInstance) {
     var that = this;
+
     var knobConfig = {
         radius:5,
+        activate: svgInstance,
         selectable: !isBoundaryKnob,
         fill: isBoundaryKnob ? 'green' : 'silver',
         cssClass: (knobIndex === 0) ? 'startKnob' : (isBoundaryKnob) ? 'endKnob' : 'innerKnob'
     };
+
     var knob = new Knob(this.transition.diagram, position, knobConfig, this.transition.group);
     knob.transition = this.transition;
     var initialDrag = true;
@@ -403,10 +403,56 @@ TransitionKnobManager.prototype.getPosition = function(index) {
 
 TransitionKnobManager.prototype.getPathManager = function() {
     return this.transition.pathManager;
-}
+};
 
 TransitionKnobManager.prototype.isInitState = function() {
     return !this.endKnob;
-}
+};
+
+TransitionKnobManager.prototype.dump = function() {
+    var result = 'KnobManager - '+this.knobs.length+'<br />';
+    object.each(this.knobs, function(index, knob) {
+        result += '['+index+']('+knob.position().x+'/'+knob.position().y+')<br />';
+    });
+    return result;
+};
+
+TransitionKnobManager.prototype.validate = function() {
+    var $transitionGroup = this.transition.group.$();
+    var $svgRoot = this.transition.diagram.getRootSVG().$();
+
+    var result = [];
+    if(this.isInitState()) {
+        return result;
+    }
+
+    if(this.knobs < 2) {
+        result['knobCount'] = 'Too less knobs found!';
+    }
+
+    if(!this.startKnob) {
+        result['startKnob'] = 'No startKnob found!';
+    } else if(!$transitionGroup.find('#'+this.startKnob.node.id).length) {
+        result['startKnob'] = 'No startKnob found in transition group!';
+    } else if($transitionGroup.find('.startKnob').length != 1) {
+        result['startKnob'] = 'Invalid startKnob amount found in transition group!';
+    }
+
+    var innerKnobs = this.getInnerKnobs();
+    var $innerKnobs = $transitionGroup.find('.innerKnob');
+    if(innerKnobs.length != $innerKnobs.length) {
+        result['innerKnobs'] = 'Invalid amount of innerKnobs found in transition group!';
+    }
+
+    if(!this.endKnob) {
+        result['endKnob'] = 'No endKnob found!';
+    } else if(!$transitionGroup.find('#'+this.endKnob.node.id).length) {
+        result['endKnob'] = 'No startKnob found in transition group!';
+    } else if($transitionGroup.find('.endKnob').length != 1) {
+        result['endKnob'] = 'Invalid endKnob amount found in transition group!';
+    }
+
+    return result;
+};
 
 module.exports = TransitionKnobManager;

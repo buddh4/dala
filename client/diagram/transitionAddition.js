@@ -199,6 +199,20 @@ TransitionAddition.prototype.removeIncomingTransition = function(transition) {
     }
 };
 
+TransitionAddition.prototype.dump = function() {
+    var result = '<b>TransitionAddition</b><br />';
+    result += this.outgoingTransitions.length+' Outgoing Transitions:<br />';
+    this.executeOnOutgoingTransitions(function(transition) {
+        result += 'Transition - '+transition.id+'<br />';
+    });
+
+    result += this.incomingTransitions.length+' Incoming Transitions:<br />';
+    this.executeOnIncomingTransitions(function(transition) {
+        result += 'Transition - '+transition.id+'<br />';
+    });
+    return result;
+};
+
 TransitionAddition.requireConfig = false;
 
 module.exports = TransitionAddition;

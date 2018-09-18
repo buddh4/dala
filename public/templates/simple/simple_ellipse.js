@@ -2,7 +2,7 @@
     dala.require('templateManager').registerTemplate('simple_ellipse', {
         description : "Simple ellipse with text",
         color_main : "#FFFFFF",
-        title : "ellipse",
+        title : "",
         docking : {
             type: 'ellipse',
             orientation: 'center'

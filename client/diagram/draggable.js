@@ -133,10 +133,13 @@ Node.prototype.getNodeAlignmentTargets = function() {
     return result;
 };
 
-Node.prototype.getDragElement = function() {
+Node.prototype.getDragElement = function() { 
+    return this.getRootSVG().instance();
+    //return dom.findIncludeSelf(this.getRootSVG().instance(), '[class~='+this.getNodeSelector('dragRoute_')+']');
+
     //TODO: we have to use the [class~=bla] selector since ie, edge (who else) throwing errors for .class selectors in jquery
     //this may change in following jqery versions.
-    return dom.findIncludeSelf(this.getRootSVG().instance(), '[class~='+this.getNodeSelector('dragRoute_')+']');
+    //return dom.findIncludeSelf(this.getRootSVG().instance(), '[class~='+this.getNodeSelector('dragRoute_')+']');
 };
 
 module.exports = {
